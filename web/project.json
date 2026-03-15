@@ -1,0 +1,28 @@
+{
+  "name": "administration",
+  "root": "web",
+  "sourceRoot": "web/src",
+  "projectType": "application",
+  "tags": ["app"],
+  "targets": {
+    "build": {
+      "executor": "@nx/webpack:webpack",
+      "options": {
+        "outputPath": "dist/web",
+        "index": "web/src/index.html",
+        "main": "web/src/main.tsx",
+        "tsConfig": "web/tsconfig.app.json",
+        "webpackConfig": "web/webpack.config.js"
+      }
+    },
+    "serve": {
+      "executor": "@nx/webpack:dev-server",
+      "options": {
+        "buildTarget": "administration:build",
+        "hmr": true,
+        "port": 4200,
+        "historyApiFallback": true
+      }
+    }
+  }
+}
