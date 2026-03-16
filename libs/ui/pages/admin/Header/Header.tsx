@@ -1,6 +1,5 @@
 import {
   AppBar,
-  Avatar,
   Badge,
   Backdrop,
   CircularProgress,
@@ -30,9 +29,7 @@ const iconBtnSx = {
 const Header = () => {
   const { classes } = useStyles();
   const {
-    user,
     isAdmin,
-    userName,
     anchorEl,
     notifAnchorEl,
     notifications,
@@ -72,24 +69,8 @@ const Header = () => {
 
         <Box className={classes.logoDivider} />
 
-        {/* Left: Avatar + Welcome + ADMIN chip + Notifications bell */}
+        {/* Left: ADMIN chip + Notifications bell */}
         <Box className={classes.headerLeft}>
-          <Avatar className={classes.avatar} src={user?.profilePicture || undefined}>
-            {!user?.profilePicture &&
-              userName
-                .split(' ')
-                .map((n) => n[0])
-                .join('')
-                .toUpperCase()
-                .slice(0, 2)}
-          </Avatar>
-
-          <Box className={classes.welcomeText}>
-            <Typography className={classes.headerTitle}>
-              Welcome,&nbsp;<strong>{userName}</strong>
-            </Typography>
-          </Box>
-
           <Chip
             className={classes.adminChip}
             icon={<AdminPanelSettingsIcon sx={{ fontSize: 15 }} />}

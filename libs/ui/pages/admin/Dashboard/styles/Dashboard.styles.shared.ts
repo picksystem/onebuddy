@@ -17,7 +17,7 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
     backgroundSize: '300% 300%',
     animation: 'db-gradient-shift 8s ease infinite',
     borderRadius: 20,
-    padding: theme.spacing(4, 4.5),
+    padding: theme.spacing(3.5, 4),
     position: 'relative',
     overflow: 'hidden',
     boxShadow: '0 24px 64px rgba(79,70,229,0.28), 0 8px 24px rgba(0,0,0,0.12)',
@@ -37,8 +37,15 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
       animation: 'db-orb 10s ease-in-out infinite reverse',
       pointerEvents: 'none',
     },
-    [theme.breakpoints.between('sm', 'md')]: { padding: theme.spacing(3, 3.5), borderRadius: 16 },
-    [theme.breakpoints.down('sm')]: { padding: theme.spacing(2.25, 2), borderRadius: 14, marginBottom: theme.spacing(2) },
+    [theme.breakpoints.between('sm', 'md')]: {
+      padding: theme.spacing(3, 3),
+      borderRadius: 16,
+    },
+    [theme.breakpoints.down('sm')]: {
+      padding: theme.spacing(2, 1.75),
+      borderRadius: 14,
+      marginBottom: theme.spacing(2),
+    },
   },
 
   heroOrb: {
@@ -52,9 +59,8 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
 
   heroContent: {
     position: 'relative', zIndex: 1,
-    display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
-    [theme.breakpoints.down('md')]: { flexDirection: 'column' as const, alignItems: 'flex-start', gap: theme.spacing(1.5) },
-    [theme.breakpoints.down('sm')]: { gap: theme.spacing(1.25) },
+    display: 'flex', flexDirection: 'column' as const,
+    gap: theme.spacing(1.5),
   },
 
   heroLeft: { flex: 1 },
@@ -77,17 +83,20 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
   },
 
   heroSub: {
-    color: 'rgba(255,255,255,0.62)', marginTop: theme.spacing(0.75),
-    fontSize: '0.9rem', animation: 'db-slide-up 0.5s 0.12s ease both',
+    color: 'rgba(255,255,255,0.62)',
+    fontSize: '0.88rem',
+    lineHeight: 1.6,
+    animation: 'db-slide-up 0.5s 0.12s ease both',
+    maxWidth: 560,
     [theme.breakpoints.between('sm', 'md')]: { fontSize: '0.82rem' },
-    [theme.breakpoints.down('sm')]: { fontSize: '0.76rem', lineHeight: 1.5 },
+    [theme.breakpoints.down('sm')]: { fontSize: '0.76rem', lineHeight: 1.55 },
   },
 
   heroModePills: {
     display: 'flex', flexWrap: 'wrap' as const,
-    gap: theme.spacing(0.75), marginTop: theme.spacing(1.75),
+    gap: theme.spacing(0.75),
     animation: 'db-slide-up 0.5s 0.2s ease both', position: 'relative', zIndex: 1,
-    [theme.breakpoints.down('sm')]: { gap: theme.spacing(0.5), marginTop: theme.spacing(1.25) },
+    [theme.breakpoints.down('sm')]: { gap: theme.spacing(0.5) },
   },
 
   heroModePill: {
@@ -101,17 +110,15 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
 
   heroRight: {
     display: 'flex', flexDirection: 'column' as const,
-    alignItems: 'flex-end', gap: theme.spacing(1),
-    animation: 'db-slide-up 0.5s 0.18s ease both',
-    [theme.breakpoints.down('md')]: { alignItems: 'flex-start' },
-    [theme.breakpoints.down('sm')]: { gap: theme.spacing(0.5) },
+    alignItems: 'flex-end', gap: theme.spacing(1.25),
+    flexShrink: 0,
   },
 
   heroBadge: {
     display: 'inline-flex', alignItems: 'center', gap: 8,
     background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(12px)',
     border: '1px solid rgba(255,255,255,0.22)', borderRadius: 40, padding: '7px 16px',
-    [theme.breakpoints.down('sm')]: { padding: '5px 12px' },
+    [theme.breakpoints.down('sm')]: { padding: '5px 10px' },
   },
 
   heroBadgeDot: {
@@ -123,7 +130,7 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
   heroBadgeText: {
     fontSize: '0.75rem', fontWeight: 700,
     color: 'rgba(255,255,255,0.9)', letterSpacing: '0.06em',
-    [theme.breakpoints.down('sm')]: { fontSize: '0.68rem' },
+    [theme.breakpoints.down('sm')]: { fontSize: '0.65rem' },
   },
 
   heroDate: {
