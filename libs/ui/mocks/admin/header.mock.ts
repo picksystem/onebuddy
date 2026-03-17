@@ -98,33 +98,6 @@ export const mockHeadersMixedStatus: IHeader[] = [
 ];
 
 // ============================================
-// Tenant-specific Mocks
-// ============================================
-
-export const mockHeadersGeneralePartner: IHeader[] = [
-  {
-    id: 1,
-    ticketType: 'Support',
-    key: 'support',
-    name: 'Support Ticket',
-    description: 'General support requests',
-    isActive: true,
-    app: 'generale-partner',
-    order: 1,
-  },
-  {
-    id: 2,
-    ticketType: 'Inquiry',
-    key: 'inquiry',
-    name: 'General Inquiry',
-    description: 'Questions and inquiries',
-    isActive: true,
-    app: 'generale-partner',
-    order: 2,
-  },
-];
-
-// ============================================
 // Loading/Error States
 // ============================================
 

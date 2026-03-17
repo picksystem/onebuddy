@@ -5,7 +5,7 @@ const path = require('path');
  * Load partner environment configuration
  *
  * Priority:
- * 1. If PARTNER env is set (e.g., "generale-partner"), use env.{PARTNER}.json
+ * 1. If PARTNER env is set (e.g., "administration"), use env.{PARTNER}.json
  * 2. Otherwise, fallback to the app type (admin/user) as default
  *
  * @param {string} root - Project root directory

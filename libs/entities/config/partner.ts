@@ -14,12 +14,6 @@ export const PARTNER_CONFIGS: Record<string, PartnerConfig> = {
     features: ['admin', 'user', 'reports', 'system', 'dashboard'],
     apiUrl: '/api',
   },
-  'generale-partner': {
-    name: 'Generale Partner',
-    theme: 'generale-partner',
-    features: ['admin', 'user', 'reports'],
-    apiUrl: '/api',
-  },
 };
 
 export const getPartnerConfig = (partner: string): PartnerConfig | undefined => {
@@ -34,6 +28,3 @@ export const isAdministration = (partner: string): boolean => {
   return partner === 'administration';
 };
 
-export const isGeneralePartner = (partner: string): boolean => {
-  return partner === 'generale-partner';
-};

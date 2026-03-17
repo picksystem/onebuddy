@@ -269,13 +269,9 @@ bandi/
 ├── web/                               # FRONTEND APPLICATIONS
 │   ├── apps/
 │   │   └── administration/            # Administration web app (port 1600)
-│   └── tenants/
-│       └── generale-partner/          # Generale Partner tenant (port 1700)
-│
 ├── env/src/                           # Environment configs per app
 │   ├── env.administration.json        # Administration app config
-│   ├── env.gateway.json               # Backend gateway config
-│   └── env.generale-partner.json      # Generale Partner tenant config
+│   └── env.gateway.json               # Backend gateway config
 │
 ├── docker-compose.yml                 # Docker services
 ├── Dockerfile                         # Docker build
@@ -328,7 +324,6 @@ npm run dev:backend
 
 # Start frontend apps
 npm run serve:administration        # http://localhost:1600
-npm run serve:generale-partner      # http://localhost:1700
 
 # Start Storybook (component library)
 npm run storybook                   # http://localhost:6006
@@ -339,7 +334,6 @@ npm run storybook                   # http://localhost:6006
 | App | Command | Port |
 |-----|---------|------|
 | **Administration** | `serve:administration` | 1600 |
-| **Generale Partner** | `serve:generale-partner` | 1700 |
 | **Backend API** | `dev:backend` | 3001 |
 | **Storybook** | `storybook` | 6006 |
 
@@ -842,11 +836,9 @@ npm run build:backend:clean      # Clean dist and rebuild
 ```bash
 # Serve apps
 npm run serve:administration     # Administration app (http://localhost:1600)
-npm run serve:generale-partner   # Generale Partner tenant (http://localhost:1700)
 
 # Build apps
 npm run build:administration     # Build Administration app
-npm run build:generale-partner   # Build Generale Partner tenant
 npm run build:shared             # Build shared libraries
 npm run build                    # Build all apps
 ```
