@@ -197,7 +197,7 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
   // ─── Stat Cards Grid ────────────────────────────────────────────────────────
   statsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
+    gridTemplateColumns: 'repeat(3, 1fr)',
     gap: theme.spacing(2),
     marginBottom: theme.spacing(2.5),
     [theme.breakpoints.down('md')]: {
@@ -259,6 +259,18 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
     animation: 'um-slide-up 0.55s 0.27s ease both',
     '&::before': { background: 'linear-gradient(90deg, #0ea5e9, #2563eb)' },
     '&:hover': { boxShadow: '0 18px 48px rgba(14,165,233,0.16), 0 4px 16px rgba(14,165,233,0.08)' },
+  },
+
+  statCard4: {
+    animation: 'um-slide-up 0.55s 0.36s ease both',
+    '&::before': { background: 'linear-gradient(90deg, #7c3aed, #a855f7)' },
+    '&:hover': { boxShadow: '0 18px 48px rgba(124,58,237,0.16), 0 4px 16px rgba(124,58,237,0.08)' },
+  },
+
+  statCard5: {
+    animation: 'um-slide-up 0.55s 0.45s ease both',
+    '&::before': { background: 'linear-gradient(90deg, #0f766e, #0ea5e9)' },
+    '&:hover': { boxShadow: '0 18px 48px rgba(15,118,110,0.16), 0 4px 16px rgba(15,118,110,0.08)' },
   },
 
   statCardTop: {
@@ -351,11 +363,15 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
     flexWrap: 'wrap' as const,
     gap: theme.spacing(0.75),
     alignItems: 'center',
+    '& > span': { flex: 1, minWidth: 0 },
+    '& > .MuiButton-root': { flex: 1, minWidth: 0 },
+    '& span > .MuiButton-root': { width: '100%' },
     [theme.breakpoints.down('md')]: {
       flexDirection: 'column' as const,
       alignItems: 'stretch',
       gap: theme.spacing(0.75),
-      '& > span': { width: '100%' },
+      '& > span': { flex: 'unset' as const, width: '100%' },
+      '& > .MuiButton-root': { flex: 'unset' as const, width: '100%' },
       '& .MuiButton-root': { width: '100%', justifyContent: 'flex-start' },
     },
   },

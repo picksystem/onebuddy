@@ -23,6 +23,7 @@ export const useFastTag = () => {
   const [tableSearch, setTableSearch] = useState('');
   const [actionInProgress, setActionInProgress] = useState<number | null>(null);
   const [detailUser, setDetailUser] = useState<IAuthUser | null>(null);
+  const [selectedRow, setSelectedRow] = useState<FastTagRow | null>(null);
   const [actionTarget, setActionTarget] = useState<{
     user: FastTagRow;
     type: ActionType;
@@ -252,6 +253,8 @@ export const useFastTag = () => {
     tabs,
     detailUser,
     setDetailUser,
+    selectedRow,
+    setSelectedRow,
     actionTarget,
     actionNotes,
     actionInProgress,

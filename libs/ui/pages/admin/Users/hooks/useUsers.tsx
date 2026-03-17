@@ -23,6 +23,7 @@ export const useUsers = () => {
   const [tableSearch, setTableSearch] = useState('');
   const [actionInProgress, setActionInProgress] = useState<number | null>(null);
   const [detailUser, setDetailUser] = useState<IAuthUser | null>(null);
+  const [selectedRow, setSelectedRow] = useState<UsersRow | null>(null);
   const [actionTarget, setActionTarget] = useState<{
     user: UsersRow;
     type: ActionType;
@@ -252,6 +253,8 @@ export const useUsers = () => {
     tabs,
     detailUser,
     setDetailUser,
+    selectedRow,
+    setSelectedRow,
     actionTarget,
     actionNotes,
     actionInProgress,

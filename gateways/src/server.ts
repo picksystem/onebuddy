@@ -28,10 +28,6 @@ import { logger } from '@bandi/config';
 // Prisma client for database access
 import { prisma } from '@bandi/database';
 
-// Draft cleanup
-import { CleanupExpiredDraftsUseCase } from '@bandi/core/use-cases';
-import { incidentGateway } from '../api/admin/Incident/Incident.routes';
-
 // Server configuration
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -74,20 +70,6 @@ async function startServer() {
       logger.info(`💚 Health check: http://localhost:${PORT}/health`);
       logger.info('='.repeat(60));
 
-      // Run expired draft cleanup on startup and every 24 hours
-      const cleanupUseCase = new CleanupExpiredDraftsUseCase(incidentGateway);
-      const runCleanup = async () => {
-        try {
-          const count = await cleanupUseCase.execute();
-          if (count > 0) {
-            logger.info(`🗑️ Cleaned up ${count} expired draft incident(s)`);
-          }
-        } catch (error) {
-          logger.error('Failed to cleanup expired drafts:', error);
-        }
-      };
-      runCleanup();
-      setInterval(runCleanup, 24 * 60 * 60 * 1000);
     });
 
     /**

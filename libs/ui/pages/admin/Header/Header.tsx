@@ -1,6 +1,5 @@
 import {
   AppBar,
-  Avatar,
   Badge,
   Backdrop,
   CircularProgress,
@@ -9,6 +8,8 @@ import {
   Toolbar,
   Tooltip,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { Box } from '@bandi/component';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
@@ -21,18 +22,12 @@ import SearchBar from './components/SearchBar';
 import NotificationsMenu from './components/NotificationsMenu';
 import UserMenu from './components/UserMenu';
 
-const iconBtnSx = {
-  color: 'white',
-  '&:hover': { background: 'rgba(255,255,255,0.15)', transform: 'scale(1.08)' },
-  transition: 'background 0.15s, transform 0.15s',
-};
-
 const Header = () => {
   const { classes } = useStyles();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const {
-    user,
     isAdmin,
-    userName,
     anchorEl,
     notifAnchorEl,
     notifications,
@@ -58,38 +53,16 @@ const Header = () => {
 
   return (
     <AppBar position='fixed' className={classes.headerAppbar}>
-      {/* Mobile logo bar — visible only on xs/sm */}
-      <Box className={classes.mobileLogoBar}>
-        <LogoMark compact />
-      </Box>
-
-      {/* Main toolbar */}
       <Toolbar className={classes.headerToolbar}>
-        {/* Logo — desktop only */}
+        {/* Logo — compact on mobile, full on tablet/desktop */}
         <Box className={classes.desktopLogoArea} onClick={handleLogoClick}>
-          <LogoMark />
+          <LogoMark compact={isMobile} />
         </Box>
 
         <Box className={classes.logoDivider} />
 
-        {/* Left: Avatar + Welcome + ADMIN chip + Notifications bell */}
+        {/* Left: ADMIN chip + Notifications bell */}
         <Box className={classes.headerLeft}>
-          <Avatar className={classes.avatar} src={user?.profilePicture || undefined}>
-            {!user?.profilePicture &&
-              userName
-                .split(' ')
-                .map((n) => n[0])
-                .join('')
-                .toUpperCase()
-                .slice(0, 2)}
-          </Avatar>
-
-          <Box className={classes.welcomeText}>
-            <Typography className={classes.headerTitle}>
-              Welcome,&nbsp;<strong>{userName}</strong>
-            </Typography>
-          </Box>
-
           <Chip
             className={classes.adminChip}
             icon={<AdminPanelSettingsIcon sx={{ fontSize: 15 }} />}
@@ -98,7 +71,7 @@ const Header = () => {
           />
 
           <Tooltip title='Notifications' placement='bottom'>
-            <IconButton onClick={handleNotifOpen} size='small' sx={iconBtnSx}>
+            <IconButton onClick={handleNotifOpen} size='small' className={classes.iconBtnBase}>
               <Badge badgeContent={notifications.length} color='error'>
                 <NotificationsIcon sx={{ fontSize: '1.25rem' }} />
               </Badge>
@@ -114,7 +87,7 @@ const Header = () => {
         />
 
         {/* Center: mobile search bar */}
-        <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', minWidth: 0 }}>
+        <Box className={classes.centerSearchWrap}>
           <Box className={classes.mobileSearch}>
             <SearchBar
               value={ticketSearch}
@@ -149,7 +122,7 @@ const Header = () => {
           </Box>
 
           <Tooltip title='Settings' placement='bottom'>
-            <IconButton size='small' sx={iconBtnSx} onClick={handleSettingsOpen}>
+            <IconButton size='small' className={classes.iconBtnBase} onClick={handleSettingsOpen}>
               <SettingsIcon className={classes.icon} />
             </IconButton>
           </Tooltip>
@@ -168,16 +141,12 @@ const Header = () => {
 
       {/* Mode-switch loading overlay */}
       <Backdrop
-        sx={{
-          color: '#fff',
-          zIndex: (theme) => theme.zIndex.drawer + 1,
-          flexDirection: 'column',
-          gap: 2,
-        }}
+        className={classes.loadingBackdrop}
+        sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
         open={isLoading}
       >
         <CircularProgress color='inherit' size={60} />
-        <Typography variant='h6' sx={{ fontWeight: 'bold' }}>
+        <Typography variant='h6' className={classes.loadingText}>
           {loadingMessage}
         </Typography>
       </Backdrop>

@@ -114,7 +114,7 @@ const Collections = () => {
             variant='scrollable'
             scrollButtons='auto'
             allowScrollButtonsMobile
-            sx={{ flex: 1 }}
+            className={classes.tabsFlex}
           >
             {tabs}
           </Tabs>

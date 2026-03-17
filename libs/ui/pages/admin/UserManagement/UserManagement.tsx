@@ -17,15 +17,15 @@ import GroupIcon from '@mui/icons-material/Group';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
 import PersonIcon from '@mui/icons-material/Person';
+import PersonSearchIcon from '@mui/icons-material/PersonSearch';
+import CarRentalIcon from '@mui/icons-material/CarRental';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
 import HistoryIcon from '@mui/icons-material/History';
 import LoginIcon from '@mui/icons-material/Login';
-import KeyIcon from '@mui/icons-material/Key';
 import LockResetIcon from '@mui/icons-material/LockReset';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
-import BadgeIcon from '@mui/icons-material/Badge';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import TabPanel from './components/TabPanel';
 import useUserManagement from './hooks/useUserManagement';
@@ -33,9 +33,7 @@ import EditUserDialog from './dialogs/EditUserDialog/EditUserDialog';
 import CreateUserDialog from './dialogs/CreateUserDialog/CreateUserDialog';
 import ChangesLogDialog from './dialogs/ChangesLogDialog/ChangesLogDialog';
 import LoginDataDialog from './dialogs/LoginDataDialog/LoginDataDialog';
-import CaptainProfileDialog from './dialogs/CaptainProfileDialog/CaptainProfileDialog';
 import ChangeProfileDialog from './dialogs/ChangeProfileDialog/ChangeProfileDialog';
-import TempPasswordDialog from './dialogs/TempPasswordDialog/TempPasswordDialog';
 import ResetPasswordDialog from './dialogs/ResetPasswordDialog/ResetPasswordDialog';
 import { useStyles } from './styles';
 
@@ -47,6 +45,8 @@ const UserManagement = () => {
     allUsers,
     admins,
     captains,
+    driverHireRequests,
+    vehicleRentalRequests,
     isLoading,
     isMobile,
     tabValue,
@@ -57,6 +57,8 @@ const UserManagement = () => {
     setSelectedRow,
     handleRowClick,
     columns,
+    driverHireColumns,
+    vehicleRentalColumns,
     getTableData,
     draftRow,
     currentUser,
@@ -126,9 +128,6 @@ const UserManagement = () => {
     // login data
     loginDataOpen,
     setLoginDataOpen,
-    // captain profile
-    captainProfileOpen,
-    setCaptainProfileOpen,
     // change profile
     changeProfileOpen,
     setChangeProfileOpen,
@@ -150,22 +149,6 @@ const UserManagement = () => {
     handleOpenChangeProfile,
     handleChangeProfileSubmit,
     handleSaveChangeProfile,
-    // temp password
-    tempPwOpen,
-    setTempPwOpen,
-    isGeneratingTempPw,
-    tempPwBulkMode,
-    setTempPwBulkMode,
-    bulkSelectedIds,
-    setBulkSelectedIds,
-    tempPwValidity,
-    setTempPwValidity,
-    tempPwForceReset,
-    setTempPwForceReset,
-    tempPwNote,
-    setTempPwNote,
-    handleOpenTempPw,
-    handleGenerateTempPw,
     // reset password
     resetPwOpen,
     setResetPwOpen,
@@ -196,7 +179,6 @@ const UserManagement = () => {
 
   const sel = selectedRow;
   const isDraft = (sel?.id as unknown as number) === -1;
-  const isCaptain = !isDraft && sel?.role === 'captain';
   const regularUsersCount = allUsers.filter((u) => u.role === 'user').length;
 
   const keyframes = (
@@ -280,6 +262,22 @@ const UserManagement = () => {
       cls: classes.statCard3,
       sub: 'Booking & travelling Users',
       color: '#0ea5e9',
+    },
+    {
+      label: 'Driver Hire',
+      value: driverHireRequests.length,
+      Icon: PersonSearchIcon,
+      cls: classes.statCard4,
+      sub: 'Driver hire requests',
+      color: '#7c3aed',
+    },
+    {
+      label: 'Vehicle Rental',
+      value: vehicleRentalRequests.length,
+      Icon: CarRentalIcon,
+      cls: classes.statCard5,
+      sub: 'Vehicle rental requests',
+      color: '#0f766e',
     },
   ];
 
@@ -365,6 +363,16 @@ const UserManagement = () => {
               iconPosition='start'
               label={isMobile ? undefined : 'Users'}
             />
+            <Tab
+              icon={<PersonSearchIcon />}
+              iconPosition='start'
+              label={isMobile ? undefined : 'Driver Hire'}
+            />
+            <Tab
+              icon={<CarRentalIcon />}
+              iconPosition='start'
+              label={isMobile ? undefined : 'Vehicle Rental'}
+            />
           </Tabs>
           <TextField
             placeholder='Search...'
@@ -386,7 +394,7 @@ const UserManagement = () => {
         {/* ── Action toolbar ── */}
         <Paper variant='outlined' className={classes.toolbar}>
           <Box className={classes.toolbarStack}>
-            {/* Create — hidden when any row is selected */}
+            {/* Create NEW USER — visible when no row selected */}
             {!sel && (
               <Tooltip title='Create new user'>
                 <Button
@@ -394,6 +402,12 @@ const UserManagement = () => {
                   variant='contained'
                   startIcon={<AddIcon />}
                   onClick={handleOpenNew}
+                  sx={{
+                    background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+                    boxShadow: '0 4px 14px rgba(79,70,229,0.45)',
+                    '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 8px 24px rgba(79,70,229,0.55)' },
+                    transition: 'all 0.22s ease',
+                  }}
                 >
                   <span className={classes.buttonLabel}>CREATE NEW USER</span>
                 </Button>
@@ -409,53 +423,41 @@ const UserManagement = () => {
                   color='info'
                   startIcon={<ScheduleIcon />}
                   onClick={handleOpenDraft}
+                  sx={{
+                    background: 'linear-gradient(135deg, #0ea5e9, #38bdf8)',
+                    boxShadow: '0 4px 14px rgba(14,165,233,0.45)',
+                    '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 8px 24px rgba(14,165,233,0.55)' },
+                    transition: 'all 0.22s ease',
+                  }}
                 >
                   <span className={classes.buttonLabel}>Open Draft</span>
                 </Button>
               </Tooltip>
             )}
 
-            {/* Edit */}
-            <Tooltip
-              title={
-                sel && !isDraft
-                  ? 'Edit selected user'
-                  : isDraft
-                    ? 'Cannot edit a draft row'
-                    : 'Select a user first'
-              }
-            >
-              <span>
+            {/* Edit — replaces Create button when a real row is selected */}
+            {sel && !isDraft && (
+              <Tooltip title='Edit selected user'>
                 <Button
                   size='small'
-                  variant='outlined'
+                  variant='contained'
                   startIcon={<EditIcon />}
-                  disabled={!sel || isDraft}
                   onClick={handleOpenEdit}
+                  sx={{
+                    background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+                    boxShadow: '0 4px 14px rgba(79,70,229,0.45)',
+                    '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 8px 24px rgba(79,70,229,0.55)' },
+                    transition: 'all 0.22s ease',
+                  }}
                 >
                   <span className={classes.buttonLabel}>Edit</span>
                 </Button>
-              </span>
-            </Tooltip>
+              </Tooltip>
+            )}
 
             {!isMobile && (
               <Divider orientation='vertical' flexItem className={classes.dividerMobile} />
             )}
-
-            {/* Captain Profile */}
-            <Tooltip title={isCaptain ? 'View captain profile' : 'Select a captain user'}>
-              <span>
-                <Button
-                  size='small'
-                  variant='outlined'
-                  startIcon={<BadgeIcon />}
-                  disabled={!isCaptain}
-                  onClick={() => setCaptainProfileOpen(true)}
-                >
-                  <span className={classes.buttonLabel}>Captain Profile</span>
-                </Button>
-              </span>
-            </Tooltip>
 
             {/* Change Profile */}
             <Tooltip
@@ -474,6 +476,16 @@ const UserManagement = () => {
                   startIcon={<ManageAccountsIcon />}
                   disabled={!sel || isDraft}
                   onClick={handleOpenChangeProfile}
+                  sx={{
+                    borderColor: sel && !isDraft ? '#10b981' : undefined,
+                    color: sel && !isDraft ? '#10b981' : undefined,
+                    '&:hover': {
+                      background: sel && !isDraft ? 'rgba(16,185,129,0.07)' : undefined,
+                      transform: sel && !isDraft ? 'translateY(-2px)' : undefined,
+                      boxShadow: sel && !isDraft ? '0 4px 14px rgba(16,185,129,0.28)' : undefined,
+                    },
+                    transition: 'all 0.22s ease',
+                  }}
                 >
                   <span className={classes.buttonLabel}>Change Profile</span>
                 </Button>
@@ -501,6 +513,16 @@ const UserManagement = () => {
                   startIcon={<HistoryIcon />}
                   disabled={!sel || isDraft}
                   onClick={handleOpenChangesLog}
+                  sx={{
+                    borderColor: sel && !isDraft ? '#6d28d9' : undefined,
+                    color: sel && !isDraft ? '#6d28d9' : undefined,
+                    '&:hover': {
+                      background: sel && !isDraft ? 'rgba(109,40,217,0.07)' : undefined,
+                      transform: sel && !isDraft ? 'translateY(-2px)' : undefined,
+                      boxShadow: sel && !isDraft ? '0 4px 14px rgba(109,40,217,0.28)' : undefined,
+                    },
+                    transition: 'all 0.22s ease',
+                  }}
                 >
                   <span className={classes.buttonLabel}>Changes Log</span>
                 </Button>
@@ -524,6 +546,16 @@ const UserManagement = () => {
                   startIcon={<LoginIcon />}
                   disabled={!sel || isDraft}
                   onClick={() => setLoginDataOpen(true)}
+                  sx={{
+                    borderColor: sel && !isDraft ? '#0f766e' : undefined,
+                    color: sel && !isDraft ? '#0f766e' : undefined,
+                    '&:hover': {
+                      background: sel && !isDraft ? 'rgba(15,118,110,0.07)' : undefined,
+                      transform: sel && !isDraft ? 'translateY(-2px)' : undefined,
+                      boxShadow: sel && !isDraft ? '0 4px 14px rgba(15,118,110,0.28)' : undefined,
+                    },
+                    transition: 'all 0.22s ease',
+                  }}
                 >
                   <span className={classes.buttonLabel}>Login Data</span>
                 </Button>
@@ -533,30 +565,6 @@ const UserManagement = () => {
             {!isMobile && (
               <Divider orientation='vertical' flexItem className={classes.dividerMobile} />
             )}
-
-            {/* Generate Temp Password */}
-            <Tooltip
-              title={
-                sel && !isDraft
-                  ? 'Generate and email a temporary password'
-                  : isDraft
-                    ? 'Not available for a draft'
-                    : 'Select a user first'
-              }
-            >
-              <span>
-                <Button
-                  size='small'
-                  variant='outlined'
-                  color='warning'
-                  startIcon={<KeyIcon />}
-                  disabled={!sel || isDraft}
-                  onClick={handleOpenTempPw}
-                >
-                  <span className={classes.buttonLabel}>Generate Temp Password</span>
-                </Button>
-              </span>
-            </Tooltip>
 
             {/* Reset Password */}
             <Tooltip
@@ -576,6 +584,14 @@ const UserManagement = () => {
                   startIcon={<LockResetIcon />}
                   disabled={!sel || isDraft}
                   onClick={handleOpenResetPw}
+                  sx={{
+                    boxShadow: sel && !isDraft ? '0 4px 14px rgba(239,68,68,0.25)' : undefined,
+                    '&:hover': {
+                      transform: sel && !isDraft ? 'translateY(-2px)' : undefined,
+                      boxShadow: sel && !isDraft ? '0 8px 24px rgba(239,68,68,0.4)' : undefined,
+                    },
+                    transition: 'all 0.22s ease',
+                  }}
                 >
                   <span className={classes.buttonLabel}>Reset Password</span>
                 </Button>
@@ -632,6 +648,56 @@ const UserManagement = () => {
             );
           },
         )}
+
+        {/* ── Driver Hire tab panel ── */}
+        <TabPanel value={tabValue} index={4}>
+          <Box className={classes.tableContainer}>
+            <DataTable
+              columns={driverHireColumns}
+              data={(() => {
+                const filtered = tableSearch
+                  ? driverHireRequests.filter((row) =>
+                      Object.values(row).some(
+                        (val) =>
+                          val !== null &&
+                          val !== undefined &&
+                          String(val).toLowerCase().includes(tableSearch.toLowerCase()),
+                      ),
+                    )
+                  : driverHireRequests;
+                return filtered.map((r, i) => ({ ...r, sno: i + 1 }));
+              })()}
+              rowKey='id'
+              searchable={false}
+              initialRowsPerPage={10}
+            />
+          </Box>
+        </TabPanel>
+
+        {/* ── Vehicle Rental tab panel ── */}
+        <TabPanel value={tabValue} index={5}>
+          <Box className={classes.tableContainer}>
+            <DataTable
+              columns={vehicleRentalColumns}
+              data={(() => {
+                const filtered = tableSearch
+                  ? vehicleRentalRequests.filter((row) =>
+                      Object.values(row).some(
+                        (val) =>
+                          val !== null &&
+                          val !== undefined &&
+                          String(val).toLowerCase().includes(tableSearch.toLowerCase()),
+                      ),
+                    )
+                  : vehicleRentalRequests;
+                return filtered.map((r, i) => ({ ...r, sno: i + 1 }));
+              })()}
+              rowKey='id'
+              searchable={false}
+              initialRowsPerPage={10}
+            />
+          </Box>
+        </TabPanel>
 
         {/* ════════════════════════════════════════════════════════════════
           DIALOGS
@@ -710,12 +776,6 @@ const UserManagement = () => {
           selectedRow={selectedRow}
         />
 
-        <CaptainProfileDialog
-          open={captainProfileOpen}
-          onClose={() => setCaptainProfileOpen(false)}
-          selectedRow={selectedRow}
-        />
-
         <ChangeProfileDialog
           open={changeProfileOpen}
           onClose={() => setChangeProfileOpen(false)}
@@ -737,25 +797,6 @@ const UserManagement = () => {
           attachmentInputRef={attachmentInputRef}
           onSubmit={handleChangeProfileSubmit}
           onConfirmSave={handleSaveChangeProfile}
-        />
-
-        <TempPasswordDialog
-          open={tempPwOpen}
-          onClose={() => setTempPwOpen(false)}
-          selectedRow={selectedRow}
-          allUsers={allUsers}
-          tempPwBulkMode={tempPwBulkMode}
-          onBulkModeChange={setTempPwBulkMode}
-          bulkSelectedIds={bulkSelectedIds}
-          onBulkIdsChange={setBulkSelectedIds}
-          tempPwValidity={tempPwValidity}
-          onValidityChange={setTempPwValidity}
-          tempPwForceReset={tempPwForceReset}
-          onForceResetChange={setTempPwForceReset}
-          tempPwNote={tempPwNote}
-          onNoteChange={setTempPwNote}
-          isGenerating={isGeneratingTempPw}
-          onGenerate={handleGenerateTempPw}
         />
 
         <ResetPasswordDialog

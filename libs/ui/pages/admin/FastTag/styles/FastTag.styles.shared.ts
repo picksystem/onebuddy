@@ -261,11 +261,15 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
     flexWrap: 'wrap' as const,
     gap: theme.spacing(0.75),
     alignItems: 'center',
+    '& > span': { flex: 1, minWidth: 0 },
+    '& > .MuiButton-root': { flex: 1, minWidth: 0 },
+    '& span > .MuiButton-root': { width: '100%' },
     [theme.breakpoints.down('md')]: {
       flexDirection: 'column' as const,
       alignItems: 'stretch',
       gap: theme.spacing(0.75),
-      '& > span': { width: '100%' },
+      '& > span': { flex: 'unset' as const, width: '100%' },
+      '& > .MuiButton-root': { flex: 'unset' as const, width: '100%' },
       '& .MuiButton-root': { width: '100%', justifyContent: 'flex-start' },
     },
   },
@@ -449,5 +453,14 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
     [theme.breakpoints.down('sm')]: {
       display: 'none',
     },
+  },
+
+  selectionIndicator: {
+    display: 'block',
+    marginTop: theme.spacing(1),
+    paddingTop: theme.spacing(0.75),
+    borderTop: '1px solid rgba(79,70,229,0.08)',
+    fontSize: '0.78rem',
+    color: 'rgba(0,0,0,0.45)',
   },
 });

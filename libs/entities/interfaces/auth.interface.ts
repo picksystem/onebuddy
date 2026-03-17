@@ -138,7 +138,13 @@ export type AuthAction =
   | 'delete-captain-role'
   | 'get-login-logs'
   | 'deactivate-user'
-  | 'activate-user';
+  | 'activate-user'
+  | 'get-driver-hire-requests'
+  | 'match-driver-hire'
+  | 'reject-driver-hire'
+  | 'get-vehicle-rental-requests'
+  | 'assign-vehicle-rental'
+  | 'reject-vehicle-rental';
 
 export interface IAuthActionRequest {
   action: AuthAction;

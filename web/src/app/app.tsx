@@ -15,7 +15,6 @@ const {
 
   // Governance
   AdminDashboardPage,
-  AdminApisPage,
   AdminAccessRequestPage,
   AdminAuditTrailsPage,
   AdminEventsPage,
@@ -28,11 +27,12 @@ const {
   AdminCollectionsPage,
   AdminCategoriesPage,
   AdminTagsPage,
-  AdminThemingLanguagePage,
-  AdminApiGatewaysPage,
-  AdminSeoPage,
   AdminUserManagementPage,
   AdminSettingsPage,
+
+  // Mobility Services
+  AdminDriverHirePage,
+  AdminVehicleRentalPage,
 
   // Supporting
   AdminProfilePage,
@@ -78,7 +78,6 @@ const AppRoutes = () => {
 
               {/* Governance */}
               <Route path={AdminPath.DASHBOARD} element={<AdminDashboardPage />} />
-              <Route path={AdminPath.APIS} element={<AdminApisPage />} />
               <Route path={AdminPath.ACCESS_REQUEST} element={<AdminAccessRequestPage />} />
               <Route path={AdminPath.AUDIT_TRAILS} element={<AdminAuditTrailsPage />} />
               <Route path={AdminPath.EVENTS} element={<AdminEventsPage />} />
@@ -91,11 +90,12 @@ const AppRoutes = () => {
               <Route path={AdminPath.COLLECTIONS} element={<AdminCollectionsPage />} />
               <Route path={AdminPath.CATEGORIES} element={<AdminCategoriesPage />} />
               <Route path={AdminPath.TAGS} element={<AdminTagsPage />} />
-              <Route path={AdminPath.THEMING_LANGUAGE} element={<AdminThemingLanguagePage />} />
-              <Route path={AdminPath.API_GATEWAYS} element={<AdminApiGatewaysPage />} />
-              <Route path={AdminPath.SEO} element={<AdminSeoPage />} />
               <Route path={AdminPath.USER_MANAGEMENT} element={<AdminUserManagementPage />} />
               <Route path={AdminPath.SETTINGS} element={<AdminSettingsPage />} />
+
+              {/* Mobility Services */}
+              <Route path={AdminPath.DRIVER_HIRE} element={<AdminDriverHirePage />} />
+              <Route path={AdminPath.VEHICLE_RENTAL} element={<AdminVehicleRentalPage />} />
 
               {/* Supporting */}
               <Route path={AdminPath.PROFILE} element={<AdminProfilePage />} />

@@ -8,7 +8,6 @@ export const LazyMenuItems = {
 
   // Governance pages
   AdminDashboardPage: lazy(() => import('@bandi/pages/admin/Dashboard')),
-  AdminApisPage: lazy(() => import('@bandi/pages/admin/Apis')),
   AdminAccessRequestPage: lazy(() => import('@bandi/pages/admin/AccessRequest')),
   AdminAuditTrailsPage: lazy(() => import('@bandi/pages/admin/AuditTrails')),
   AdminEventsPage: lazy(() => import('@bandi/pages/admin/Events')),
@@ -21,11 +20,12 @@ export const LazyMenuItems = {
   AdminCollectionsPage: lazy(() => import('@bandi/pages/admin/Collections')),
   AdminCategoriesPage: lazy(() => import('@bandi/pages/admin/Categories')),
   AdminTagsPage: lazy(() => import('@bandi/pages/admin/FastTag')),
-  AdminThemingLanguagePage: lazy(() => import('@bandi/pages/admin/ThemingLanguage')),
-  AdminApiGatewaysPage: lazy(() => import('@bandi/pages/admin/ApiGateways')),
-  AdminSeoPage: lazy(() => import('@bandi/pages/admin/Seo')),
   AdminUserManagementPage: lazy(() => import('@bandi/pages/admin/UserManagement')),
   AdminSettingsPage: lazy(() => import('@bandi/pages/admin/Settings')),
+
+  // Mobility Services pages
+  AdminDriverHirePage: lazy(() => import('@bandi/pages/admin/DriverHire')),
+  AdminVehicleRentalPage: lazy(() => import('@bandi/pages/admin/VehicleRental')),
 
   // Supporting pages
   AdminProfilePage: lazy(() => import('@bandi/pages/admin/Profile')),

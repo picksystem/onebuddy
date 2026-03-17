@@ -1,11 +1,14 @@
 import { Box, Loader, DataTable } from '@bandi/component';
-import { Typography, Tabs, Divider, TextField, InputAdornment } from '@mui/material';
+import { Typography, Tabs, Divider, TextField, InputAdornment, Paper, Button, Tooltip, Link } from '@mui/material';
 import GlobalStyles from '@mui/material/GlobalStyles';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import NearMeIcon from '@mui/icons-material/NearMe';
 import PersonOffIcon from '@mui/icons-material/PersonOff';
 import SearchIcon from '@mui/icons-material/Search';
+import BadgeIcon from '@mui/icons-material/Badge';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import { IAuthUser } from '@bandi/interfaces';
 import { useStyles } from './styles';
 import { useCaptains } from './hooks/useCaptains';
@@ -26,6 +29,8 @@ const Captains = () => {
     tabs,
     detailUser,
     setDetailUser,
+    selectedRow,
+    setSelectedRow,
     actionTarget,
     actionNotes,
     actionInProgress,
@@ -35,6 +40,7 @@ const Captains = () => {
     setActionNotes,
     getFilteredData,
   } = useCaptains();
+  const sel = selectedRow;
 
   const keyframes = (
     <GlobalStyles styles={`
@@ -135,6 +141,81 @@ const Captains = () => {
           />
         </Box>
 
+        {/* Toolbar */}
+        <Paper variant='outlined' className={classes.toolbar}>
+          <Box className={classes.toolbarStack}>
+            <Tooltip title={sel ? 'View captain profile' : 'Select a captain first'}>
+              <span>
+                <Button
+                  size='small'
+                  variant='contained'
+                  startIcon={<BadgeIcon />}
+                  disabled={!sel}
+                  onClick={() => sel && setDetailUser(sel)}
+                  sx={{
+                    background: sel ? 'linear-gradient(135deg, #4f46e5, #7c3aed)' : undefined,
+                    boxShadow: sel ? '0 4px 14px rgba(79,70,229,0.4)' : undefined,
+                    '&:hover': { transform: sel ? 'translateY(-1px)' : undefined },
+                    transition: 'all 0.22s ease',
+                  }}
+                >
+                  <span className={classes.buttonLabel}>View Profile</span>
+                </Button>
+              </span>
+            </Tooltip>
+
+            <Divider orientation='vertical' flexItem className={classes.dividerMobile} />
+
+            <Tooltip title={sel && sel.status === 'pending_approval' ? 'Approve captain access' : sel ? 'Only pending requests can be approved' : 'Select a captain first'}>
+              <span>
+                <Button
+                  size='small'
+                  variant='contained'
+                  color='success'
+                  startIcon={<CheckCircleOutlineIcon />}
+                  disabled={!sel || sel.status !== 'pending_approval'}
+                  onClick={() => sel && handleOpenAction(sel, 'approve')}
+                  sx={{
+                    boxShadow: sel?.status === 'pending_approval' ? '0 4px 14px rgba(16,185,129,0.38)' : undefined,
+                    '&:hover': { transform: sel?.status === 'pending_approval' ? 'translateY(-1px)' : undefined },
+                    transition: 'all 0.22s ease',
+                  }}
+                >
+                  <span className={classes.buttonLabel}>Approve Captain</span>
+                </Button>
+              </span>
+            </Tooltip>
+
+            <Tooltip title={sel && sel.status === 'pending_approval' ? 'Reject captain request' : sel ? 'Only pending requests can be rejected' : 'Select a captain first'}>
+              <span>
+                <Button
+                  size='small'
+                  variant='outlined'
+                  color='error'
+                  startIcon={<CancelOutlinedIcon />}
+                  disabled={!sel || sel.status !== 'pending_approval'}
+                  onClick={() => sel && handleOpenAction(sel, 'reject')}
+                  sx={{
+                    '&:hover': { transform: sel?.status === 'pending_approval' ? 'translateY(-1px)' : undefined, boxShadow: sel?.status === 'pending_approval' ? '0 4px 14px rgba(239,68,68,0.25)' : undefined },
+                    transition: 'all 0.22s ease',
+                  }}
+                >
+                  <span className={classes.buttonLabel}>Reject</span>
+                </Button>
+              </span>
+            </Tooltip>
+          </Box>
+
+          {sel && (
+            <Typography variant='caption' className={classes.selectionIndicator}>
+              Selected: <strong>{sel.name}</strong> ({sel.email}) &nbsp;·&nbsp;
+              <Link component='button' variant='caption' onClick={() => setSelectedRow(null)}>
+                Clear
+              </Link>
+            </Typography>
+          )}
+        </Paper>
+
         {/* Tab panels */}
         {tabLists.map((list, idx) => (
           <TabPanel key={idx} value={tabValue} index={idx}>
@@ -153,7 +234,8 @@ const Captains = () => {
                   rowKey='id'
                   searchable={false}
                   initialRowsPerPage={10}
-                  onRowClick={(row) => setDetailUser(row as IAuthUser)}
+                  onRowClick={(row) => setSelectedRow((prev) => prev?.id === (row as IAuthUser).id ? null : row as typeof sel)}
+                  activeRowKey={sel?.id}
                 />
               </Box>
             )}

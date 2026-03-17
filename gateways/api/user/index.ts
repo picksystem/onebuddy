@@ -1,1 +1,1 @@
-export * from './NotFound';
+export { default as userRoutes } from './routes';

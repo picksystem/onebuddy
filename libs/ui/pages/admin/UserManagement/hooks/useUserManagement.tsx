@@ -3,8 +3,6 @@ import { Chip, Switch } from '@mui/material';
 import { useThemeContext } from '@bandi/theme';
 import {
   useAuthActionMutation,
-  useGetAdminControlsQuery,
-  useUpdateAdminControlsMutation,
 } from '@bandi/services';
 import {
   useAuth,
@@ -21,6 +19,8 @@ import {
   ResetPwErrors,
   ChangeLogEntry,
 } from '../types/userManagement.types';
+import { DriverHireRow } from '../../DriverHire/types/driverHire.types';
+import { VehicleRentalRow } from '../../VehicleRental/types/vehicleRental.types';
 import {
   buildEditForm,
   initialCreateValues,
@@ -51,6 +51,8 @@ const useUserManagement = () => {
   const [allUsers, setAllUsers] = useState<IAuthUser[]>([]);
   const [admins, setAdmins] = useState<IAuthUser[]>([]);
   const [captains, setCaptains] = useState<IAuthUser[]>([]);
+  const [driverHireRequests, setDriverHireRequests] = useState<DriverHireRow[]>([]);
+  const [vehicleRentalRequests, setVehicleRentalRequests] = useState<VehicleRentalRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [tabValue, setTabValue] = useState(0);
   const [tableSearch, setTableSearch] = useState('');
@@ -99,7 +101,6 @@ const useUserManagement = () => {
   const [loginDataOpen, setLoginDataOpen] = useState(false);
 
   // ── Captain profile dialog ─────────────────────────────────────────────────
-  const [captainProfileOpen, setCaptainProfileOpen] = useState(false);
 
   // ── Change profile (role) dialog ──────────────────────────────────────────────
   const [changeProfileOpen, setChangeProfileOpen] = useState(false);
@@ -112,15 +113,6 @@ const useUserManagement = () => {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const changeProfileNoteRef = useRef<HTMLTextAreaElement>(null);
   const attachmentInputRef = useRef<HTMLInputElement>(null);
-
-  // ── Generate temp password ────────────────────────────────────────────────────
-  const [tempPwOpen, setTempPwOpen] = useState(false);
-  const [isGeneratingTempPw, setIsGeneratingTempPw] = useState(false);
-  const [tempPwBulkMode, setTempPwBulkMode] = useState(false);
-  const [bulkSelectedIds, setBulkSelectedIds] = useState<number[]>([]);
-  const [tempPwValidity, setTempPwValidity] = useState('24h');
-  const [tempPwForceReset, setTempPwForceReset] = useState(true);
-  const [tempPwNote, setTempPwNote] = useState('');
 
   // ── Reset password dialog ─────────────────────────────────────────────────────
   const [resetPwOpen, setResetPwOpen] = useState(false);
@@ -140,35 +132,26 @@ const useUserManagement = () => {
   const [adminControlsOpen, setAdminControlsOpen] = useState(false);
 
   const { themeName: selectedTheme, setThemeName } = useThemeContext();
-  const { data: adminControlsData } = useGetAdminControlsQuery();
-  const [updateAdminControls, { isLoading: isSavingControls }] = useUpdateAdminControlsMutation();
-
-  // Load admin controls from DB on mount
-  useEffect(() => {
-    if (adminControlsData) {
-      // Apply theme from DB if not already set in localStorage
-      const storedTheme = localStorage.getItem('bandi_selected_theme');
-      if (!storedTheme || storedTheme === 'System') {
-        setThemeName(adminControlsData.theme);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adminControlsData]);
 
   const handleThemeChange = (theme: string) => {
     setThemeName(theme);
-    updateAdminControls({ theme }).catch(() => notify.error('Failed to save theme'));
   };
 
   // ── Fetch ─────────────────────────────────────────────────────────────────────
   const fetchUsers = useCallback(async () => {
     try {
       setIsLoading(true);
-      const result = await authAction({ action: 'get-all-users' }).unwrap();
-      const users: IAuthUser[] = result.data || [];
+      const [usersResult, driverHireResult, vehicleRentalResult] = await Promise.all([
+        authAction({ action: 'get-all-users' }).unwrap(),
+        authAction({ action: 'get-driver-hire-requests' }).unwrap().catch(() => ({ data: [] })),
+        authAction({ action: 'get-vehicle-rental-requests' }).unwrap().catch(() => ({ data: [] })),
+      ]);
+      const users: IAuthUser[] = usersResult.data || [];
       setAllUsers(users);
       setAdmins(users.filter((u) => u.role === 'admin'));
       setCaptains(users.filter((u) => u.role === 'captain'));
+      setDriverHireRequests(driverHireResult.data || []);
+      setVehicleRentalRequests(vehicleRentalResult.data || []);
       setSelectedRow((prev) => {
         if (!prev) return null;
         const fresh = users.find((u) => u.id === prev.id);
@@ -544,42 +527,6 @@ const useUserManagement = () => {
     }
   };
 
-  // ── Temp password ─────────────────────────────────────────────────────────────
-  const handleOpenTempPw = () => {
-    setTempPwBulkMode(false);
-    setBulkSelectedIds(selectedRow ? [selectedRow.id] : []);
-    setTempPwValidity('24h');
-    setTempPwForceReset(true);
-    setTempPwNote('');
-    setTempPwOpen(true);
-  };
-
-  const handleGenerateTempPw = async () => {
-    const ids = tempPwBulkMode ? bulkSelectedIds : selectedRow ? [selectedRow.id] : [];
-    if (ids.length === 0) return;
-    setIsGeneratingTempPw(true);
-    try {
-      await authAction({
-        action: 'generate-temp-password',
-        userIds: ids,
-        validity: tempPwValidity,
-        forceReset: tempPwForceReset,
-        note: tempPwNote,
-      }).unwrap();
-      notify.success(
-        `Temporary password generated and emailed to ${ids.length} user${ids.length > 1 ? 's' : ''}`,
-      );
-      setTempPwOpen(false);
-    } catch (err: unknown) {
-      notify.error(
-        (err as { data?: { message?: string } })?.data?.message ||
-          'Failed to generate temporary password',
-      );
-    } finally {
-      setIsGeneratingTempPw(false);
-    }
-  };
-
   // ── Reset password ────────────────────────────────────────────────────────────
   const handleOpenResetPw = () => {
     const pw = generateTempPassword();
@@ -764,6 +711,63 @@ const useUserManagement = () => {
   const getTableData = (users: IAuthUser[], startFrom = 1): UserRow[] =>
     users.map((u, i) => ({ ...u, sno: startFrom + i }));
 
+  const driverHireColumns: Column<DriverHireRow>[] = [
+    { id: 'sno', label: 'S.No', minWidth: 60, align: 'center', sortable: false },
+    { id: 'name', label: 'Name', minWidth: 150, format: (v: unknown) => String(v || '-') },
+    { id: 'email', label: 'Email', minWidth: 210, format: (v: unknown) => String(v || '-') },
+    { id: 'vehicleType', label: 'Vehicle Type', minWidth: 140, format: (v: unknown) => String(v || '-') },
+    { id: 'location', label: 'Location', minWidth: 140, format: (v: unknown) => String(v || '-') },
+    { id: 'duration', label: 'Duration', minWidth: 120, format: (v: unknown) => String(v || '-') },
+    {
+      id: 'status',
+      label: 'Status',
+      minWidth: 120,
+      align: 'center',
+      format: (v: unknown): React.ReactNode => {
+        const s = String(v || '');
+        const colorMap: Record<string, 'warning' | 'info' | 'success' | 'error' | 'default'> = {
+          pending: 'warning', matched: 'info', completed: 'success', rejected: 'error',
+        };
+        return (
+          <Chip
+            label={s.charAt(0).toUpperCase() + s.slice(1)}
+            color={colorMap[s] ?? 'default'}
+            size='small'
+          />
+        );
+      },
+    },
+  ];
+
+  const vehicleRentalColumns: Column<VehicleRentalRow>[] = [
+    { id: 'sno', label: 'S.No', minWidth: 60, align: 'center', sortable: false },
+    { id: 'name', label: 'Name', minWidth: 150, format: (v: unknown) => String(v || '-') },
+    { id: 'email', label: 'Email', minWidth: 210, format: (v: unknown) => String(v || '-') },
+    { id: 'vehicleType', label: 'Vehicle Type', minWidth: 140, format: (v: unknown) => String(v || '-') },
+    { id: 'location', label: 'Location', minWidth: 140, format: (v: unknown) => String(v || '-') },
+    { id: 'duration', label: 'Duration', minWidth: 120, format: (v: unknown) => String(v || '-') },
+    { id: 'startDate', label: 'Start Date', minWidth: 130, format: (v: unknown) => String(v || '-') },
+    {
+      id: 'status',
+      label: 'Status',
+      minWidth: 120,
+      align: 'center',
+      format: (v: unknown): React.ReactNode => {
+        const s = String(v || '');
+        const colorMap: Record<string, 'warning' | 'info' | 'success' | 'error' | 'default'> = {
+          pending: 'warning', active: 'info', completed: 'success', rejected: 'error',
+        };
+        return (
+          <Chip
+            label={s.charAt(0).toUpperCase() + s.slice(1)}
+            color={colorMap[s] ?? 'default'}
+            size='small'
+          />
+        );
+      },
+    },
+  ];
+
   const draftRow: UserRow | null =
     draftMeta && draftValues
       ? ({
@@ -806,6 +810,8 @@ const useUserManagement = () => {
     allUsers,
     admins,
     captains,
+    driverHireRequests,
+    vehicleRentalRequests,
     isLoading,
     isMobile,
     tabValue,
@@ -819,6 +825,8 @@ const useUserManagement = () => {
     handleRowClick,
     handleToggleAccess,
     columns,
+    driverHireColumns,
+    vehicleRentalColumns,
     getTableData,
     draftRow,
     currentUser,
@@ -890,9 +898,6 @@ const useUserManagement = () => {
     // login data
     loginDataOpen,
     setLoginDataOpen,
-    // captain profile
-    captainProfileOpen,
-    setCaptainProfileOpen,
     // change profile
     changeProfileOpen,
     setChangeProfileOpen,
@@ -914,22 +919,6 @@ const useUserManagement = () => {
     handleOpenChangeProfile,
     handleChangeProfileSubmit,
     handleSaveChangeProfile,
-    // temp password
-    tempPwOpen,
-    setTempPwOpen,
-    isGeneratingTempPw,
-    tempPwBulkMode,
-    setTempPwBulkMode,
-    bulkSelectedIds,
-    setBulkSelectedIds,
-    tempPwValidity,
-    setTempPwValidity,
-    tempPwForceReset,
-    setTempPwForceReset,
-    tempPwNote,
-    setTempPwNote,
-    handleOpenTempPw,
-    handleGenerateTempPw,
     // reset password
     resetPwOpen,
     setResetPwOpen,
@@ -959,7 +948,6 @@ const useUserManagement = () => {
     // admin controls
     adminControlsOpen,
     setAdminControlsOpen,
-    isSavingControls,
     selectedTheme,
     handleThemeChange,
   };

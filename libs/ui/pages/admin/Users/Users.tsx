@@ -1,11 +1,14 @@
 import { Box, Loader, DataTable } from '@bandi/component';
-import { Typography, Tabs, Divider, TextField, InputAdornment } from '@mui/material';
+import { Typography, Tabs, Divider, TextField, InputAdornment, Paper, Button, Tooltip, Link } from '@mui/material';
 import GlobalStyles from '@mui/material/GlobalStyles';
 import PeopleIcon from '@mui/icons-material/People';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PersonOffIcon from '@mui/icons-material/PersonOff';
 import BlockIcon from '@mui/icons-material/Block';
 import SearchIcon from '@mui/icons-material/Search';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import { IAuthUser } from '@bandi/interfaces';
 import { useStyles } from './styles';
 import { useUsers } from './hooks/useUsers';
@@ -26,6 +29,8 @@ const Users = () => {
     tabs,
     detailUser,
     setDetailUser,
+    selectedRow,
+    setSelectedRow,
     actionTarget,
     actionNotes,
     actionInProgress,
@@ -35,6 +40,7 @@ const Users = () => {
     setActionNotes,
     getFilteredData,
   } = useUsers();
+  const sel = selectedRow;
 
   const keyframes = (
     <GlobalStyles styles={`
@@ -135,6 +141,82 @@ const Users = () => {
           />
         </Box>
 
+        {/* Toolbar */}
+        <Paper variant='outlined' className={classes.toolbar}>
+          <Box className={classes.toolbarStack}>
+            <Tooltip title={sel ? 'View user details' : 'Select a user first'}>
+              <span>
+                <Button
+                  size='small'
+                  variant='contained'
+                  startIcon={<InfoOutlinedIcon />}
+                  disabled={!sel}
+                  onClick={() => sel && setDetailUser(sel)}
+                  sx={{
+                    background: sel ? 'linear-gradient(135deg, #4f46e5, #7c3aed)' : undefined,
+                    boxShadow: sel ? '0 4px 14px rgba(79,70,229,0.4)' : undefined,
+                    '&:hover': { transform: sel ? 'translateY(-1px)' : undefined, boxShadow: sel ? '0 6px 20px rgba(79,70,229,0.5)' : undefined },
+                    transition: 'all 0.22s ease',
+                  }}
+                >
+                  <span className={classes.buttonLabel}>View Details</span>
+                </Button>
+              </span>
+            </Tooltip>
+
+            <Divider orientation='vertical' flexItem className={classes.dividerMobile} />
+
+            <Tooltip title={sel && sel.status === 'pending_approval' ? 'Approve access request' : sel ? 'Only pending requests can be approved' : 'Select a user first'}>
+              <span>
+                <Button
+                  size='small'
+                  variant='contained'
+                  color='success'
+                  startIcon={<CheckCircleOutlineIcon />}
+                  disabled={!sel || sel.status !== 'pending_approval'}
+                  onClick={() => sel && handleOpenAction(sel, 'approve')}
+                  sx={{
+                    boxShadow: sel?.status === 'pending_approval' ? '0 4px 14px rgba(16,185,129,0.38)' : undefined,
+                    '&:hover': { transform: sel?.status === 'pending_approval' ? 'translateY(-1px)' : undefined },
+                    transition: 'all 0.22s ease',
+                  }}
+                >
+                  <span className={classes.buttonLabel}>Approve</span>
+                </Button>
+              </span>
+            </Tooltip>
+
+            <Tooltip title={sel && sel.status === 'pending_approval' ? 'Reject access request' : sel ? 'Only pending requests can be rejected' : 'Select a user first'}>
+              <span>
+                <Button
+                  size='small'
+                  variant='outlined'
+                  color='error'
+                  startIcon={<CancelOutlinedIcon />}
+                  disabled={!sel || sel.status !== 'pending_approval'}
+                  onClick={() => sel && handleOpenAction(sel, 'reject')}
+                  sx={{
+                    borderColor: sel?.status === 'pending_approval' ? '#ef4444' : undefined,
+                    '&:hover': { transform: sel?.status === 'pending_approval' ? 'translateY(-1px)' : undefined, boxShadow: sel?.status === 'pending_approval' ? '0 4px 14px rgba(239,68,68,0.25)' : undefined },
+                    transition: 'all 0.22s ease',
+                  }}
+                >
+                  <span className={classes.buttonLabel}>Reject</span>
+                </Button>
+              </span>
+            </Tooltip>
+          </Box>
+
+          {sel && (
+            <Typography variant='caption' className={classes.selectionIndicator}>
+              Selected: <strong>{sel.name}</strong> ({sel.email}) &nbsp;·&nbsp;
+              <Link component='button' variant='caption' onClick={() => setSelectedRow(null)}>
+                Clear
+              </Link>
+            </Typography>
+          )}
+        </Paper>
+
         {/* Tab panels */}
         {tabLists.map((list, idx) => (
           <TabPanel key={idx} value={tabValue} index={idx}>
@@ -153,7 +235,8 @@ const Users = () => {
                   rowKey='id'
                   searchable={false}
                   initialRowsPerPage={10}
-                  onRowClick={(row) => setDetailUser(row as IAuthUser)}
+                  onRowClick={(row) => setSelectedRow((prev) => prev?.id === (row as IAuthUser).id ? null : row as typeof sel)}
+                  activeRowKey={sel?.id}
                 />
               </Box>
             )}

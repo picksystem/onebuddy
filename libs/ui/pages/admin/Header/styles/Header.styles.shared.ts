@@ -14,25 +14,11 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
     backdropFilter: 'blur(20px)',
     WebkitBackdropFilter: 'blur(20px)',
     borderBottom: '1px solid rgba(255,255,255,0.07)',
-
-    [theme.breakpoints.down('sm')]: {
-      minHeight: '104px',
-    },
   },
 
+  // kept as dead style — no longer rendered
   mobileLogoBar: {
     display: 'none',
-
-    [theme.breakpoints.down('sm')]: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'flex-start',
-      height: '48px',
-      borderBottom: '1px solid rgba(255,255,255,0.08)',
-      paddingLeft: theme.spacing(2),
-      paddingRight: theme.spacing(2),
-      background: 'rgba(255,255,255,0.03)',
-    },
   },
 
   desktopLogoArea: {
@@ -51,7 +37,11 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
       boxShadow: '0 0 20px rgba(99,102,241,0.2)',
     },
 
-    [theme.breakpoints.down('sm')]: { display: 'none' },
+    // visible on all breakpoints — compact logo rendered on mobile via prop
+    [theme.breakpoints.down('sm')]: {
+      padding: theme.spacing(0.5, 0.75),
+      borderRadius: '10px',
+    },
   },
 
   logoBadge: {
@@ -118,7 +108,11 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
     marginRight: theme.spacing(1.5),
     flexShrink: 0,
 
-    [theme.breakpoints.down('sm')]: { display: 'none' },
+    [theme.breakpoints.down('sm')]: {
+      height: '20px',
+      marginLeft: theme.spacing(1),
+      marginRight: theme.spacing(0.75),
+    },
   },
 
   headerToolbar: {
@@ -429,6 +423,32 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
       filter: 'drop-shadow(0 0 6px rgba(165,180,252,0.7))',
       transform: 'scale(1.15)',
     },
+  },
+
+  loadingText: {
+    fontWeight: 'bold',
+  },
+
+  centerSearchWrap: {
+    flexGrow: 1,
+    display: 'flex',
+    justifyContent: 'center',
+    minWidth: 0,
+  },
+
+  iconBtnBase: {
+    color: 'white',
+    transition: 'background 0.15s, transform 0.15s',
+    '&:hover': {
+      background: 'rgba(255,255,255,0.15)',
+      transform: 'scale(1.08)',
+    },
+  },
+
+  loadingBackdrop: {
+    color: '#fff',
+    flexDirection: 'column' as const,
+    gap: theme.spacing(2),
   },
 
   iconBtn: {

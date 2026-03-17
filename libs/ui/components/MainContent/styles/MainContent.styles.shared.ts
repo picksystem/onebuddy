@@ -34,8 +34,8 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
       width: 'calc(100% - 200px)',
       marginLeft: '200px',
       padding: theme.spacing(1.5),
-      marginTop: '104px',
-      minHeight: 'calc(100vh - 104px)',
+      marginTop: '56px',
+      minHeight: 'calc(100vh - 56px)',
     },
   },
 

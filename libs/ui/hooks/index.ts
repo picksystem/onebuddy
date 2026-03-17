@@ -38,6 +38,3 @@ export * from './useCurrentDate';
 export * from './useDateFormat';
 export * from './useRelativeTime';
 export * from './useDateUtils';
-
-// Configuration-driven dropdown options
-export * from './useTicketConfig';

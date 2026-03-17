@@ -10,6 +10,8 @@ import CategoryIcon from '@mui/icons-material/Category';
 import CollectionsIcon from '@mui/icons-material/Collections';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import SubscriptionsIcon from '@mui/icons-material/Subscriptions';
+import PersonSearchIcon from '@mui/icons-material/PersonSearch';
+import CarRentalIcon from '@mui/icons-material/CarRental';
 import { constants } from '@bandi/utils';
 
 export interface MenuItem {
@@ -63,6 +65,16 @@ export const useMenuItems = (): MenuGroup[] => {
           label: 'Captains',
           icon: <DirectionsCarIcon />,
           path: AdminPath.CAPTAINS,
+        },
+        {
+          label: 'Driver Hire',
+          icon: <PersonSearchIcon />,
+          path: AdminPath.DRIVER_HIRE,
+        },
+        {
+          label: 'Vehicle Rental',
+          icon: <CarRentalIcon />,
+          path: AdminPath.VEHICLE_RENTAL,
         },
         {
           label: 'User Management',

@@ -24,6 +24,10 @@ const AdminPath = {
   USER_MANAGEMENT: `${ADMIN_BASE}/user-management`,
   SETTINGS: `${ADMIN_BASE}/settings`,
 
+  // Mobility Services
+  DRIVER_HIRE: `${ADMIN_BASE}/driver-hire`,
+  VEHICLE_RENTAL: `${ADMIN_BASE}/vehicle-rental`,
+
   // Supporting
   PROFILE: `${ADMIN_BASE}/profile`,
 

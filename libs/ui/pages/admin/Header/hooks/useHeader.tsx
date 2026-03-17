@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { constants } from '@bandi/utils';
 import { useAuth, useDebounce } from '@bandi/hooks';
-import { useAuthActionMutation, useGetIncidentsQuery } from '@bandi/services';
-import { IAuthUser, IIncident } from '@bandi/interfaces';
+import { useAuthActionMutation } from '@bandi/services';
+import { IAuthUser } from '@bandi/interfaces';
 
 export const useHeader = () => {
   const navigate = useNavigate();
@@ -26,13 +26,11 @@ export const useHeader = () => {
   const [ticketSearch, setTicketSearch] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
   const debouncedSearch = useDebounce(ticketSearch, 300);
-  const { data: incidents } = useGetIncidentsQuery();
 
   const filteredIncidents = useMemo(() => {
-    if (!debouncedSearch || debouncedSearch.length < 2 || !incidents) return [];
-    const query = debouncedSearch.toLowerCase();
-    return incidents.filter((inc) => inc.number.toLowerCase().includes(query)).slice(0, 8);
-  }, [debouncedSearch, incidents]);
+    if (!debouncedSearch || debouncedSearch.length < 2) return [];
+    return [];
+  }, [debouncedSearch]);
 
   useEffect(() => {
     const fetchPendingRequests = async () => {
@@ -55,10 +53,9 @@ export const useHeader = () => {
     setShowSearchResults(true);
   }, []);
 
-  const handleSelectIncident = useCallback((incident: IIncident) => {
+  const handleSelectIncident = useCallback(() => {
     setShowSearchResults(false);
     setTicketSearch('');
-    window.open(`${window.location.origin}/app/admin/incident/${incident.number}`, '_blank');
   }, []);
 
   const handleCloseSearchResults = useCallback(() => setShowSearchResults(false), []);

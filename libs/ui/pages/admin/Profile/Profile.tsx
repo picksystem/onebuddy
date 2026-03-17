@@ -333,7 +333,7 @@ const Profile = () => {
       label: 'Browser / Device',
       minWidth: 240,
       format: (v): React.ReactNode => (
-        <Typography variant='body2' noWrap sx={{ maxWidth: 300, fontSize: '0.8rem' }}>
+        <Typography variant='body2' noWrap className={classes.userAgentText}>
           {String(v || '—')}
         </Typography>
       ),
@@ -386,7 +386,7 @@ const Profile = () => {
                 label={user?.role?.toUpperCase() || 'USER'}
                 color={roleChipColor(user?.role)}
                 size='small'
-                sx={{ fontWeight: 700, fontSize: '0.7rem', letterSpacing: 0.5 }}
+                className={classes.roleChip}
               />
               {user?.isActive ? (
                 <Chip
@@ -394,7 +394,7 @@ const Profile = () => {
                   label='Active'
                   color='success'
                   size='small'
-                  sx={{ fontSize: '0.72rem' }}
+                  className={classes.statusChip}
                 />
               ) : (
                 <Chip
@@ -402,7 +402,7 @@ const Profile = () => {
                   label='Inactive'
                   color='error'
                   size='small'
-                  sx={{ fontSize: '0.72rem' }}
+                  className={classes.statusChip}
                 />
               )}
               {user?.mustResetPassword && (
@@ -411,7 +411,7 @@ const Profile = () => {
                   label='Must Reset Password'
                   color='warning'
                   size='small'
-                  sx={{ fontSize: '0.72rem' }}
+                  className={classes.statusChip}
                 />
               )}
             </Box>
@@ -441,16 +441,7 @@ const Profile = () => {
                     e.stopPropagation();
                     handleRemovePhoto();
                   }}
-                  sx={{
-                    color: 'rgba(255,100,100,0.9)',
-                    borderColor: 'rgba(255,100,100,0.5)',
-                    '&:hover': {
-                      borderColor: 'rgba(255,100,100,0.9)',
-                      bgcolor: 'rgba(255,0,0,0.08)',
-                    },
-                    minWidth: 0,
-                    px: 1.5,
-                  }}
+                  className={classes.removePhotoBtn}
                 >
                   Remove Photo
                 </Button>
@@ -464,17 +455,13 @@ const Profile = () => {
                   setTab(0);
                   setIsEditing(true);
                 }}
-                sx={{
-                  color: '#fff',
-                  borderColor: 'rgba(255,255,255,0.5)',
-                  border: '1px solid',
-                  '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.1)' },
-                }}
+                className={classes.editProfileBtn}
               >
                 Edit Profile
               </Button>
+
             ) : (
-              <Chip label='Editing' color='warning' size='small' sx={{ fontWeight: 700 }} />
+              <Chip label='Editing' color='warning' size='small' className={classes.editingChip} />
             )}
           </Box>
         </Box>
@@ -640,109 +627,73 @@ const Profile = () => {
             />
 
             {user?.mustResetPassword && (
-              <Alert severity='warning' sx={{ mb: 2 }}>
+              <Alert severity='warning' className={classes.mustResetAlert}>
                 Your password must be reset before you can continue.
               </Alert>
             )}
 
             <Box className={classes.securityGrid}>
               <Box className={classes.securityItem}>
-                <Typography
-                  variant='caption'
-                  color='text.secondary'
-                  fontWeight={600}
-                  textTransform='uppercase'
-                  letterSpacing={0.5}
-                >
+                <Typography className={classes.securityItemLabel}>
                   Account Created
                 </Typography>
-                <Typography variant='body2' fontWeight={600} mt={0.5}>
+                <Typography className={classes.securityItemValue}>
                   {fmtDate(user?.createdAt)}
                 </Typography>
               </Box>
               <Box className={classes.securityItem}>
-                <Typography
-                  variant='caption'
-                  color='text.secondary'
-                  fontWeight={600}
-                  textTransform='uppercase'
-                  letterSpacing={0.5}
-                >
+                <Typography className={classes.securityItemLabel}>
                   Last Updated
                 </Typography>
-                <Typography variant='body2' fontWeight={600} mt={0.5}>
+                <Typography className={classes.securityItemValue}>
                   {fmtDate(user?.updatedAt)}
                 </Typography>
               </Box>
               <Box className={classes.securityItem}>
-                <Typography
-                  variant='caption'
-                  color='text.secondary'
-                  fontWeight={600}
-                  textTransform='uppercase'
-                  letterSpacing={0.5}
-                >
+                <Typography className={classes.securityItemLabel}>
                   Last Active
                 </Typography>
-                <Typography variant='body2' fontWeight={600} mt={0.5}>
+                <Typography className={classes.securityItemValue}>
                   {user?.lastActivityAt ? fmtDate(user.lastActivityAt) : '—'}
                 </Typography>
               </Box>
               <Box className={classes.securityItem}>
-                <Typography
-                  variant='caption'
-                  color='text.secondary'
-                  fontWeight={600}
-                  textTransform='uppercase'
-                  letterSpacing={0.5}
-                >
+                <Typography className={classes.securityItemLabel}>
                   Role
                 </Typography>
-                <Box mt={0.5}>
+                <Box className={classes.securityItemChipBox}>
                   <Chip
                     label={user?.role?.toUpperCase()}
                     color={roleChipColor(user?.role)}
                     size='small'
-                    sx={{ fontWeight: 700, fontSize: '0.7rem' }}
+                    className={classes.roleChip}
                   />
                 </Box>
               </Box>
               <Box className={classes.securityItem}>
-                <Typography
-                  variant='caption'
-                  color='text.secondary'
-                  fontWeight={600}
-                  textTransform='uppercase'
-                  letterSpacing={0.5}
-                >
+                <Typography className={classes.securityItemLabel}>
                   Status
                 </Typography>
-                <Box mt={0.5}>
+                <Box className={classes.securityItemChipBox}>
                   <Chip
                     label={String(user?.status || '')
                       .replace(/_/g, ' ')
                       .replace(/\b\w/g, (c) => c.toUpperCase())}
                     color={user?.isActive ? 'success' : 'default'}
                     size='small'
-                    sx={{ fontWeight: 600 }}
+                    className={classes.statusChip}
                   />
                 </Box>
               </Box>
               <Box className={classes.securityItem}>
-                <Typography
-                  variant='caption'
-                  color='text.secondary'
-                  fontWeight={600}
-                  textTransform='uppercase'
-                  letterSpacing={0.5}
-                >
+                <Typography className={classes.securityItemLabel}>
                   Source
                 </Typography>
                 <Typography
                   variant='body2'
                   fontWeight={600}
                   mt={0.5}
-                  sx={{ textTransform: 'capitalize' }}
+                  className={classes.sourceText}
                 >
                   {user?.source || '—'}
                 </Typography>
@@ -757,7 +708,7 @@ const Profile = () => {
               title='Change Password'
               classes={classes}
             />
-            <Stack spacing={2} sx={{ maxWidth: 440 }}>
+            <Stack spacing={2} className={classes.passwordStack}>
               <TextField
                 label='Current Password'
                 type={showPw.current ? 'text' : 'password'}
@@ -812,7 +763,7 @@ const Profile = () => {
                   }}
                 />
                 {pwForm.next && (
-                  <Box sx={{ mt: 1 }}>
+                  <Box className={classes.strengthBox}>
                     <Box className={classes.strengthRow}>
                       {[1, 2, 3, 4, 5].map((n) => (
                         <Box
@@ -866,7 +817,7 @@ const Profile = () => {
                   startIcon={<LockIcon />}
                   onClick={handleChangePassword}
                   disabled={isSavingPw || !pwForm.current || !pwForm.next || !pwForm.confirm}
-                  sx={{ px: 3 }}
+                  className={classes.updatePasswordBtn}
                 >
                   {isSavingPw ? 'Updating…' : 'Update Password'}
                 </Button>
@@ -884,11 +835,11 @@ const Profile = () => {
               classes={classes}
             />
             {logsLoading ? (
-              <Box sx={{ py: 4 }}>
+              <Box className={classes.loaderBox}>
                 <Loader />
               </Box>
             ) : logData.length === 0 ? (
-              <Box sx={{ textAlign: 'center', py: 6 }}>
+              <Box className={classes.emptyHistory}>
                 <HistoryIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
                 <Typography color='text.secondary'>No login history available</Typography>
               </Box>

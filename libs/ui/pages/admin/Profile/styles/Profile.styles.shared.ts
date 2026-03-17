@@ -314,6 +314,106 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
     border: `1px solid ${theme.palette.divider}`,
   },
 
+  // ── Hero action buttons ───────────────────────────────────────────────────────
+  removePhotoBtn: {
+    color: 'rgba(255,100,100,0.9)',
+    borderColor: 'rgba(255,100,100,0.5)',
+    minWidth: 0,
+    paddingLeft: '12px',
+    paddingRight: '12px',
+    '&:hover': {
+      borderColor: 'rgba(255,100,100,0.9)',
+      backgroundColor: 'rgba(255,0,0,0.08)',
+    },
+  },
+
+  editProfileBtn: {
+    color: '#fff',
+    borderColor: 'rgba(255,255,255,0.5)',
+    border: '1px solid',
+    '&:hover': {
+      borderColor: '#fff',
+      backgroundColor: 'rgba(255,255,255,0.1)',
+    },
+  },
+
+  updatePasswordBtn: {
+    paddingLeft: '24px',
+    paddingRight: '24px',
+  },
+
+  // ── Password form container ───────────────────────────────────────────────────
+  passwordStack: {
+    maxWidth: 440,
+  },
+
+  // ── Password strength indicator ───────────────────────────────────────────────
+  strengthBox: {
+    marginTop: theme.spacing(1),
+  },
+
+  // ── Login history loader ──────────────────────────────────────────────────────
+  loaderBox: {
+    paddingTop: theme.spacing(4),
+    paddingBottom: theme.spacing(4),
+  },
+
+  emptyHistory: {
+    textAlign: 'center' as const,
+    paddingTop: theme.spacing(6),
+    paddingBottom: theme.spacing(6),
+  },
+
+  // ── User agent text in log table ──────────────────────────────────────────────
+  userAgentText: {
+    maxWidth: 300,
+    fontSize: '0.8rem',
+  },
+
+  // ── Role chip styles ──────────────────────────────────────────────────────────
+  roleChip: {
+    fontWeight: 700,
+    fontSize: '0.7rem',
+    letterSpacing: 0.5,
+  },
+
+  statusChip: {
+    fontSize: '0.72rem',
+  },
+
+  sourceText: {
+    textTransform: 'capitalize' as const,
+    fontWeight: 600,
+  },
+
+  // ── Security item typography ──────────────────────────────────────────────────
+  securityItemLabel: {
+    fontSize: '0.72rem',
+    fontWeight: 600,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+    color: theme.palette.text.secondary,
+  },
+
+  securityItemValue: {
+    fontSize: '0.875rem',
+    fontWeight: 600,
+    marginTop: theme.spacing(0.5),
+  },
+
+  securityItemChipBox: {
+    marginTop: theme.spacing(0.5),
+  },
+
+  // ── Chip/Alert states ─────────────────────────────────────────────────────────
+  editingChip: {
+    fontWeight: 700,
+  },
+
+  mustResetAlert: {
+    marginBottom: theme.spacing(2),
+  },
+
   // ── Save bar ──────────────────────────────────────────────────────────────────
   saveBar: {
     display: 'flex',

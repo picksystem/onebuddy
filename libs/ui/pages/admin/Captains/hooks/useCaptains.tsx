@@ -23,6 +23,7 @@ export const useCaptains = () => {
   const [tableSearch, setTableSearch] = useState('');
   const [actionInProgress, setActionInProgress] = useState<number | null>(null);
   const [detailUser, setDetailUser] = useState<IAuthUser | null>(null);
+  const [selectedRow, setSelectedRow] = useState<CaptainsRow | null>(null);
   const [actionTarget, setActionTarget] = useState<{
     user: CaptainsRow;
     type: ActionType;
@@ -252,6 +253,8 @@ export const useCaptains = () => {
     tabs,
     detailUser,
     setDetailUser,
+    selectedRow,
+    setSelectedRow,
     actionTarget,
     actionNotes,
     actionInProgress,

@@ -43,8 +43,8 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
       [theme.breakpoints.down('sm')]: {
         width: 200,
         padding: theme.spacing(0.75),
-        top: '104px',
-        height: 'calc(100vh - 104px)',
+        top: '56px',
+        height: 'calc(100vh - 56px)',
       },
     },
   },
@@ -258,6 +258,70 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
       [theme.breakpoints.between('sm', 'md')]: { fontSize: '0.84rem' },
       [theme.breakpoints.down('sm')]: { fontSize: '0.82rem' },
     },
+  },
+
+  // ── Scrollable nav area ──────────────────────────────────────────────────────
+  navScrollArea: {
+    overflowY: 'auto' as const,
+    overflowX: 'hidden' as const,
+    flex: 1,
+    paddingBottom: theme.spacing(2),
+    '&::-webkit-scrollbar': { width: 3 },
+    '&::-webkit-scrollbar-track': { background: 'transparent' },
+    '&::-webkit-scrollbar-thumb': {
+      background: 'rgba(99,102,241,0.3)',
+      borderRadius: 4,
+    },
+    '&::-webkit-scrollbar-thumb:hover': { background: 'rgba(99,102,241,0.55)' },
+  },
+
+  navList: {
+    padding: 0,
+    width: '100%',
+  },
+
+  navGroupBox: {
+    marginBottom: theme.spacing(0.5),
+  },
+
+  // Section header for expanded state (static parts - dynamic cfg values stay in sx)
+  sectionHeaderExpanded: {
+    marginLeft: theme.spacing(0.75),
+    marginRight: theme.spacing(0.75),
+    paddingLeft: theme.spacing(1.5),
+    paddingRight: theme.spacing(1.5),
+    paddingTop: theme.spacing(0.9),
+    paddingBottom: theme.spacing(0.9),
+    borderRadius: '10px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(1),
+  },
+
+  sectionGroupDot: {
+    width: 6,
+    height: 6,
+    borderRadius: '50%',
+    flexShrink: 0,
+  },
+
+  sectionGroupLabel: {
+    fontSize: '0.68rem',
+    fontWeight: 800,
+    letterSpacing: '0.16em',
+    textTransform: 'uppercase' as const,
+    userSelect: 'none' as const,
+    lineHeight: 1,
+  },
+
+  // Collapsed divider pill (static parts)
+  sectionDividerCollapsed: {
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    width: 28,
+    height: 3,
+    borderRadius: 8,
+    cursor: 'default',
   },
 
   // Legacy — kept for backwards compat with any sub-item usage

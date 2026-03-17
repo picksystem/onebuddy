@@ -38,13 +38,15 @@ const AccessRequest = () => {
   } = useAccessRequest();
 
   const keyframes = (
-    <GlobalStyles styles={`
+    <GlobalStyles
+      styles={`
       @keyframes um-gradient-shift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
       @keyframes um-orb-drift { 0%, 100% { transform: translate(0, 0) scale(1); } 25% { transform: translate(22px, -18px) scale(1.06); } 75% { transform: translate(-16px, 12px) scale(0.94); } }
       @keyframes um-float { 0%, 100% { transform: translateY(0px) rotate(0deg); } 40% { transform: translateY(-18px) rotate(6deg); } 70% { transform: translateY(-9px) rotate(-3deg); } }
       @keyframes um-slide-up { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
       @keyframes um-counter { from { opacity: 0; transform: scale(0.65) translateY(12px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-    `} />
+    `}
+    />
   );
 
   if (isLoading) {
@@ -59,10 +61,38 @@ const AccessRequest = () => {
   }
 
   const statCards = [
-    { label: 'Total Requests', value: tabLists[0]?.length ?? 0, Icon: AssignmentIcon, cls: classes.statCard0, sub: 'All incoming requests', color: '#4f46e5' },
-    { label: 'Pending', value: tabLists[1]?.length ?? 0, Icon: HourglassEmptyIcon, cls: classes.statCard1, sub: 'Awaiting review', color: '#f59e0b' },
-    { label: 'Approved', value: tabLists[2]?.length ?? 0, Icon: CheckCircleIcon, cls: classes.statCard2, sub: 'Access granted', color: '#10b981' },
-    { label: 'Rejected', value: tabLists[3]?.length ?? 0, Icon: CancelIcon, cls: classes.statCard3, sub: 'Access denied', color: '#0ea5e9' },
+    {
+      label: 'Total Requests',
+      value: tabLists[0]?.length ?? 0,
+      Icon: AssignmentIcon,
+      cls: classes.statCard0,
+      sub: 'All incoming requests',
+      color: '#4f46e5',
+    },
+    {
+      label: 'Pending',
+      value: tabLists[1]?.length ?? 0,
+      Icon: HourglassEmptyIcon,
+      cls: classes.statCard1,
+      sub: 'Awaiting review',
+      color: '#f59e0b',
+    },
+    {
+      label: 'Approved',
+      value: tabLists[2]?.length ?? 0,
+      Icon: CheckCircleIcon,
+      cls: classes.statCard2,
+      sub: 'Access granted',
+      color: '#10b981',
+    },
+    {
+      label: 'Rejected',
+      value: tabLists[3]?.length ?? 0,
+      Icon: CancelIcon,
+      cls: classes.statCard3,
+      sub: 'Access denied',
+      color: '#0ea5e9',
+    },
   ];
 
   return (
@@ -78,7 +108,8 @@ const AccessRequest = () => {
             </Typography>
           </Box>
           <Typography variant='body2' className={classes.description}>
-            Review and process all account access requests. Approve or reject to manage platform entry.
+            Review and process all account access requests. Approve or reject to manage platform
+            entry.
           </Typography>
         </Box>
 
@@ -88,16 +119,24 @@ const AccessRequest = () => {
             <Box key={label} className={`${classes.statCard} ${cls}`}>
               <Box className={classes.statCardTop}>
                 <Box>
-                  <Typography className={classes.statValue} sx={{ color }}>{value}</Typography>
+                  <Typography className={classes.statValue} sx={{ color }}>
+                    {value}
+                  </Typography>
                   <Typography className={classes.statLabel}>{label}</Typography>
                 </Box>
-                <Box className={classes.statIconWrap} sx={{ background: `${color}14`, border: `1.5px solid ${color}28` }}>
+                <Box
+                  className={classes.statIconWrap}
+                  sx={{ background: `${color}14`, border: `1.5px solid ${color}28` }}
+                >
                   <Icon className={classes.statIcon} sx={{ color }} />
                 </Box>
               </Box>
               <Divider className={classes.statDivider} />
               <Box className={classes.statSubRow}>
-                <Box className={classes.statSubDot} sx={{ background: color, boxShadow: `0 0 6px ${color}` }} />
+                <Box
+                  className={classes.statSubDot}
+                  sx={{ background: color, boxShadow: `0 0 6px ${color}` }}
+                />
                 <Typography className={classes.statSub}>{sub}</Typography>
               </Box>
             </Box>
@@ -115,7 +154,7 @@ const AccessRequest = () => {
             variant='scrollable'
             scrollButtons='auto'
             allowScrollButtonsMobile
-            sx={{ flex: 1 }}
+            className={classes.tabsFlex}
           >
             {tabs}
           </Tabs>
