@@ -1,6 +1,14 @@
 import { Box, Loader, DataTable } from '@bandi/component';
-import { Typography, Tabs, Divider, TextField, InputAdornment, Paper, Button, Tooltip, Link } from '@mui/material';
-import GlobalStyles from '@mui/material/GlobalStyles';
+import {
+  Typography,
+  Tabs,
+  Divider,
+  TextField,
+  InputAdornment,
+  Paper,
+  Button,
+  Tooltip,
+} from '@mui/material';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -9,15 +17,18 @@ import SearchIcon from '@mui/icons-material/Search';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
+import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import { IAuthUser } from '@bandi/interfaces';
 import { useStyles } from './styles';
 import { useFastTag } from './hooks/useFastTag';
 import TabPanel from './components/TabPanel';
 import DetailDialog from './dialogs/DetailDialog/DetailDialog';
 import ActionDialog from './dialogs/ActionDialog/ActionDialog';
+import { useAdminKeyframes } from '@bandi/hooks';
 
 const FastTag = () => {
   const { classes } = useStyles();
+  const keyframes = useAdminKeyframes();
   const {
     isLoading,
     tabValue,
@@ -42,16 +53,6 @@ const FastTag = () => {
   } = useFastTag();
   const sel = selectedRow;
 
-  const keyframes = (
-    <GlobalStyles styles={`
-      @keyframes um-gradient-shift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-      @keyframes um-orb-drift { 0%, 100% { transform: translate(0, 0) scale(1); } 25% { transform: translate(22px, -18px) scale(1.06); } 75% { transform: translate(-16px, 12px) scale(0.94); } }
-      @keyframes um-float { 0%, 100% { transform: translateY(0px) rotate(0deg); } 40% { transform: translateY(-18px) rotate(6deg); } 70% { transform: translateY(-9px) rotate(-3deg); } }
-      @keyframes um-slide-up { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
-      @keyframes um-counter { from { opacity: 0; transform: scale(0.65) translateY(12px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-    `} />
-  );
-
   if (isLoading) {
     return (
       <>
@@ -64,10 +65,38 @@ const FastTag = () => {
   }
 
   const statCards = [
-    { label: 'Total Requests', value: tabLists[0]?.length ?? 0, Icon: LocalOfferIcon, cls: classes.statCard0, sub: 'All tag requests', color: '#4f46e5' },
-    { label: 'Pending', value: tabLists[1]?.length ?? 0, Icon: HourglassEmptyIcon, cls: classes.statCard1, sub: 'Awaiting review', color: '#f59e0b' },
-    { label: 'Approved', value: tabLists[2]?.length ?? 0, Icon: CheckCircleIcon, cls: classes.statCard2, sub: 'Tags granted', color: '#10b981' },
-    { label: 'Rejected', value: tabLists[3]?.length ?? 0, Icon: CancelIcon, cls: classes.statCard3, sub: 'Requests denied', color: '#0ea5e9' },
+    {
+      label: 'Total Requests',
+      value: tabLists[0]?.length ?? 0,
+      Icon: LocalOfferIcon,
+      cls: classes.statCard0,
+      sub: 'All tag requests',
+      color: '#4f46e5',
+    },
+    {
+      label: 'Pending',
+      value: tabLists[1]?.length ?? 0,
+      Icon: HourglassEmptyIcon,
+      cls: classes.statCard1,
+      sub: 'Awaiting review',
+      color: '#f59e0b',
+    },
+    {
+      label: 'Approved',
+      value: tabLists[2]?.length ?? 0,
+      Icon: CheckCircleIcon,
+      cls: classes.statCard2,
+      sub: 'Tags granted',
+      color: '#10b981',
+    },
+    {
+      label: 'Rejected',
+      value: tabLists[3]?.length ?? 0,
+      Icon: CancelIcon,
+      cls: classes.statCard3,
+      sub: 'Requests denied',
+      color: '#0ea5e9',
+    },
   ];
 
   return (
@@ -93,16 +122,24 @@ const FastTag = () => {
             <Box key={label} className={`${classes.statCard} ${cls}`}>
               <Box className={classes.statCardTop}>
                 <Box>
-                  <Typography className={classes.statValue} sx={{ color }}>{value}</Typography>
+                  <Typography className={classes.statValue} sx={{ color }}>
+                    {value}
+                  </Typography>
                   <Typography className={classes.statLabel}>{label}</Typography>
                 </Box>
-                <Box className={classes.statIconWrap} sx={{ background: `${color}14`, border: `1.5px solid ${color}28` }}>
+                <Box
+                  className={classes.statIconWrap}
+                  sx={{ background: `${color}14`, border: `1.5px solid ${color}28` }}
+                >
                   <Icon className={classes.statIcon} sx={{ color }} />
                 </Box>
               </Box>
               <Divider className={classes.statDivider} />
               <Box className={classes.statSubRow}>
-                <Box className={classes.statSubDot} sx={{ background: color, boxShadow: `0 0 6px ${color}` }} />
+                <Box
+                  className={classes.statSubDot}
+                  sx={{ background: color, boxShadow: `0 0 6px ${color}` }}
+                />
                 <Typography className={classes.statSub}>{sub}</Typography>
               </Box>
             </Box>
@@ -166,7 +203,15 @@ const FastTag = () => {
 
             <Divider orientation='vertical' flexItem className={classes.dividerMobile} />
 
-            <Tooltip title={sel && sel.status === 'pending_approval' ? 'Approve Fast Tag request' : sel ? 'Only pending requests can be approved' : 'Select a request first'}>
+            <Tooltip
+              title={
+                sel && sel.status === 'pending_approval'
+                  ? 'Approve Fast Tag request'
+                  : sel
+                    ? 'Only pending requests can be approved'
+                    : 'Select a request first'
+              }
+            >
               <span>
                 <Button
                   size='small'
@@ -176,8 +221,14 @@ const FastTag = () => {
                   disabled={!sel || sel.status !== 'pending_approval'}
                   onClick={() => sel && handleOpenAction(sel, 'approve')}
                   sx={{
-                    boxShadow: sel?.status === 'pending_approval' ? '0 4px 14px rgba(16,185,129,0.38)' : undefined,
-                    '&:hover': { transform: sel?.status === 'pending_approval' ? 'translateY(-1px)' : undefined },
+                    boxShadow:
+                      sel?.status === 'pending_approval'
+                        ? '0 4px 14px rgba(16,185,129,0.38)'
+                        : undefined,
+                    '&:hover': {
+                      transform:
+                        sel?.status === 'pending_approval' ? 'translateY(-1px)' : undefined,
+                    },
                     transition: 'all 0.22s ease',
                   }}
                 >
@@ -186,7 +237,15 @@ const FastTag = () => {
               </span>
             </Tooltip>
 
-            <Tooltip title={sel && sel.status === 'pending_approval' ? 'Reject Fast Tag request' : sel ? 'Only pending requests can be rejected' : 'Select a request first'}>
+            <Tooltip
+              title={
+                sel && sel.status === 'pending_approval'
+                  ? 'Reject Fast Tag request'
+                  : sel
+                    ? 'Only pending requests can be rejected'
+                    : 'Select a request first'
+              }
+            >
               <span>
                 <Button
                   size='small'
@@ -196,7 +255,14 @@ const FastTag = () => {
                   disabled={!sel || sel.status !== 'pending_approval'}
                   onClick={() => sel && handleOpenAction(sel, 'reject')}
                   sx={{
-                    '&:hover': { transform: sel?.status === 'pending_approval' ? 'translateY(-1px)' : undefined, boxShadow: sel?.status === 'pending_approval' ? '0 4px 14px rgba(239,68,68,0.25)' : undefined },
+                    '&:hover': {
+                      transform:
+                        sel?.status === 'pending_approval' ? 'translateY(-1px)' : undefined,
+                      boxShadow:
+                        sel?.status === 'pending_approval'
+                          ? '0 4px 14px rgba(239,68,68,0.25)'
+                          : undefined,
+                    },
                     transition: 'all 0.22s ease',
                   }}
                 >
@@ -207,12 +273,34 @@ const FastTag = () => {
           </Box>
 
           {sel && (
-            <Typography variant='caption' className={classes.selectionIndicator}>
-              Selected: <strong>{sel.name}</strong> ({sel.email}) &nbsp;·&nbsp;
-              <Link component='button' variant='caption' onClick={() => setSelectedRow(null)}>
+            <Box className={classes.selectionIndicator}>
+              <Typography variant='caption' color='text.secondary'>
+                Selected: <strong>{sel.name}</strong> ({sel.email})
+              </Typography>
+              <Button
+                size='small'
+                variant='outlined'
+                startIcon={<HighlightOffIcon sx={{ fontSize: '0.9rem !important' }} />}
+                onClick={() => setSelectedRow(null)}
+                sx={{
+                  borderRadius: '50px',
+                  fontSize: '0.7rem',
+                  py: 0.3,
+                  px: 1.5,
+                  borderColor: 'rgba(239,68,68,0.4)',
+                  color: 'rgba(239,68,68,0.85)',
+                  '&:hover': {
+                    borderColor: '#ef4444',
+                    background: 'rgba(239,68,68,0.06)',
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 3px 10px rgba(239,68,68,0.2)',
+                  },
+                  transition: 'all 0.2s ease',
+                }}
+              >
                 Clear
-              </Link>
-            </Typography>
+              </Button>
+            </Box>
           )}
         </Paper>
 
@@ -242,7 +330,11 @@ const FastTag = () => {
                   rowKey='id'
                   searchable={false}
                   initialRowsPerPage={10}
-                  onRowClick={(row) => setSelectedRow((prev) => prev?.id === (row as IAuthUser).id ? null : row as typeof sel)}
+                  onRowClick={(row) =>
+                    setSelectedRow((prev) =>
+                      prev?.id === (row as IAuthUser).id ? null : (row as typeof sel),
+                    )
+                  }
                   activeRowKey={sel?.id}
                 />
               </Box>

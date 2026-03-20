@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "OneBuddy",
+    "slug": "onebuddy-customer",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "onebuddy",
+    "backgroundColor": "#0f172a",
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0f172a"
+      },
+      "package": "com.bandi.onebuddy"
+    },
+    "ios": {
+      "bundleIdentifier": "com.bandi.onebuddy",
+      "supportsTablet": false
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}

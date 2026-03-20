@@ -62,12 +62,8 @@ const ActionDialog = ({
               </Typography>
             </Box>
             <Box className={classes.dialogHeaderUserRow}>
-              <Avatar
-                src={actionTarget.user.profilePicture || undefined}
-                className={classes.dialogHeaderAvatar}
-              >
-                {!actionTarget.user.profilePicture &&
-                  `${actionTarget.user.firstName?.[0] ?? ''}${actionTarget.user.lastName?.[0] ?? ''}`.toUpperCase()}
+              <Avatar className={classes.dialogHeaderAvatar}>
+                {`${actionTarget.user.firstName?.[0] ?? ''}${actionTarget.user.lastName?.[0] ?? ''}`.toUpperCase()}
               </Avatar>
               <Box className={classes.dialogHeaderUserInfo}>
                 <Typography
@@ -75,7 +71,7 @@ const ActionDialog = ({
                   fontWeight={700}
                   className={classes.dialogHeaderName}
                 >
-                  {actionTarget.user.name}
+                  {`${actionTarget.user.firstName} ${actionTarget.user.lastName}`.trim()}
                 </Typography>
                 <Typography variant='caption' className={classes.dialogHeaderEmail}>
                   {actionTarget.user.email}
@@ -90,8 +86,8 @@ const ActionDialog = ({
           <DialogContent sx={{ p: 3 }}>
             <Typography variant='body2' color='text.secondary' className={classes.descriptionText}>
               {isApprove
-                ? `You are about to approve the access request for ${actionTarget.user.name}. Their account will be activated with the requested role.`
-                : `You are about to reject the access request for ${actionTarget.user.name}. They will not be granted access.`}
+                ? `You are about to approve the onboarding request for ${`${actionTarget.user.firstName} ${actionTarget.user.lastName}`.trim()}. Their onboarding will be marked as approved.`
+                : `You are about to reject the onboarding request for ${`${actionTarget.user.firstName} ${actionTarget.user.lastName}`.trim()}. They will not be onboarded.`}
             </Typography>
             <TextField
               label='Admin Notes (optional)'

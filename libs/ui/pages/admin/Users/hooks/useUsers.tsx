@@ -7,9 +7,9 @@ import PendingActionsIcon from '@mui/icons-material/PendingActions';
 import GroupIcon from '@mui/icons-material/Group';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
+import ReviewsIcon from '@mui/icons-material/Reviews';
 import { useAuthActionMutation } from '@bandi/services';
 import { useNotification } from '@bandi/hooks';
-import { IAuthUser } from '@bandi/interfaces';
 import { UsersRow, ActionType } from '../types/users.types';
 import { getFilteredData, getTabLists } from '../utils/users.utils';
 
@@ -17,12 +17,12 @@ export const useUsers = () => {
   const [authAction] = useAuthActionMutation();
   const notify = useNotification();
 
-  const [requests, setRequests] = useState<IAuthUser[]>([]);
+  const [requests, setRequests] = useState<UsersRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [tabValue, setTabValue] = useState(0);
   const [tableSearch, setTableSearch] = useState('');
   const [actionInProgress, setActionInProgress] = useState<number | null>(null);
-  const [detailUser, setDetailUser] = useState<IAuthUser | null>(null);
+  const [detailUser, setDetailUser] = useState<UsersRow | null>(null);
   const [selectedRow, setSelectedRow] = useState<UsersRow | null>(null);
   const [actionTarget, setActionTarget] = useState<{
     user: UsersRow;
@@ -33,10 +33,13 @@ export const useUsers = () => {
   const fetchRequests = useCallback(async () => {
     try {
       setIsLoading(true);
-      const result = await authAction({ action: 'get-role-requests' }).unwrap();
-      setRequests(result.data || []);
+      const result = await authAction({ action: 'get-customer-onboardings' }).unwrap();
+      const all: UsersRow[] = ((result.data || []) as UsersRow[])
+        .filter((r) => r.serviceCategory === 'logistics')
+        .map((r, i) => ({ ...r, sno: i + 1 }));
+      setRequests(all);
     } catch {
-      notify.error('Failed to load access requests');
+      notify.error('Failed to load end user onboarding requests');
     } finally {
       setIsLoading(false);
     }
@@ -51,10 +54,17 @@ export const useUsers = () => {
   const {
     all: allRequests,
     pending: pendingRequests,
+    underReview: underReviewRequests,
     approved: approvedRequests,
     rejected: rejectedRequests,
   } = getTabLists(requests);
-  const tabLists = [allRequests, pendingRequests, approvedRequests, rejectedRequests];
+  const tabLists = [
+    allRequests,
+    pendingRequests,
+    underReviewRequests,
+    approvedRequests,
+    rejectedRequests,
+  ];
 
   const handleConfirmAction = async () => {
     if (!actionTarget) return;
@@ -62,14 +72,16 @@ export const useUsers = () => {
     try {
       setActionInProgress(user.id);
       await authAction({
-        action: type === 'approve' ? 'approve-role-request' : 'reject-role-request',
-        userId: user.id,
+        action: 'update-customer-onboarding',
+        id: user.id,
+        data: { status: type === 'approve' ? 'approved' : 'rejected' },
         adminNotes: actionNotes || undefined,
       }).unwrap();
+      const name = `${user.firstName} ${user.lastName}`.trim();
       notify.success(
         type === 'approve'
-          ? `Access approved for ${user.name}`
-          : `Access request from ${user.name} has been rejected`,
+          ? `Onboarding approved for ${name}`
+          : `Onboarding request from ${name} has been rejected`,
       );
       setActionTarget(null);
       setActionNotes('');
@@ -91,10 +103,17 @@ export const useUsers = () => {
     setActionNotes('');
   };
 
+  const statusColor: Record<string, 'warning' | 'default' | 'success' | 'error' | 'info'> = {
+    pending: 'warning',
+    under_review: 'default',
+    approved: 'success',
+    rejected: 'error',
+  };
+
   const columns: Column<UsersRow>[] = [
     { id: 'sno', label: 'S.No', minWidth: 60, align: 'center', sortable: false },
     {
-      id: 'name',
+      id: 'firstName',
       label: 'Name',
       minWidth: 170,
       format: (_v: unknown, row: UsersRow): React.ReactNode => (
@@ -108,38 +127,27 @@ export const useUsers = () => {
           }}
           sx={{ fontWeight: 500, cursor: 'pointer' }}
         >
-          {String(row.name || '-')}
+          {`${row.firstName} ${row.lastName}`.trim() || '-'}
         </Link>
       ),
     },
+    { id: 'phone', label: 'Phone', minWidth: 130, format: (v: unknown) => String(v || '-') },
+    { id: 'email', label: 'Email', minWidth: 200, format: (v: unknown) => String(v || '-') },
+    { id: 'city', label: 'City', minWidth: 100, format: (v: unknown) => String(v || '-') },
     {
-      id: 'email',
-      label: 'Email',
-      minWidth: 220,
-      format: (v: unknown): React.ReactNode => String(v || '-'),
+      id: 'vehicleType',
+      label: 'Vehicle Type',
+      minWidth: 130,
+      format: (v: unknown) =>
+        String(v || '-')
+          .replace(/_/g, ' ')
+          .replace(/\b\w/g, (c: string) => c.toUpperCase()),
     },
     {
-      id: 'businessUnit',
-      label: 'Business Unit',
-      minWidth: 150,
-      format: (v: unknown): React.ReactNode => String(v || '-'),
-    },
-    {
-      id: 'requestedRole',
-      label: 'Requested Role',
-      minWidth: 140,
-      align: 'center',
-      format: (v: unknown): React.ReactNode => {
-        const role = String(v || '-');
-        return (
-          <Chip
-            label={role.charAt(0).toUpperCase() + role.slice(1)}
-            color='primary'
-            size='small'
-            variant='outlined'
-          />
-        );
-      },
+      id: 'vehicleNumber',
+      label: 'Veh. No.',
+      minWidth: 115,
+      format: (v: unknown) => String(v || '-'),
     },
     {
       id: 'status',
@@ -147,28 +155,11 @@ export const useUsers = () => {
       minWidth: 120,
       align: 'center',
       format: (v: unknown): React.ReactNode => {
-        const status = String(v || '').toLowerCase();
-        const colorMap: Record<string, 'warning' | 'info' | 'success' | 'error' | 'default'> = {
-          pending_approval: 'warning',
-          invited: 'info',
-          active: 'success',
-          rejected: 'error',
-        };
-        const labelMap: Record<string, string> = {
-          pending_approval: 'Pending',
-          invited: 'Invited',
-          active: 'Approved',
-          rejected: 'Rejected',
-        };
+        const s = String(v || '');
         return (
           <Chip
-            label={
-              labelMap[status] ||
-              String(v || '-')
-                .charAt(0)
-                .toUpperCase() + String(v || '-').slice(1)
-            }
-            color={colorMap[status] ?? 'default'}
+            label={s.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
+            color={statusColor[s] ?? 'default'}
             size='small'
           />
         );
@@ -181,7 +172,8 @@ export const useUsers = () => {
       align: 'center',
       sortable: false,
       format: (_v: unknown, row: UsersRow): React.ReactNode => {
-        if (row.status !== 'pending_approval') return <Typography variant='body2'>-</Typography>;
+        if (row.status !== 'pending' && row.status !== 'under_review')
+          return <Typography variant='body2'>-</Typography>;
         const isProcessing = actionInProgress === row.id;
         return (
           <Stack direction='row' spacing={1} justifyContent='center'>
@@ -219,15 +211,16 @@ export const useUsers = () => {
 
   const tabs = (
     <>
-      <Tab
-        icon={<GroupIcon />}
-        iconPosition='start'
-        label={`All Requests (${allRequests.length})`}
-      />
+      <Tab icon={<GroupIcon />} iconPosition='start' label={`All (${allRequests.length})`} />
       <Tab
         icon={<PendingActionsIcon />}
         iconPosition='start'
         label={`Pending (${pendingRequests.length})`}
+      />
+      <Tab
+        icon={<ReviewsIcon />}
+        iconPosition='start'
+        label={`Under Review (${underReviewRequests.length})`}
       />
       <Tab
         icon={<CheckCircleIcon />}
@@ -262,9 +255,10 @@ export const useUsers = () => {
     handleOpenAction,
     handleCloseAction,
     setActionNotes,
-    getFilteredData: (list: IAuthUser[]) => getFilteredData(list, tableSearch),
+    getFilteredData: (list: UsersRow[]) => getFilteredData(list, tableSearch),
     allRequests,
     pendingRequests,
+    underReviewRequests,
     approvedRequests,
     rejectedRequests,
   };

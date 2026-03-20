@@ -1,23 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFormWithSessionStorage, useNotification } from '@bandi/hooks';
 import { SignUpSchema } from '@bandi/interfaces';
 import { constants } from '@bandi/utils';
 import { useAuthActionMutation } from '@bandi/services';
 
-
 export const STEPS = [
-  { label: 'Personal', fields: ['firstName', 'lastName', 'email', 'phone'] },
+  {
+    label: 'Personal',
+    fields: ['firstName', 'lastName', 'email', 'phone', 'dateOfBirth', 'gender', 'city'],
+  },
   {
     label: 'Work Details',
-    fields: [
-      'employeeId',
-      'businessUnit',
-      'reasonForAccess',
-      'role',
-    ],
+    fields: ['employeeId', 'department', 'managerEmail', 'reasonForAccess', 'role'],
   },
-  { label: 'Security', fields: ['password', 'confirmPassword'] },
+  { label: 'Security', fields: ['password', 'confirmPassword', 'agreeToTerms'] },
 ];
 
 const useSignUp = () => {
@@ -27,6 +24,10 @@ const useSignUp = () => {
   const [submitted, setSubmitted] = useState(false);
   const [step2Touched, setStep2Touched] = useState({ password: false, confirmPassword: false });
   const [step2Submitted, setStep2Submitted] = useState(false);
+  const [emailExists, setEmailExists] = useState(false);
+  const [phoneExists, setPhoneExists] = useState(false);
+  const emailDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const phoneDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [step, setStep] = useState(() => {
     try {
       const saved = sessionStorage.getItem('signUpStep');
@@ -44,18 +45,45 @@ const useSignUp = () => {
     }
   }, [step]);
 
+  const checkEmail = (email: string) => {
+    if (emailDebounce.current) clearTimeout(emailDebounce.current);
+    if (!email || !/\S+@\S+\.\S+/.test(email)) { setEmailExists(false); return; }
+    emailDebounce.current = setTimeout(async () => {
+      try {
+        const res = await authAction({ action: 'check-availability', email }).unwrap();
+        setEmailExists(res.data?.emailExists ?? false);
+      } catch { setEmailExists(false); }
+    }, 600);
+  };
+
+  const checkPhone = (phone: string) => {
+    if (phoneDebounce.current) clearTimeout(phoneDebounce.current);
+    if (!phone || phone.length < 7) { setPhoneExists(false); return; }
+    phoneDebounce.current = setTimeout(async () => {
+      try {
+        const res = await authAction({ action: 'check-availability', phone }).unwrap();
+        setPhoneExists(res.data?.phoneExists ?? false);
+      } catch { setPhoneExists(false); }
+    }, 600);
+  };
+
   const formik = useFormWithSessionStorage('signUp', {
     initialValues: {
       firstName: '',
       lastName: '',
       email: '',
       phone: '',
-      reasonForAccess: '',
+      dateOfBirth: '',
+      gender: '',
+      city: '',
       employeeId: '',
-      businessUnit: '',
+      department: '',
+      managerEmail: '',
+      reasonForAccess: '',
       password: '',
       confirmPassword: '',
-      role: 'user',
+      role: 'consultant',
+      agreeToTerms: false,
     },
     validationSchema: SignUpSchema,
     onSubmit: async (values) => {
@@ -80,7 +108,7 @@ const useSignUp = () => {
     formik.setTouched({ ...formik.touched, ...touches }, false);
     const errors = await formik.validateForm();
     const hasError = fields.some((f) => (errors as Record<string, unknown>)[f]);
-    if (!hasError) {
+    if (!hasError && !emailExists && !phoneExists) {
       setStep2Touched({ password: false, confirmPassword: false });
       setStep2Submitted(false);
       setStep(() => nextStep);
@@ -106,6 +134,10 @@ const useSignUp = () => {
     handleNext,
     initials,
     navigate,
+    emailExists,
+    phoneExists,
+    checkEmail,
+    checkPhone,
   };
 };
 

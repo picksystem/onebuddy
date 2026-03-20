@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Request, Response, NextFunction } from 'express';
 import { ValidationError } from 'yup';
 import bcrypt from 'bcryptjs';
@@ -17,10 +18,32 @@ import { sendEmail, generateOtp } from '@bandi/config';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'bandi-jwt-secret-key';
 const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN || '24h') as jwt.SignOptions['expiresIn'];
+// Mobile access token has a shorter TTL; refresh token is long-lived
+const MOBILE_ACCESS_EXPIRES_IN = (process.env.MOBILE_ACCESS_EXPIRES_IN ||
+  '1h') as jwt.SignOptions['expiresIn'];
+const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || `${JWT_SECRET}_refresh`;
+const REFRESH_TOKEN_EXPIRES_IN = (process.env.REFRESH_TOKEN_EXPIRES_IN ||
+  '30d') as jwt.SignOptions['expiresIn'];
 const APP_URL = process.env.APP_URL || 'http://localhost:4200';
 
-const MAX_FAILED_ATTEMPTS = 5;
-const LOCKOUT_DURATION_MINUTES = 30;
+// ─── Platform Detection ───────────────────────────────────────────────────────
+type Platform = 'web' | 'android' | 'ios';
+
+function detectPlatform(req: Request): Platform {
+  // Mobile apps can explicitly send platform in request body
+  const bodyPlatform = (req.body as Record<string, unknown>)?.platform as string;
+  if (bodyPlatform === 'android') return 'android';
+  if (bodyPlatform === 'ios') return 'ios';
+  if (bodyPlatform === 'web') return 'web';
+  // Fallback: parse User-Agent
+  const ua = (req.headers['user-agent'] || '').toLowerCase();
+  if (ua.includes('android')) return 'android';
+  if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('ipod')) return 'ios';
+  return 'web';
+}
+
+const __MAX_FAILED_ATTEMPTS = 5;
+const __LOCKOUT_DURATION_MINUTES = 30;
 
 // ─── User Status Constants ────────────────────────────────────────────────────
 const STATUS = {
@@ -44,9 +67,14 @@ const SOURCE = {
 type AuthAction =
   | 'signin'
   | 'signup'
+  | 'check-availability'
   | 'forgot-password'
   | 'verify-otp'
   | 'reset-password'
+  | 'refresh-token' // mobile: exchange refresh token for new access token
+  | 'register-device' // mobile: store FCM/APNS push token
+  | 'unregister-device' // mobile: remove push token on logout
+  | 'logout' // stamps LoginLog.logoutTime + deactivates device token
   | 'change-password'
   | 'get-my-profile'
   | 'update-my-profile'
@@ -73,7 +101,18 @@ type AuthAction =
   | 'create-captain-role'
   | 'update-captain-role'
   | 'delete-captain-role'
-  | 'get-login-logs';
+  | 'get-login-logs'
+  | 'get-customer-onboardings'
+  | 'create-customer-onboarding'
+  | 'update-customer-onboarding'
+  | 'get-driver-hire-requests'
+  | 'get-vehicle-rental-requests'
+  | 'get-parcel-requests'
+  | 'save-draft'
+  | 'load-draft'
+  | 'delete-draft'
+  | 'create-management-request'
+  | 'get-management-drafts';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -135,15 +174,22 @@ export class AuthController {
           return await this.signin(req, res);
         case 'signup':
           return await this.signup(req, res);
+        case 'check-availability':
+          return await this.checkAvailability(req, res);
         case 'forgot-password':
           return await this.forgotPassword(req, res);
         case 'verify-otp':
           return await this.verifyOtp(req, res);
         case 'reset-password':
           return await this.resetPassword(req, res);
+        case 'refresh-token':
+          return await this.refreshToken(req, res);
         case 'change-password':
         case 'get-my-profile':
         case 'update-my-profile':
+        case 'register-device':
+        case 'unregister-device':
+        case 'logout':
           return await this.handleAuthenticatedAction(req, res, action);
         case 'get-role-requests':
         case 'get-pending-role-requests':
@@ -169,6 +215,17 @@ export class AuthController {
         case 'update-captain-role':
         case 'delete-captain-role':
         case 'get-login-logs':
+        case 'get-customer-onboardings':
+        case 'create-customer-onboarding':
+        case 'update-customer-onboarding':
+        case 'get-driver-hire-requests':
+        case 'get-vehicle-rental-requests':
+        case 'get-parcel-requests':
+        case 'save-draft':
+        case 'load-draft':
+        case 'delete-draft':
+        case 'create-management-request':
+        case 'get-management-drafts':
           return await this.handleAdminAction(req, res, action);
         default:
           res.status(400).json({ message: `Unknown action: ${action}` });
@@ -186,6 +243,33 @@ export class AuthController {
         next(error);
       }
     }
+  };
+
+  // ── Check availability (public) ──────────────────────────────────────────────
+  private checkAvailability = async (req: Request, res: Response) => {
+    const db = prisma as PrismaClient;
+    const { email, phone } = req.body as { email?: string; phone?: string };
+    const result: { emailExists: boolean; phoneExists: boolean } = {
+      emailExists: false,
+      phoneExists: false,
+    };
+    if (email) {
+      const u = await db.user.findUnique({ where: { email } });
+      result.emailExists = !!u;
+    }
+    if (phone) {
+      // Normalize: strip spaces, dashes, parentheses for comparison
+      const normalized = phone.replace(/[\s\-().]/g, '');
+      const users = await (db as any).user.findMany({
+        where: { phone: { not: null } },
+        select: { phone: true },
+      });
+      result.phoneExists = users.some(
+        (u: { phone: string | null }) =>
+          u.phone && u.phone.replace(/[\s\-().]/g, '') === normalized,
+      );
+    }
+    res.json({ message: 'Availability checked', data: result });
   };
 
   // ── Sign In ─────────────────────────────────────────────────────────────────
@@ -232,13 +316,13 @@ export class AuthController {
       // // Failed attempts tracking disabled temporarily
       // const newFailed = user.failedLoginAttempts + 1;
       // const updateData: Record<string, unknown> = { failedLoginAttempts: newFailed };
-      // if (newFailed >= MAX_FAILED_ATTEMPTS) {
-      //   updateData.lockedUntil = new Date(Date.now() + LOCKOUT_DURATION_MINUTES * 60_000);
+      // if (newFailed >= _MAX_FAILED_ATTEMPTS) {
+      //   updateData.lockedUntil = new Date(Date.now() + _LOCKOUT_DURATION_MINUTES * 60_000);
       // }
       // await db.user.update({ where: { id: user.id }, data: updateData });
-      // if (newFailed >= MAX_FAILED_ATTEMPTS) {
+      // if (newFailed >= _MAX_FAILED_ATTEMPTS) {
       //   res.status(423).json({
-      //     message: `Account locked after ${MAX_FAILED_ATTEMPTS} failed attempts. Try again in ${LOCKOUT_DURATION_MINUTES} min.`,
+      //     message: `Account locked after ${_MAX_FAILED_ATTEMPTS} failed attempts. Try again in ${_LOCKOUT_DURATION_MINUTES} min.`,
       //   });
       //   return;
       // }
@@ -251,27 +335,42 @@ export class AuthController {
       data: { failedLoginAttempts: 0, lockedUntil: null, lastLoginAt: now, lastActivityAt: now },
     });
 
-    // Log login
+    const platform = detectPlatform(req);
+    const deviceId = ((req.body as Record<string, unknown>)?.deviceId as string) || null;
+
+    // Log login with platform info
     await (db as any).loginLog.create({
       data: {
         userId: user.id,
         loginTime: now,
         ipAddress: req.ip || null,
         userAgent: req.headers['user-agent'] || null,
+        platform,
+        deviceId,
       },
     });
 
-    const token = jwt.sign(
-      {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        lastLoginAt: now.toISOString(),
-      },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN },
-    );
+    // Mobile clients get a short-lived access token + long-lived refresh token
+    // Web clients get the standard token (JWT_EXPIRES_IN, default 24h)
+    const isMobile = platform === 'android' || platform === 'ios';
+    const tokenPayload = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      lastLoginAt: now.toISOString(),
+    };
+
+    const token = jwt.sign(tokenPayload, JWT_SECRET, {
+      expiresIn: isMobile ? MOBILE_ACCESS_EXPIRES_IN : JWT_EXPIRES_IN,
+    });
+
+    // Refresh token only issued to mobile — web re-authenticates via session
+    const refreshToken = isMobile
+      ? jwt.sign({ id: user.id, type: 'refresh' }, REFRESH_TOKEN_SECRET, {
+          expiresIn: REFRESH_TOKEN_EXPIRES_IN,
+        })
+      : undefined;
 
     const userWithLogin = { ...user, lastLoginAt: now } as unknown as Record<string, unknown>;
     const mustReset = (user as any).mustResetPassword === true;
@@ -283,6 +382,9 @@ export class AuthController {
       data: {
         user: sanitizeUser(userWithLogin),
         token,
+        ...(refreshToken && { refreshToken }),
+        tokenExpiresIn: isMobile ? MOBILE_ACCESS_EXPIRES_IN : JWT_EXPIRES_IN,
+        platform,
         mustResetPassword: mustReset,
         adminApproved: user.role === 'admin',
         adminRequestPending: false,
@@ -305,6 +407,22 @@ export class AuthController {
       return;
     }
 
+    if (validatedData.phone) {
+      const normalizedPhone = validatedData.phone.replace(/[\s\-().]/g, '');
+      const allUsers = await (db as any).user.findMany({
+        where: { phone: { not: null } },
+        select: { phone: true },
+      });
+      const phoneTaken = allUsers.some(
+        (u: { phone: string | null }) =>
+          u.phone && u.phone.replace(/[\s\-().]/g, '') === normalizedPhone,
+      );
+      if (phoneTaken) {
+        res.status(409).json({ message: 'Phone number already registered' });
+        return;
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(validatedData.password, 10);
     const fullName = `${validatedData.firstName} ${validatedData.lastName}`;
 
@@ -317,7 +435,7 @@ export class AuthController {
         phone: validatedData.phone || null,
         reasonForAccess: validatedData.reasonForAccess || null,
         employeeId: validatedData.employeeId || null,
-        businessUnit: validatedData.businessUnit || null,
+        businessUnit: validatedData.department || null,
         name: fullName,
         role: 'user',
         requestedRole: validatedData.role,
@@ -375,7 +493,7 @@ export class AuthController {
     });
 
     if (process.env.NODE_ENV !== 'production')
-      console.log(`[DEV] OTP for ${validatedData.email}: ${otp}`);
+      console.warn(`[DEV] OTP for ${validatedData.email}: ${otp}`);
 
     sendEmail(
       validatedData.email,
@@ -450,6 +568,59 @@ export class AuthController {
     res.json({ message: 'Password reset successfully. You can now sign in.' });
   };
 
+  // ── Refresh Token (mobile only) ──────────────────────────────────────────────
+  // Mobile apps send their long-lived refresh token to get a new short-lived access token.
+  // The refresh token is verified against REFRESH_TOKEN_SECRET.
+  private refreshToken = async (req: Request, res: Response) => {
+    const { refreshToken: incoming } = req.body as { refreshToken?: string };
+    if (!incoming) {
+      res.status(400).json({ message: 'refreshToken is required' });
+      return;
+    }
+
+    let decoded: { id: number; type: string };
+    try {
+      decoded = jwt.verify(incoming, REFRESH_TOKEN_SECRET) as typeof decoded;
+    } catch {
+      res.status(401).json({ message: 'Invalid or expired refresh token. Please sign in again.' });
+      return;
+    }
+
+    if (decoded.type !== 'refresh') {
+      res.status(401).json({ message: 'Invalid token type' });
+      return;
+    }
+
+    const db = prisma as PrismaClient;
+    const user = await db.user.findUnique({ where: { id: decoded.id } });
+    if (!user || !(user as any).isActive) {
+      res.status(401).json({ message: 'Account not active. Please sign in again.' });
+      return;
+    }
+
+    const now = new Date();
+    db.user
+      .update({ where: { id: decoded.id }, data: { lastActivityAt: now } })
+      .catch((_err: unknown) => undefined);
+
+    const newAccessToken = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        lastLoginAt: now.toISOString(),
+      },
+      JWT_SECRET,
+      { expiresIn: MOBILE_ACCESS_EXPIRES_IN },
+    );
+
+    res.json({
+      message: 'Token refreshed',
+      data: { token: newAccessToken, tokenExpiresIn: MOBILE_ACCESS_EXPIRES_IN },
+    });
+  };
+
   // ── Authenticated (non-admin) actions ────────────────────────────────────────
   private handleAuthenticatedAction = async (req: Request, res: Response, action: string) => {
     const authHeader = req.headers.authorization;
@@ -469,7 +640,9 @@ export class AuthController {
     const userId = Number(decoded.id);
 
     // Track last activity (fire-and-forget — does not block the response)
-    db.user.update({ where: { id: userId }, data: { lastActivityAt: new Date() } }).catch(() => {});
+    db.user
+      .update({ where: { id: userId }, data: { lastActivityAt: new Date() } })
+      .catch((_err: unknown) => undefined);
 
     if (action === 'change-password') {
       const { currentPassword, newPassword } = req.body as {
@@ -563,6 +736,76 @@ export class AuthController {
         data: sanitizeUser(updated as unknown as Record<string, unknown>),
       });
     }
+
+    // ── Device Token Registration (for push notifications) ──────────────────
+    if (action === 'register-device') {
+      const {
+        token: pushToken,
+        platform: devicePlatform,
+        deviceId,
+      } = req.body as {
+        token: string;
+        platform: string;
+        deviceId?: string;
+      };
+      if (!pushToken || !devicePlatform) {
+        res.status(400).json({ message: 'token and platform are required' });
+        return;
+      }
+      if (!['android', 'ios', 'web'].includes(devicePlatform)) {
+        res.status(400).json({ message: "platform must be 'android', 'ios', or 'web'" });
+        return;
+      }
+      // Upsert: if this token already exists (re-login same device), update the userId/platform
+      await (db as any).deviceToken.upsert({
+        where: { token: pushToken },
+        update: { userId, platform: devicePlatform, deviceId: deviceId ?? null, isActive: true },
+        create: { userId, token: pushToken, platform: devicePlatform, deviceId: deviceId ?? null },
+      });
+      res.json({ message: 'Device registered for push notifications' });
+    }
+
+    if (action === 'unregister-device') {
+      const { token: pushToken } = req.body as { token: string };
+      if (!pushToken) {
+        res.status(400).json({ message: 'token is required' });
+        return;
+      }
+      await (db as any).deviceToken.updateMany({
+        where: { token: pushToken, userId },
+        data: { isActive: false },
+      });
+      res.json({ message: 'Device unregistered' });
+    }
+
+    // ── Logout ───────────────────────────────────────────────────────────────
+    // Stamps the most recent open LoginLog session with logoutTime.
+    // Optionally deactivates the device push token (mobile logout).
+    if (action === 'logout') {
+      const { deviceToken: pushToken } = req.body as { deviceToken?: string };
+
+      // Stamp logoutTime on the latest open session for this user
+      const openSession = await (db as any).loginLog.findFirst({
+        where: { userId, logoutTime: null },
+        orderBy: { loginTime: 'desc' },
+      });
+      if (openSession) {
+        await (db as any).loginLog.update({
+          where: { id: openSession.id },
+          data: { logoutTime: new Date() },
+        });
+      }
+
+      // Deactivate the device push token if provided (mobile)
+      if (pushToken) {
+        await (db as any).deviceToken.updateMany({
+          where: { token: pushToken, userId },
+          data: { isActive: false },
+        });
+      }
+
+      res.json({ message: 'Logged out successfully' });
+    }
   };
 
   // ── Admin actions ─────────────────────────────────────────────────────────────
@@ -587,7 +830,9 @@ export class AuthController {
     const db = prisma as PrismaClient;
 
     // Track last activity (fire-and-forget — does not block the response)
-    db.user.update({ where: { id: decoded.id }, data: { lastActivityAt: new Date() } }).catch(() => {});
+    db.user
+      .update({ where: { id: decoded.id }, data: { lastActivityAt: new Date() } })
+      .catch((_err: unknown) => undefined);
 
     switch (action) {
       // ── List users ──────────────────────────────────────────────────────────
@@ -781,6 +1026,12 @@ export class AuthController {
           reasonForAccess,
           accessFromDate,
           accessToDate,
+          dateOfBirth,
+          gender,
+          city,
+          adminNotes,
+          reportingManagerEmail,
+          referredByEmail,
         } = body;
 
         if (!firstName || !lastName || !email) {
@@ -811,6 +1062,10 @@ export class AuthController {
             businessUnit: businessUnit || null,
             employeeId: employeeId || null,
             reasonForAccess: reasonForAccess || null,
+            dateOfBirth: dateOfBirth || null,
+            gender: gender || null,
+            city: city || null,
+            adminNotes: adminNotes || null,
             status: STATUS.ACTIVE,
             source: SOURCE.ADMIN,
             isActive: true,
@@ -820,6 +1075,14 @@ export class AuthController {
             accessToDate: accessToDate ? new Date(accessToDate) : null,
           } as any,
         });
+
+        // Log referral/reporting manager as audit notes
+        if (reportingManagerEmail || referredByEmail) {
+          await logChange(db, user.id, 'access_created', decoded.id, decoded.name, {
+            fieldName: 'meta',
+            newValue: JSON.stringify({ reportingManagerEmail, referredByEmail }),
+          });
+        }
 
         await logChange(db, user.id, 'access_created', decoded.id, decoded.name, {
           fieldName: 'source',
@@ -951,10 +1214,7 @@ export class AuthController {
         }
 
         // Log auditable field changes; pass reasonCode + reasonNotes for role changes
-        const auditFields = [
-          'role',
-          'isActive',
-        ];
+        const auditFields = ['role', 'isActive'];
         for (const field of auditFields) {
           if (field in sanitizedUpdate && sanitizedUpdate[field] !== (existingUser as any)[field]) {
             await logChange(
@@ -1302,6 +1562,311 @@ export class AuthController {
         }
         await (db as any).captainRole.delete({ where: { id: roleId } });
         res.json({ message: 'Captain role deleted' });
+        break;
+      }
+
+      case 'get-customer-onboardings': {
+        const onboardings = await (db as any).customerOnboarding.findMany({
+          orderBy: { createdAt: 'desc' },
+        });
+        res.json({ message: 'Customer onboardings retrieved', data: onboardings });
+        break;
+      }
+
+      case 'create-customer-onboarding': {
+        const { data: onboardingData } = req.body as { data: Record<string, unknown> };
+        if (!onboardingData?.firstName || !onboardingData?.phone || !onboardingData?.vehicleType) {
+          res.status(400).json({ message: 'firstName, phone, and vehicleType are required' });
+          return;
+        }
+
+        // Strip out any unknown fields to prevent Prisma errors, then persist
+        const {
+          firstName,
+          lastName,
+          phone,
+          email,
+          city,
+          area,
+          pincode,
+          serviceCategory,
+          vehicleType,
+          vehicleSubType,
+          fuelType,
+          tripPreference,
+          vehicleNumber,
+          rcNumber,
+          rcExpiry,
+          insuranceNumber,
+          insuranceExpiry,
+          pucNumber,
+          pucExpiry,
+          fitnessNumber,
+          fitnessExpiry,
+          permitNumber,
+          permitExpiry,
+          dlNumber,
+          dlExpiry,
+          idProofType,
+          idProofNumber,
+          // bundle fields
+          bundleTypes,
+          bundleDiscount,
+          rentalVehiclePref,
+          rentalDuration,
+          rentalPickupZone,
+          driverHireCount,
+          driverHireShift,
+          driverHireBudget,
+          additionalVehicles,
+          // smart combo bundle fields
+          parcelComboTypes,
+          parcelMaxWeight,
+          parcelRadiusPref,
+          cargoCoRideMax,
+          cargoCoRideHaulPref,
+          cargoCoRideRatePref,
+        } = onboardingData as Record<string, unknown>;
+
+        const onboarding = await (db as any).customerOnboarding.create({
+          data: {
+            firstName,
+            lastName,
+            phone,
+            email: email ?? null,
+            city,
+            area: area ?? null,
+            pincode: pincode ?? null,
+            serviceCategory,
+            vehicleType,
+            vehicleSubType: vehicleSubType ?? null,
+            fuelType,
+            tripPreference,
+            vehicleNumber,
+            rcNumber: rcNumber ?? null,
+            rcExpiry: rcExpiry ?? null,
+            insuranceNumber: insuranceNumber ?? null,
+            insuranceExpiry: insuranceExpiry ?? null,
+            pucNumber: pucNumber ?? null,
+            pucExpiry: pucExpiry ?? null,
+            fitnessNumber: fitnessNumber ?? null,
+            fitnessExpiry: fitnessExpiry ?? null,
+            permitNumber: permitNumber ?? null,
+            permitExpiry: permitExpiry ?? null,
+            dlNumber: dlNumber ?? null,
+            dlExpiry: dlExpiry ?? null,
+            idProofType: idProofType ?? null,
+            idProofNumber: idProofNumber ?? null,
+            bundleTypes: bundleTypes ?? null,
+            bundleDiscount:
+              bundleDiscount !== null && bundleDiscount !== undefined
+                ? Number(bundleDiscount)
+                : null,
+            rentalVehiclePref: rentalVehiclePref ?? null,
+            rentalDuration: rentalDuration ?? null,
+            rentalPickupZone: rentalPickupZone ?? null,
+            driverHireCount:
+              driverHireCount !== null && driverHireCount !== undefined
+                ? Number(driverHireCount)
+                : null,
+            driverHireShift: driverHireShift ?? null,
+            driverHireBudget: driverHireBudget ?? null,
+            additionalVehicles: additionalVehicles ?? null,
+            parcelComboTypes: parcelComboTypes ?? null,
+            parcelMaxWeight: parcelMaxWeight ?? null,
+            parcelRadiusPref: parcelRadiusPref ?? null,
+            cargoCoRideMax:
+              cargoCoRideMax !== null && cargoCoRideMax !== undefined
+                ? Number(cargoCoRideMax)
+                : null,
+            cargoCoRideHaulPref: cargoCoRideHaulPref ?? null,
+            cargoCoRideRatePref: cargoCoRideRatePref ?? null,
+            submittedAt: new Date(),
+          },
+        });
+        res.status(201).json({ message: 'Customer onboarding submitted', data: onboarding });
+        break;
+      }
+
+      case 'update-customer-onboarding': {
+        const { onboardingId, data: onboardingData } = req.body as {
+          onboardingId: number;
+          data: Record<string, unknown>;
+        };
+        if (!onboardingId) {
+          res.status(400).json({ message: 'onboardingId is required' });
+          return;
+        }
+        const onboarding = await (db as any).customerOnboarding.update({
+          where: { id: onboardingId },
+          data: onboardingData,
+        });
+        res.json({ message: 'Customer onboarding updated', data: onboarding });
+        break;
+      }
+
+      case 'get-driver-hire-requests': {
+        // Driver hire model not yet in schema — return empty list until table is created
+        res.json({ data: [], total: 0, message: 'Driver hire requests' });
+        break;
+      }
+
+      case 'get-vehicle-rental-requests': {
+        // Vehicle rental model not yet in schema — return empty list until table is created
+        res.json({ data: [], total: 0, message: 'Vehicle rental requests' });
+        break;
+      }
+
+      case 'get-parcel-requests': {
+        // Parcel model not yet in schema — return empty list until table is created
+        res.json({ data: [], total: 0, message: 'Parcel requests' });
+        break;
+      }
+
+      // ── Create management request (pending approval) ─────────────────────────
+      case 'create-management-request': {
+        const body = req.body as Record<string, any>;
+        const {
+          firstName, lastName, email, phone, role,
+          businessUnit, employeeId, reasonForAccess,
+          dateOfBirth, gender, city, adminNotes,
+          reportingManagerEmail, referredByEmail,
+        } = body;
+
+        if (!firstName || !lastName || !email) {
+          res.status(400).json({ message: 'firstName, lastName, and email are required' });
+          return;
+        }
+        const existing = await db.user.findUnique({ where: { email } });
+        if (existing) {
+          res.status(409).json({ message: 'Email already registered' });
+          return;
+        }
+
+        if (phone) {
+          const normalizedPhone = phone.replace(/[\s\-().]/g, '');
+          const allUsers = await (db as any).user.findMany({
+            where: { phone: { not: null } },
+            select: { phone: true },
+          });
+          const phoneTaken = allUsers.some(
+            (u: { phone: string | null }) =>
+              u.phone && u.phone.replace(/[\s\-().]/g, '') === normalizedPhone,
+          );
+          if (phoneTaken) {
+            res.status(409).json({ message: 'Phone number already registered' });
+            return;
+          }
+        }
+
+        // Create as pending — no temp password sent yet; invitation sent on approval
+        const tempPw = generateTempPw();
+        const hashedPw = await bcrypt.hash(tempPw, 10);
+        const fullName = `${firstName} ${lastName}`;
+
+        const user = await db.user.create({
+          data: {
+            firstName, lastName, email,
+            password: hashedPw,
+            name: fullName,
+            role: 'user',              // actual role assigned on approval
+            requestedRole: role,       // 'admin' | 'consultant'
+            phone: phone || null,
+            businessUnit: businessUnit || null,
+            employeeId: employeeId || null,
+            reasonForAccess: reasonForAccess || null,
+            dateOfBirth: dateOfBirth || null,
+            gender: gender || null,
+            city: city || null,
+            adminNotes: adminNotes || null,
+            status: STATUS.PENDING_APPROVAL,
+            source: SOURCE.ADMIN,
+            isActive: false,
+          } as any,
+        });
+
+        if (reportingManagerEmail || referredByEmail) {
+          await logChange(db, user.id, 'access_created', decoded.id, decoded.name, {
+            fieldName: 'meta',
+            newValue: JSON.stringify({ reportingManagerEmail, referredByEmail }),
+          });
+        }
+
+        res.status(201).json({
+          message: 'Management request submitted and pending approval.',
+          data: sanitizeUser(user as unknown as Record<string, unknown>),
+        });
+        break;
+      }
+
+      // ── Get all management drafts (admin view) ────────────────────────────────
+      case 'get-management-drafts': {
+        const { type: draftType } = req.body as { type?: string };
+        const drafts = await (db as any).managementDraft.findMany({
+          where: draftType ? { type: draftType } : undefined,
+          orderBy: { updatedAt: 'desc' },
+        });
+        const parsed = drafts.map((d: any) => ({
+          ...d,
+          formData: (() => { try { return JSON.parse(d.formData); } catch { return {}; } })(),
+        }));
+        res.json({ message: 'Management drafts retrieved', data: parsed });
+        break;
+      }
+
+      // ── Draft: save (upsert) ─────────────────────────────────────────────────
+      case 'save-draft': {
+        const { type: draftType, formData } = req.body as { type: string; formData: Record<string, unknown> };
+        if (!draftType || !formData) {
+          res.status(400).json({ message: 'type and formData are required' });
+          return;
+        }
+        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60_000); // 1 week
+        const draft = await (db as any).managementDraft.upsert({
+          where: { createdBy_type: { createdBy: decoded.id, type: draftType } },
+          update: { formData: JSON.stringify(formData), expiresAt, updatedAt: new Date() },
+          create: { createdBy: decoded.id, type: draftType, formData: JSON.stringify(formData), expiresAt },
+        });
+        res.json({ message: 'Draft saved. It will expire in 7 days.', data: draft });
+        break;
+      }
+
+      // ── Draft: load ──────────────────────────────────────────────────────────
+      case 'load-draft': {
+        const { type: draftType } = req.body as { type: string };
+        if (!draftType) {
+          res.status(400).json({ message: 'type is required' });
+          return;
+        }
+        const draft = await (db as any).managementDraft.findUnique({
+          where: { createdBy_type: { createdBy: decoded.id, type: draftType } },
+        });
+        if (!draft) {
+          res.json({ message: 'No draft found', data: null });
+          return;
+        }
+        if (new Date(draft.expiresAt) < new Date()) {
+          await (db as any).managementDraft.delete({
+            where: { createdBy_type: { createdBy: decoded.id, type: draftType } },
+          });
+          res.json({ message: 'Draft expired', data: null });
+          return;
+        }
+        res.json({ message: 'Draft loaded', data: { ...draft, formData: JSON.parse(draft.formData) } });
+        break;
+      }
+
+      // ── Draft: delete ────────────────────────────────────────────────────────
+      case 'delete-draft': {
+        const { type: draftType } = req.body as { type: string };
+        if (!draftType) {
+          res.status(400).json({ message: 'type is required' });
+          return;
+        }
+        await (db as any).managementDraft.deleteMany({
+          where: { createdBy: decoded.id, type: draftType },
+        });
+        res.json({ message: 'Draft deleted' });
         break;
       }
 

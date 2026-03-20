@@ -80,7 +80,7 @@ Think of it as the backend operations layer for a company like Rapido or Ola —
 - Access request approvals (role change requests)
 
 **People & Organizations**
-- User Management — create, edit, activate/deactivate users
+- Customer Management — create, edit, activate/deactivate users
 - Captain Management — approve captains, view captain profiles
 - Driver Hire requests — match users with available drivers
 - Vehicle Rental requests — assign vehicles to rental requests

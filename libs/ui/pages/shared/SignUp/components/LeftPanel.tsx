@@ -43,8 +43,8 @@ const LeftPanel = ({ classes, onNavigateSignIn }: LeftPanelProps) => (
       all your vehicles
     </Typography>
     <Typography className={classes.heroSubtitle}>
-      Join fleet managers tracking bikes, cars, lorries, DCMs, and Tata Aces — with FASTag and
-      toll integration built in.
+      Join fleet managers tracking bikes, cars, lorries, DCMs, and Tata Aces — with FASTag and toll
+      integration built in.
     </Typography>
 
     {FEATURES.map(({ icon: Icon, label }) => (

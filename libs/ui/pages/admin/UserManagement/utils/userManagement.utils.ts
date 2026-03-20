@@ -132,6 +132,16 @@ export const ROLE_CHANGE_REASON_CODES = [
   { value: 'other', label: 'Other' },
 ];
 
+export const STATUS_CHANGE_REASON_CODES = [
+  { value: 'docs_verified', label: 'Documents Verified' },
+  { value: 'docs_rejected', label: 'Documents Rejected / Incomplete' },
+  { value: 'under_review', label: 'Sent for Review' },
+  { value: 'compliance', label: 'Compliance Requirement' },
+  { value: 'background_check', label: 'Background Check' },
+  { value: 'resubmission', label: 'Resubmission Required' },
+  { value: 'other', label: 'Other' },
+];
+
 export const LANG_LABELS: Record<string, string> = {
   en: 'English',
   es: 'Spanish',

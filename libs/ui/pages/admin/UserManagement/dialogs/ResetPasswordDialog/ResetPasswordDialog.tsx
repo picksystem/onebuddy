@@ -31,13 +31,21 @@ import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import EmailIcon from '@mui/icons-material/Email';
 import { useStyles } from './styles';
 import { useNotification, useFieldError } from '@bandi/hooks';
-import { UserRow, ResetPwErrors } from '../../types/userManagement.types';
+import { UserRow, ResetPwErrors, CustomerOnboardingRow } from '../../types/userManagement.types';
 import { getPasswordStrength, generateTempPassword } from '../../utils/userManagement.utils';
+
+const STATUS_COLORS: Record<string, 'warning' | 'default' | 'success' | 'error'> = {
+  pending: 'warning',
+  under_review: 'default',
+  approved: 'success',
+  rejected: 'error',
+};
 
 interface ResetPasswordDialogProps {
   open: boolean;
   onClose: () => void;
   selectedRow: UserRow | null;
+  selectedOnboarding?: CustomerOnboardingRow | null;
   resetPwMode: 'auto' | 'manual';
   onModeChange: (v: 'auto' | 'manual') => void;
   autoResetPw: string;
@@ -66,6 +74,7 @@ const ResetPasswordDialog = ({
   open,
   onClose,
   selectedRow,
+  selectedOnboarding,
   resetPwMode,
   onModeChange,
   autoResetPw,
@@ -94,6 +103,7 @@ const ResetPasswordDialog = ({
   const reqError = useFieldError();
   const strengthAuto = getPasswordStrength(autoResetPw);
   const strengthManual = getPasswordStrength(newPassword);
+  const isOnboarding = !!selectedOnboarding;
 
   return (
     <Dialog
@@ -122,7 +132,18 @@ const ResetPasswordDialog = ({
               {selectedRow?.email}
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.75 }}>
-              <Chip label={selectedRow?.role || '-'} size='small' className={classes.roleChip} />
+              {isOnboarding && selectedOnboarding ? (
+                <Chip
+                  label={selectedOnboarding.status
+                    .replace(/_/g, ' ')
+                    .replace(/\b\w/g, (c) => c.toUpperCase())}
+                  size='small'
+                  color={STATUS_COLORS[selectedOnboarding.status] ?? 'default'}
+                  className={classes.roleChip}
+                />
+              ) : (
+                <Chip label={selectedRow?.role || '-'} size='small' className={classes.roleChip} />
+              )}
               <Typography variant='caption' className={classes.metaCaption}>
                 This action will be logged in the audit trail
               </Typography>
@@ -135,6 +156,15 @@ const ResetPasswordDialog = ({
       </Box>
 
       <DialogContent className={classes.dialogContent}>
+        {/* Onboarding info banner */}
+        {isOnboarding && (
+          <Alert severity='info' sx={{ mb: 2, fontSize: '0.82rem' }}>
+            This is an <strong>onboarding record</strong> — not a registered system account.
+            Password reset applies only if the driver has been issued credentials. Proceed with
+            caution.
+          </Alert>
+        )}
+
         {/* Mode selector */}
         <Typography variant='subtitle2' fontWeight={700} sx={{ mb: 1 }}>
           Reset Method

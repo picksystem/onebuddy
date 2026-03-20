@@ -5,6 +5,10 @@ import {
   CircularProgress,
   Chip,
   IconButton,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
   Toolbar,
   Tooltip,
   Typography,
@@ -15,6 +19,9 @@ import { Box } from '@bandi/component';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import SettingsIcon from '@mui/icons-material/Settings';
 import NotificationsIcon from '@mui/icons-material/Notifications';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import { useStyles } from './styles';
 import { useHeader } from './hooks/useHeader';
 import LogoMark from './components/LogoMark';
@@ -30,6 +37,7 @@ const Header = () => {
     isAdmin,
     anchorEl,
     notifAnchorEl,
+    addAnchorEl,
     notifications,
     isLoading,
     loadingMessage,
@@ -44,6 +52,10 @@ const Header = () => {
     handleNotifOpen,
     handleNotifClose,
     handleNotifClick,
+    handleAddOpen,
+    handleAddClose,
+    handleAddManagement,
+    handleAddCustomer,
     handleLogout,
     handleProfile,
     handleUserPage,
@@ -77,6 +89,66 @@ const Header = () => {
               </Badge>
             </IconButton>
           </Tooltip>
+
+          <Tooltip title='Create New' placement='bottom'>
+            <IconButton onClick={handleAddOpen} size='small' className={classes.iconBtnBase}>
+              <AddCircleOutlineIcon sx={{ fontSize: '1.25rem' }} />
+            </IconButton>
+          </Tooltip>
+
+          <Menu
+            anchorEl={addAnchorEl}
+            open={Boolean(addAnchorEl)}
+            onClose={handleAddClose}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+            PaperProps={{
+              sx: {
+                mt: 1,
+                minWidth: 180,
+                background: 'rgba(15,23,42,0.97)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(99,102,241,0.25)',
+                borderRadius: '12px',
+                boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
+              },
+            }}
+          >
+            <MenuItem
+              onClick={handleAddManagement}
+              sx={{
+                gap: 1.5,
+                py: 1.2,
+                color: '#e2e8f0',
+                '&:hover': { background: 'rgba(99,102,241,0.18)' },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 'unset', color: '#a5b4fc' }}>
+                <ManageAccountsIcon fontSize='small' />
+              </ListItemIcon>
+              <ListItemText
+                primary='Create New Management'
+                primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: 600 }}
+              />
+            </MenuItem>
+            <MenuItem
+              onClick={handleAddCustomer}
+              sx={{
+                gap: 1.5,
+                py: 1.2,
+                color: '#e2e8f0',
+                '&:hover': { background: 'rgba(99,102,241,0.18)' },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 'unset', color: '#a5b4fc' }}>
+                <PersonAddIcon fontSize='small' />
+              </ListItemIcon>
+              <ListItemText
+                primary='Create New Customer'
+                primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: 600 }}
+              />
+            </MenuItem>
+          </Menu>
         </Box>
 
         <NotificationsMenu

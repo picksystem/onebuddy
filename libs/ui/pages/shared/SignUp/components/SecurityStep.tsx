@@ -1,4 +1,12 @@
-import { Box, Typography, Grid, Alert } from '@mui/material';
+import {
+  Box,
+  Typography,
+  Grid,
+  Alert,
+  FormControlLabel,
+  Checkbox,
+  FormHelperText,
+} from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 import { useFieldError } from '@bandi/hooks';
 import TextField from '../../../../components/TextField/TextField';
@@ -16,7 +24,7 @@ function getStrength(pw: string) {
 }
 
 interface SecurityStepProps {
-  values: { password: string; confirmPassword: string };
+  values: { password: string; confirmPassword: string; agreeToTerms: boolean };
   errors: Partial<Record<string, string>>;
   step2Touched: { password: boolean; confirmPassword: boolean };
   step2Submitted: boolean;
@@ -24,6 +32,7 @@ interface SecurityStepProps {
   onPasswordBlur: (e: React.FocusEvent) => void;
   onConfirmChange: React.ChangeEventHandler;
   onConfirmBlur: (e: React.FocusEvent) => void;
+  onTermsChange: (checked: boolean) => void;
   classes: Record<string, string>;
 }
 
@@ -36,6 +45,7 @@ const SecurityStep = ({
   onPasswordBlur,
   onConfirmChange,
   onConfirmBlur,
+  onTermsChange,
   classes,
 }: SecurityStepProps) => {
   const reqError = useFieldError();
@@ -59,7 +69,7 @@ const SecurityStep = ({
               name='password'
               label='Password'
               type='password'
-              placeholder='Create a strong password'
+              placeholder='Min. 8 chars, 1 uppercase, 1 number'
               value={values.password}
               onChange={onPasswordChange}
               onBlur={onPasswordBlur}
@@ -111,10 +121,62 @@ const SecurityStep = ({
               required
             />
           </Grid>
+
+          {/* Terms & Conditions */}
+          <Grid size={{ xs: 12 }}>
+            <Box sx={{ mt: 0.5 }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={values.agreeToTerms}
+                    onChange={(e) => onTermsChange(e.target.checked)}
+                    color='primary'
+                    size='small'
+                  />
+                }
+                label={
+                  <Typography variant='body2' color='text.secondary'>
+                    I agree to the{' '}
+                    <Typography
+                      component='span'
+                      variant='body2'
+                      color='primary'
+                      sx={{
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        '&:hover': { textDecoration: 'underline' },
+                      }}
+                    >
+                      Terms of Service
+                    </Typography>{' '}
+                    and{' '}
+                    <Typography
+                      component='span'
+                      variant='body2'
+                      color='primary'
+                      sx={{
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        '&:hover': { textDecoration: 'underline' },
+                      }}
+                    >
+                      Privacy Policy
+                    </Typography>
+                  </Typography>
+                }
+              />
+              {step2Submitted && errors.agreeToTerms && (
+                <FormHelperText error sx={{ ml: 4 }}>
+                  {errors.agreeToTerms}
+                </FormHelperText>
+              )}
+            </Box>
+          </Grid>
         </Grid>
+
         <Alert severity='info' sx={{ mt: 2, borderRadius: 2 }}>
-          Admin approval may take a minimum of 3 days. You will be notified once your account is
-          approved.
+          Admin approval may take up to 3 business days. You will be notified via email and SMS once
+          your account is approved.
         </Alert>
       </Box>
     </Box>

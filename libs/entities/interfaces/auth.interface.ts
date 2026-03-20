@@ -7,6 +7,7 @@ export enum UserRole {
   ADMIN = 'admin',
   USER = 'user',
   CAPTAIN = 'captain',
+  CONSULTANT = 'consultant',
 }
 
 export enum UserStatus {
@@ -60,7 +61,10 @@ export interface IAuthUser {
   applicationLead: string | null;
   captainProfileUpdated: boolean;
   mustResetPassword: boolean;
+  gender: string | null;
+  city: string | null;
   source: string | null;
+  draftExpiresAt: string | null;
   lastActivityAt: string | null;
   lastLoginAt?: string | null;
   failedLoginAttempts?: number | null;
@@ -108,6 +112,7 @@ export interface ICaptainRole {
 export type AuthAction =
   | 'signin'
   | 'signup'
+  | 'check-availability'
   | 'forgot-password'
   | 'verify-otp'
   | 'reset-password'
@@ -144,7 +149,26 @@ export type AuthAction =
   | 'reject-driver-hire'
   | 'get-vehicle-rental-requests'
   | 'assign-vehicle-rental'
-  | 'reject-vehicle-rental';
+  | 'reject-vehicle-rental'
+  | 'get-parcel-requests'
+  | 'dispatch-parcel'
+  | 'reject-parcel'
+  | 'get-customer-onboardings'
+  | 'create-customer-onboarding'
+  | 'update-customer-onboarding'
+  | 'create-management-request'
+  | 'get-management-drafts'
+  | 'save-draft'
+  | 'load-draft'
+  | 'delete-draft'
+  | 'get-logistics-shipments'
+  | 'dispatch-logistics-shipment'
+  | 'reject-logistics-shipment'
+  // Mobile-specific actions
+  | 'refresh-token'
+  | 'register-device'
+  | 'unregister-device'
+  | 'logout';
 
 export interface IAuthActionRequest {
   action: AuthAction;

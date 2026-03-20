@@ -1,6 +1,14 @@
 import { Box, Loader, DataTable } from '@bandi/component';
-import { Typography, Tabs, Divider, TextField, InputAdornment, Paper, Button, Tooltip, Link } from '@mui/material';
-import GlobalStyles from '@mui/material/GlobalStyles';
+import {
+  Typography,
+  Tabs,
+  Divider,
+  TextField,
+  InputAdornment,
+  Paper,
+  Button,
+  Tooltip,
+} from '@mui/material';
 import PersonSearchIcon from '@mui/icons-material/PersonSearch';
 import PendingActionsIcon from '@mui/icons-material/PendingActions';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -9,13 +17,16 @@ import SearchIcon from '@mui/icons-material/Search';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import LinkIcon from '@mui/icons-material/Link';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
+import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import { useStyles } from './styles';
 import { useDriverHire } from './hooks/useDriverHire';
 import TabPanel from './components/TabPanel';
 import { DriverHireRow } from './types/driverHire.types';
+import { useAdminKeyframes } from '@bandi/hooks';
 
 const DriverHire = () => {
   const { classes } = useStyles();
+  const keyframes = useAdminKeyframes();
   const {
     isLoading,
     tabValue,
@@ -32,18 +43,6 @@ const DriverHire = () => {
     getFilteredData,
   } = useDriverHire();
   const sel = selectedRow;
-
-  const keyframes = (
-    <GlobalStyles
-      styles={`
-      @keyframes dh-gradient-shift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-      @keyframes dh-orb-drift { 0%, 100% { transform: translate(0, 0) scale(1); } 25% { transform: translate(20px, -16px) scale(1.06); } 75% { transform: translate(-14px, 10px) scale(0.94); } }
-      @keyframes dh-slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-      @keyframes dh-counter { from { opacity: 0; transform: scale(0.65) translateY(12px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-      @keyframes dh-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.35); } }
-    `}
-    />
-  );
 
   if (isLoading) {
     return (
@@ -198,7 +197,15 @@ const DriverHire = () => {
 
             <Divider orientation='vertical' flexItem className={classes.dividerMobile} />
 
-            <Tooltip title={sel && sel.status === 'pending' ? 'Match a driver for this request' : sel ? 'Only pending requests can be matched' : 'Select a request first'}>
+            <Tooltip
+              title={
+                sel && sel.status === 'pending'
+                  ? 'Match a driver for this request'
+                  : sel
+                    ? 'Only pending requests can be matched'
+                    : 'Select a request first'
+              }
+            >
               <span>
                 <Button
                   size='small'
@@ -208,8 +215,11 @@ const DriverHire = () => {
                   disabled={!sel || sel.status !== 'pending'}
                   onClick={() => sel && handleOpenAction(sel, 'match')}
                   sx={{
-                    boxShadow: sel?.status === 'pending' ? '0 4px 14px rgba(16,185,129,0.38)' : undefined,
-                    '&:hover': { transform: sel?.status === 'pending' ? 'translateY(-1px)' : undefined },
+                    boxShadow:
+                      sel?.status === 'pending' ? '0 4px 14px rgba(16,185,129,0.38)' : undefined,
+                    '&:hover': {
+                      transform: sel?.status === 'pending' ? 'translateY(-1px)' : undefined,
+                    },
                     transition: 'all 0.22s ease',
                   }}
                 >
@@ -218,7 +228,15 @@ const DriverHire = () => {
               </span>
             </Tooltip>
 
-            <Tooltip title={sel && sel.status === 'pending' ? 'Reject this driver hire request' : sel ? 'Only pending requests can be rejected' : 'Select a request first'}>
+            <Tooltip
+              title={
+                sel && sel.status === 'pending'
+                  ? 'Reject this driver hire request'
+                  : sel
+                    ? 'Only pending requests can be rejected'
+                    : 'Select a request first'
+              }
+            >
               <span>
                 <Button
                   size='small'
@@ -228,7 +246,11 @@ const DriverHire = () => {
                   disabled={!sel || sel.status !== 'pending'}
                   onClick={() => sel && handleOpenAction(sel, 'reject')}
                   sx={{
-                    '&:hover': { transform: sel?.status === 'pending' ? 'translateY(-1px)' : undefined, boxShadow: sel?.status === 'pending' ? '0 4px 14px rgba(239,68,68,0.25)' : undefined },
+                    '&:hover': {
+                      transform: sel?.status === 'pending' ? 'translateY(-1px)' : undefined,
+                      boxShadow:
+                        sel?.status === 'pending' ? '0 4px 14px rgba(239,68,68,0.25)' : undefined,
+                    },
                     transition: 'all 0.22s ease',
                   }}
                 >
@@ -239,12 +261,34 @@ const DriverHire = () => {
           </Box>
 
           {sel && (
-            <Typography variant='caption' className={classes.selectionIndicator}>
-              Selected: <strong>{sel.name}</strong> ({sel.email}) &nbsp;·&nbsp;
-              <Link component='button' variant='caption' onClick={() => setSelectedRow(null)}>
+            <Box className={classes.selectionIndicator}>
+              <Typography variant='caption' color='text.secondary'>
+                Selected: <strong>{sel.name}</strong> ({sel.email})
+              </Typography>
+              <Button
+                size='small'
+                variant='outlined'
+                startIcon={<HighlightOffIcon sx={{ fontSize: '0.9rem !important' }} />}
+                onClick={() => setSelectedRow(null)}
+                sx={{
+                  borderRadius: '50px',
+                  fontSize: '0.7rem',
+                  py: 0.3,
+                  px: 1.5,
+                  borderColor: 'rgba(239,68,68,0.4)',
+                  color: 'rgba(239,68,68,0.85)',
+                  '&:hover': {
+                    borderColor: '#ef4444',
+                    background: 'rgba(239,68,68,0.06)',
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 3px 10px rgba(239,68,68,0.2)',
+                  },
+                  transition: 'all 0.2s ease',
+                }}
+              >
                 Clear
-              </Link>
-            </Typography>
+              </Button>
+            </Box>
           )}
         </Paper>
 
@@ -266,7 +310,11 @@ const DriverHire = () => {
                   rowKey='id'
                   searchable={false}
                   initialRowsPerPage={10}
-                  onRowClick={(row) => setSelectedRow((prev) => prev?.id === (row as DriverHireRow).id ? null : row as DriverHireRow)}
+                  onRowClick={(row) =>
+                    setSelectedRow((prev) =>
+                      prev?.id === (row as DriverHireRow).id ? null : (row as DriverHireRow),
+                    )
+                  }
                   activeRowKey={sel?.id}
                 />
               </Box>

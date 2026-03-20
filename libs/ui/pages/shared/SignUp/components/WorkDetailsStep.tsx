@@ -13,10 +13,25 @@ import WorkIcon from '@mui/icons-material/Work';
 import { useFieldError } from '@bandi/hooks';
 import TextField from '../../../../components/TextField/TextField';
 
+const DEPARTMENT_OPTIONS = [
+  'Operations',
+  'Fleet Management',
+  'Finance & Accounts',
+  'Technology & Engineering',
+  'Sales & Business Development',
+  'Customer Support',
+  'Driver / Captain Onboarding',
+  'Compliance & Legal',
+  'Human Resources',
+  'Marketing',
+  'Other',
+];
+
 interface WorkDetailsStepProps {
   values: {
     employeeId: string;
-    businessUnit: string;
+    department: string;
+    managerEmail: string;
     reasonForAccess: string;
     role: string;
   };
@@ -24,6 +39,7 @@ interface WorkDetailsStepProps {
   errors: Partial<Record<string, string>>;
   onChange: React.ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement>;
   onRoleChange: (event: SelectChangeEvent<string>) => void;
+  onDepartmentChange: (event: SelectChangeEvent<string>) => void;
   onBlur: React.FocusEventHandler<HTMLInputElement | HTMLTextAreaElement>;
   classes: Record<string, string>;
 }
@@ -34,6 +50,7 @@ const WorkDetailsStep = ({
   errors,
   onChange,
   onRoleChange,
+  onDepartmentChange,
   onBlur,
   classes,
 }: WorkDetailsStepProps) => {
@@ -51,6 +68,7 @@ const WorkDetailsStep = ({
       </Box>
       <Box className={classes.stepContent}>
         <Grid container spacing={2}>
+          {/* Employee ID + Department */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               id='employeeId'
@@ -68,38 +86,45 @@ const WorkDetailsStep = ({
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              id='businessUnit'
-              name='businessUnit'
-              label='Business Unit (Optional)'
-              type='text'
-              placeholder='e.g. Operations'
-              value={values.businessUnit}
-              onChange={onChange}
-              onBlur={onBlur}
-              error={touched.businessUnit && Boolean(errors.businessUnit)}
-              errorText={touched.businessUnit ? errors.businessUnit : undefined}
-              fullWidth
-            />
+            <FormControl fullWidth>
+              <InputLabel id='department-label'>Department (Optional)</InputLabel>
+              <Select
+                labelId='department-label'
+                id='department'
+                name='department'
+                value={values.department}
+                label='Department (Optional)'
+                onChange={onDepartmentChange}
+                onBlur={onBlur}
+              >
+                {DEPARTMENT_OPTIONS.map((d) => (
+                  <MenuItem key={d} value={d}>
+                    {d}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Grid>
+
+          {/* Manager Email */}
           <Grid size={{ xs: 12 }}>
             <TextField
-              id='reasonForAccess'
-              name='reasonForAccess'
-              label='Reason for Access'
-              type='text'
-              placeholder='Briefly describe why you need access to BANDI...'
-              value={values.reasonForAccess}
+              id='managerEmail'
+              name='managerEmail'
+              label='Reporting Manager Email (Optional)'
+              type='email'
+              placeholder='manager@company.com'
+              value={values.managerEmail}
               onChange={onChange}
               onBlur={onBlur}
-              error={touched.reasonForAccess && Boolean(errors.reasonForAccess)}
-              errorText={reqError(touched.reasonForAccess, errors.reasonForAccess)}
+              error={touched.managerEmail && Boolean(errors.managerEmail)}
+              errorText={touched.managerEmail ? errors.managerEmail : undefined}
               fullWidth
-              required
-              multiline
-              minRows={3}
+              helperText='Helps route your approval request to the right person.'
             />
           </Grid>
+
+          {/* Requested Role */}
           <Grid size={{ xs: 12 }}>
             <FormControl fullWidth required error={touched.role && Boolean(errors.role)}>
               <InputLabel id='role-label' required>
@@ -114,14 +139,39 @@ const WorkDetailsStep = ({
                 onChange={onRoleChange}
                 onBlur={onBlur}
               >
-                <MenuItem value='admin'>Admin</MenuItem>
-                <MenuItem value='user'>User</MenuItem>
-                <MenuItem value='captain'>Captain</MenuItem>
+                <MenuItem value='admin'>
+                  Admin — Manage platform settings, users &amp; reports
+                </MenuItem>
+                <MenuItem value='consultant'>
+                  Consultant — Read-only access to reports &amp; analytics
+                </MenuItem>
               </Select>
               <FormHelperText>
-                All sign-ups require admin approval before you can access the system.
+                {errors.role && touched.role
+                  ? errors.role
+                  : 'All sign-ups require admin approval before platform access is granted.'}
               </FormHelperText>
             </FormControl>
+          </Grid>
+
+          {/* Reason for Access */}
+          <Grid size={{ xs: 12 }}>
+            <TextField
+              id='reasonForAccess'
+              name='reasonForAccess'
+              label='Reason for Access'
+              type='text'
+              placeholder='Briefly describe why you need access to OneBuddy...'
+              value={values.reasonForAccess}
+              onChange={onChange}
+              onBlur={onBlur}
+              error={touched.reasonForAccess && Boolean(errors.reasonForAccess)}
+              errorText={reqError(touched.reasonForAccess, errors.reasonForAccess)}
+              fullWidth
+              required
+              multiline
+              minRows={3}
+            />
           </Grid>
         </Grid>
       </Box>

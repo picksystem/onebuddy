@@ -596,6 +596,45 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
     [theme.breakpoints.down('sm')]: { fontSize: '0.63rem' },
   },
 
+  // ── Section Label ────────────────────────────────────────────────────────────
+  sectionLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(1.5),
+    marginBottom: theme.spacing(1.5),
+    marginTop: theme.spacing(0.5),
+  },
+
+  sectionLabelText: {
+    fontSize: '0.7rem',
+    fontWeight: 800,
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase' as const,
+    color: '#94a3b8',
+    whiteSpace: 'nowrap' as const,
+  },
+
+  sectionLabelBar: {
+    flex: 1,
+    height: 1,
+    background: 'rgba(79,70,229,0.08)',
+    borderRadius: 1,
+  },
+
+  // ── 6-column Fleet Grid ───────────────────────────────────────────────────────
+  fleetGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(6, 1fr)',
+    gap: theme.spacing(1.5),
+    marginBottom: theme.spacing(2.5),
+    [theme.breakpoints.between('md', 'xl')]: { gridTemplateColumns: 'repeat(3, 1fr)' },
+    [theme.breakpoints.between('sm', 'md')]: {
+      gridTemplateColumns: 'repeat(3, 1fr)',
+      gap: theme.spacing(1.25),
+    },
+    [theme.breakpoints.down('sm')]: { gridTemplateColumns: '1fr 1fr', gap: theme.spacing(1.1) },
+  },
+
   // ── Secondary Metric Row ─────────────────────────────────────────────────────
   secRow: {
     display: 'grid',

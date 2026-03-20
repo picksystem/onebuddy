@@ -25,6 +25,8 @@ model User {
   employeeId      String?
   businessUnit    String?
   dateOfBirth     String?
+  gender          String?
+  city            String?
   profilePicture  String?
   name            String
   role            String    @default("user")
@@ -110,167 +112,124 @@ model LoginLog {
   ipAddress  String?
   device     String?
   userAgent  String?
+  platform   String?   // 'web' | 'android' | 'ios'
+  deviceId   String?   // unique device identifier from mobile app
 }
 
-// ADMIN API Models
+// Stores FCM (Android) / APNS (iOS) push notification tokens per device
+model DeviceToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  token     String   @unique  // FCM or APNS push token
+  platform  String            // 'android' | 'ios' | 'web'
+  deviceId  String?           // optional device fingerprint
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
 
-model AdminHeader {
+model ManagementDraft {
   id          Int      @id @default(autoincrement())
-  ticketType  String
-  key         String   @unique
-  name        String
-  description String?
-  isActive    Boolean  @default(true)
-  app         String
-  order       Int
+  createdBy   Int      // admin user id
+  type        String   // 'admin' | 'consultant'
+  formData    String   // JSON blob of all form fields
+  expiresAt   DateTime // 1 week from last save
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([createdBy, type])
 }
 
-model AdminServiceRequest {
-  id                 Int      @id @default(autoincrement())
-  number             String   @unique
-  client             String?
-  caller             String
-  callerPhone        String?
-  callerEmail        String?
-  callerLocation     String?
-  callerDepartment   String?
-  businessCategory   String?
-  serviceLine        String?
-  application        String?
-  applicationCategory    String?
-  applicationSubCategory String?
-  shortDescription   String?
-  description        String?
-  impact             String?
-  urgency            String?
-  priority           String?
-  status             String   @default("new")
-  assignmentGroup    String?
-  primaryResource    String?
-  secondaryResources String?
-  createdBy          String
-  isRecurring           Boolean   @default(false)
-  isReleaseManagement   Boolean   @default(false)
-  eta                   DateTime?
-  notes                 String?
-  relatedRecords     String?
-  attachments        String?
-  followers          String?
-  internalFollowers  String?
-  draftExpiresAt     DateTime?
-  clientPrimaryContact   String?
-  billingCode            String?
-  approvedEstimatesHours Float?
-  estimatesDetails       String?
-  analysisSummary    String?
-  ticketSource       String?
-  resolvedAt         DateTime?
-  resolvedBy         String?
-  closedAt           DateTime?
-  closedBy           String?
-  reopenedAt         DateTime?
-  reopenedBy         String?
-  approvedAt         DateTime?
-  approvedBy         String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+model CustomerOnboarding {
+  id              Int       @id @default(autoincrement())
 
-  comments           AdminServiceRequestComment[]
-  timeEntries        AdminServiceRequestTimeEntry[]
-  resolutions        AdminServiceRequestResolution[]
-  activities         AdminServiceRequestActivity[]
-}
+  // Personal Info
+  firstName       String
+  lastName        String
+  phone           String
+  email           String?
+  city            String
+  area            String?   // locality / area within the city
+  pincode         String?   // 6-digit postal code
 
-model AdminServiceRequestComment {
-  id                  Int      @id @default(autoincrement())
-  serviceRequestId    Int
-  serviceRequest      AdminServiceRequest @relation(fields: [serviceRequestId], references: [id], onDelete: Cascade)
-  subject             String
-  message             String
-  isInternal          Boolean  @default(false)
-  isSelfNote          Boolean  @default(false)
-  notifyAssigneesOnly Boolean  @default(false)
-  status              String?
-  attachments         String?
-  createdBy           String
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-}
+  // Service & Vehicle
+  serviceCategory String    // mobility | logistics
+  vehicleType     String    // bike | auto | cab | shuttle | tata_ace | dcm | lorry
+  vehicleSubType  String?
+  fuelType        String
+  tripPreference  String    // local | outstation | both | local_delivery | outstation_delivery
 
-model AdminServiceRequestTimeEntry {
-  id               Int      @id @default(autoincrement())
-  serviceRequestId Int
-  serviceRequest   AdminServiceRequest @relation(fields: [serviceRequestId], references: [id], onDelete: Cascade)
-  date             String
-  hours            Int
-  minutes          Int
-  billingCode      String?
-  activityTask     String?
-  externalComment  String?
-  internalComment  String?
-  isNonBillable    Boolean  @default(false)
-  attachments      String?
-  createdBy        String
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-}
+  // Vehicle
+  vehicleNumber   String
 
-model AdminServiceRequestResolution {
-  id                   Int      @id @default(autoincrement())
-  serviceRequestId     Int
-  serviceRequest       AdminServiceRequest @relation(fields: [serviceRequestId], references: [id], onDelete: Cascade)
-  application          String?
-  category             String?
-  subCategory          String?
-  customerConfirmation Boolean  @default(false)
-  isRecurring          Boolean  @default(false)
-  rootCauseIdentified  Boolean  @default(false)
-  rootCause            String?
-  resolutionCode       String
-  resolution           String
-  internalNote         String?
-  attachments          String?
-  createdBy            String
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-}
+  // RC
+  rcNumber        String
+  rcExpiry        String?
 
-model AdminServiceRequestActivity {
-  id               Int      @id @default(autoincrement())
-  serviceRequestId Int
-  serviceRequest   AdminServiceRequest @relation(fields: [serviceRequestId], references: [id], onDelete: Cascade)
-  activityType     String
-  description      String
-  previousValue    String?
-  newValue         String?
-  performedBy      String
-  createdAt        DateTime @default(now())
-}
+  // Insurance (required)
+  insuranceNumber String?
+  insuranceExpiry String?
 
-// USER API Models
+  // PUC (recommended)
+  pucNumber       String?
+  pucExpiry       String?
 
-model UserDashboard {
-  id   String @id @default(cuid())
-  name String
-  key  String
-  path String
-  app  String
-}
+  // Fitness Certificate (commercial vehicles only)
+  fitnessNumber   String?
+  fitnessExpiry   String?
 
-model UserHeader {
-  id   String @id @default(cuid())
-  name String
-  key  String
-  path String
-  app  String
-}
+  // Permit (commercial vehicles only)
+  permitNumber    String?
+  permitExpiry    String?
 
-model UserSideNav {
-  id   String @id @default(cuid())
-  name String
-  key  String
-  path String
-  app  String
+  // Driving License
+  dlNumber        String
+  dlExpiry        String?
+
+  // Identity Proof
+  idProofType     String    // aadhaar | pan
+  idProofNumber   String?
+
+  // Bundle Options (optional — captain may apply one or more bundles)
+  // bundleTypes: JSON array e.g. ["rental","driver_hire","parcel_combo"]
+  bundleTypes          String?   // JSON
+  bundleDiscount       Float?    // calculated % commission discount
+
+  // Rent & Ride Bundle
+  rentalVehiclePref    String?   // preferred vehicle type to rent
+  rentalDuration       String?   // daily | weekly | monthly
+  rentalPickupZone     String?
+
+  // Driver Hire Bundle
+  driverHireCount      Int?      // 1–5 drivers needed
+  driverHireShift      String?   // day | night | both
+  driverHireBudget     String?
+
+  // Multi-Vehicle Bundle
+  additionalVehicles   String?   // JSON: [{vehicleType,vehicleNumber,fuelType}]
+
+  // Parcel + Ride Combo Bundle (bike / auto / cab only)
+  // Captain accepts a small parcel delivery while on a passenger trip
+  parcelComboTypes     String?   // JSON: ["documents","food","general","fragile"]
+  parcelMaxWeight      String?   // '2kg' | '5kg' | '10kg' | '15kg'
+  parcelRadiusPref     String?   // '0.5km' | '1km' | '1.5km' | '2km'
+
+  // Cargo Co-Ride Bundle (lorry / tata_ace / dcm only)
+  // Captain accepts a co-passenger on an outstation cargo trip
+  cargoCoRideMax       Int?      // 1 or 2 co-passengers max
+  cargoCoRideHaulPref  String?   // 'short' | 'medium' | 'long'
+  cargoCoRideRatePref  String?   // 'platform_suggested' | 'negotiable'
+
+  // Platform Access Window (set by admin after approval)
+  accessFromDate  DateTime?
+  accessToDate    DateTime?
+
+  // Status
+  status          String    @default("pending")
+  adminNotes      String?
+  submittedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
 

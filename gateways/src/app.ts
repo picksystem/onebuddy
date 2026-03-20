@@ -1,7 +1,7 @@
 // Automatically catches async errors thrown inside route handlers
 import 'express-async-errors';
 
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
@@ -21,13 +21,112 @@ import { ADMIN_PATHS, USER_PATHS, CAPTAIN_PATHS } from '@bandi/constants';
 const app = express();
 
 /**
+ * ─────────────────────────────────────────────────
+ * Simple In-Memory Rate Limiter
+ * ─────────────────────────────────────────────────
+ * Protects public auth endpoints (signin, signup, forgot-password, verify-otp)
+ * from brute-force and enumeration attacks.
+ * Works across both web and mobile without external dependencies.
+ *
+ * Limits:
+ *   - Auth sensitive actions  : 10 requests / 15 min per IP
+ *   - All other auth actions  : 60 requests / 1 min per IP
+ */
+const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+
+// Clean up expired entries every 5 minutes to prevent memory growth
+setInterval(
+  () => {
+    const now = Date.now();
+    for (const [key, val] of rateLimitStore.entries()) {
+      if (now > val.resetAt) rateLimitStore.delete(key);
+    }
+  },
+  5 * 60 * 1000,
+);
+
+function makeRateLimiter(maxRequests: number, windowMs: number) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    const key = `${ip}:${req.path}`;
+    const now = Date.now();
+    const entry = rateLimitStore.get(key);
+
+    if (!entry || now > entry.resetAt) {
+      rateLimitStore.set(key, { count: 1, resetAt: now + windowMs });
+      return next();
+    }
+    if (entry.count >= maxRequests) {
+      const retryAfterSec = Math.ceil((entry.resetAt - now) / 1000);
+      res.setHeader('Retry-After', String(retryAfterSec));
+      res.status(429).json({
+        message: `Too many requests. Please try again in ${retryAfterSec} seconds.`,
+        retryAfter: retryAfterSec,
+      });
+      return;
+    }
+    entry.count++;
+    next();
+  };
+}
+
+// Strict limiter for sensitive endpoints
+const strictRateLimit = makeRateLimiter(10, 15 * 60 * 1000); // 10 / 15 min
+// General limiter for all other auth calls
+const generalRateLimit = makeRateLimiter(60, 60 * 1000); // 60 / 1 min
+
+// Middleware that applies strict or general limit based on action
+function authRateLimit(req: Request, res: Response, next: NextFunction) {
+  const action = (req.body as Record<string, unknown>)?.action as string;
+  const sensitiveActions = [
+    'signin',
+    'signup',
+    'forgot-password',
+    'verify-otp',
+    'reset-password',
+    'refresh-token',
+  ];
+  if (sensitiveActions.includes(action)) return strictRateLimit(req, res, next);
+  return generalRateLimit(req, res, next);
+}
+
+/**
+ * ─────────────────────────────────────────────────
+ * CORS Configuration
+ * ─────────────────────────────────────────────────
+ * Web browsers require CORS headers.
+ * Native mobile apps (Android/iOS) do NOT send Origin headers —
+ * they bypass CORS entirely and call the API directly.
+ *
+ * CORS_ORIGIN env var: comma-separated list of allowed web origins.
+ * Leave blank/unset to allow all origins (development mode).
+ */
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
+  : [];
+
+const corsOptions: cors.CorsOptions = {
+  origin:
+    allowedOrigins.length > 0
+      ? (origin, callback) => {
+          // Mobile apps (no Origin header) and configured origins are allowed
+          if (!origin || allowedOrigins.includes(origin)) callback(null, true);
+          else callback(new Error(`CORS: origin ${origin} not allowed`));
+        }
+      : true, // allow all in dev
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Platform', 'X-Device-Id'],
+};
+
+/**
  * -------------------------
  * Global Middleware
  * -------------------------
  */
 
 // Enable CORS
-app.use(cors());
+app.use(cors(corsOptions));
 
 // Parse incoming JSON requests
 app.use(express.json({ limit: '10mb' }));
@@ -40,22 +139,39 @@ app.use('/uploads/attachments', express.static(uploadsDir));
 app.use('/uploads', (_req, res) => res.status(404).end());
 
 /**
+ * ─────────────────────────────────────────────────
+ * API Routes — with versioning
+ * ─────────────────────────────────────────────────
+ * Both /api/* and /api/v1/* are served by the same handlers.
+ * This allows mobile apps to target /api/v1/ while the web
+ * continues using /api/. Future breaking changes get /api/v2/.
+ * ─────────────────────────────────────────────────
+ */
+
+// Helper to mount a route on both unversioned and v1 paths
+function mountVersioned(basePath: string, router: express.Router) {
+  app.use(basePath, router);
+  app.use(`/api/v1${basePath.replace('/api', '')}`, router);
+}
+
+/**
  * -------------------------
  * API Routes
  * -------------------------
  */
 
-// Auth API routes
-app.use('/api/auth', authRoutes);
+// Auth API routes (rate-limited)
+app.use('/api/auth', authRateLimit, authRoutes);
+app.use('/api/v1/auth', authRateLimit, authRoutes);
 
 // Admin API routes
-app.use(`/api/${ADMIN_PATHS.ADMIN}`, adminRoutes);
+mountVersioned(`/api/${ADMIN_PATHS.ADMIN}`, adminRoutes);
 
 // User API routes
-app.use(`/api/${USER_PATHS.USER}`, userRoutes);
+mountVersioned(`/api/${USER_PATHS.USER}`, userRoutes);
 
 // Captain API routes
-app.use(`/api/${CAPTAIN_PATHS.CAPTAIN}`, captainRoutes);
+mountVersioned(`/api/${CAPTAIN_PATHS.CAPTAIN}`, captainRoutes);
 
 /**
  * -------------------------

@@ -1,42 +1,25 @@
 import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
-import { Chip, Switch } from '@mui/material';
-import { useThemeContext } from '@bandi/theme';
-import {
-  useAuthActionMutation,
-} from '@bandi/services';
-import {
-  useAuth,
-  useNotification,
-  useFieldError,
-  useFormWithSessionStorage,
-  useMediaQuery,
-} from '@bandi/hooks';
-import { IAuthUser, UserRole } from '@bandi/interfaces';
+import { Chip } from '@mui/material';
+import { useAuthActionMutation } from '@bandi/services';
+import { useAuth, useNotification, useMediaQuery } from '@bandi/hooks';
+import { IAuthUser } from '@bandi/interfaces';
 import {
   UserRow,
   EditFormShape,
   ChangeProfileErrors,
   ResetPwErrors,
   ChangeLogEntry,
+  CustomerOnboardingRow,
+  EditOnboardingFormShape,
 } from '../types/userManagement.types';
 import { DriverHireRow } from '../../DriverHire/types/driverHire.types';
 import { VehicleRentalRow } from '../../VehicleRental/types/vehicleRental.types';
+import { ParcelRow } from '../../Parcel/types/parcel.types';
 import {
   buildEditForm,
-  initialCreateValues,
-  AdminCreateUserSchema,
   generateTempPassword,
-  loadNewUserDraft,
-  saveNewUserDraft,
-  clearNewUserDraft,
-  getDraftDaysRemaining,
   fmtDateTime,
   fmtDateUser,
-  fmtDateTimeUser,
-  fmtDate,
-  SOURCE_LABELS,
-  DRAFT_DAYS,
-  UM_SESSION_KEY,
 } from '../utils/userManagement.utils';
 import { Column } from '@bandi/component';
 
@@ -44,42 +27,86 @@ const useUserManagement = () => {
   const [authAction] = useAuthActionMutation();
   const { user: currentUser } = useAuth();
   const notify = useNotification();
-  const reqError = useFieldError();
   const isMobile = useMediaQuery('(max-width: 599px)');
 
   // ── Table state ───────────────────────────────────────────────────────────────
-  const [allUsers, setAllUsers] = useState<IAuthUser[]>([]);
-  const [admins, setAdmins] = useState<IAuthUser[]>([]);
-  const [captains, setCaptains] = useState<IAuthUser[]>([]);
+  const [customerOnboardings, setCustomerOnboardings] = useState<CustomerOnboardingRow[]>([]);
   const [driverHireRequests, setDriverHireRequests] = useState<DriverHireRow[]>([]);
   const [vehicleRentalRequests, setVehicleRentalRequests] = useState<VehicleRentalRow[]>([]);
+  const [parcelRequests, setParcelRequests] = useState<ParcelRow[]>([]);
+
   const [isLoading, setIsLoading] = useState(true);
   const [tabValue, setTabValue] = useState(0);
   const [tableSearch, setTableSearch] = useState('');
-  const [togglingIds, setTogglingIds] = useState<Set<number>>(new Set());
   const [selectedRow, setSelectedRow] = useState<UserRow | null>(null);
+  const [selectedOnboarding, setSelectedOnboarding] = useState<CustomerOnboardingRow | null>(null);
 
-  // ── Edit dialog ───────────────────────────────────────────────────────────────
+  // ── Edit Onboarding dialog ─────────────────────────────────────────────────
+  const [editOnboardingOpen, setEditOnboardingOpen] = useState(false);
+  const [editOnboardingForm, setEditOnboardingForm] = useState<EditOnboardingFormShape>({
+    firstName: '',
+    lastName: '',
+    phone: '',
+    email: '',
+    city: '',
+    area: '',
+    pincode: '',
+    serviceCategory: '',
+    vehicleType: '',
+    vehicleSubType: '',
+    fuelType: '',
+    tripPreference: '',
+    vehicleNumber: '',
+    rcNumber: '',
+    rcExpiry: '',
+    dlNumber: '',
+    dlExpiry: '',
+    insuranceNumber: '',
+    insuranceExpiry: '',
+    pucNumber: '',
+    pucExpiry: '',
+    fitnessNumber: '',
+    fitnessExpiry: '',
+    permitNumber: '',
+    permitExpiry: '',
+    idProofType: '',
+    idProofNumber: '',
+    bundleTypes: '',
+    bundleDiscount: '',
+    rentalVehiclePref: '',
+    rentalDuration: '',
+    rentalPickupZone: '',
+    driverHireCount: '',
+    driverHireShift: '',
+    driverHireBudget: '',
+    additionalVehicles: '',
+    parcelComboTypes: '',
+    parcelMaxWeight: '',
+    parcelRadiusPref: '',
+    cargoCoRideMax: '',
+    cargoCoRideHaulPref: '',
+    cargoCoRideRatePref: '',
+    accessFromDate: '',
+    accessToDate: '',
+    status: '',
+    adminNotes: '',
+  });
+  const [editOnboardingOriginal, setEditOnboardingOriginal] =
+    useState<EditOnboardingFormShape>(editOnboardingForm);
+  const [isSavingOnboarding, setIsSavingOnboarding] = useState(false);
+  const isOnboardingDirty =
+    editOnboardingOpen &&
+    JSON.stringify(editOnboardingForm) !== JSON.stringify(editOnboardingOriginal);
+
+  // ── Edit dialog (for future user tabs if needed) ──────────────────────────────
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState<EditFormShape>(buildEditForm({} as IAuthUser));
   const [editOriginal, setEditOriginal] = useState<EditFormShape>(buildEditForm({} as IAuthUser));
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const isDirty = editOpen && JSON.stringify(editForm) !== JSON.stringify(editOriginal);
-  const [adminNotes, setAdminNotes] = useState('');
 
   // ── Create dialog ─────────────────────────────────────────────────────────────
   const [createOpen, setCreateOpen] = useState(false);
-  const [isOpenedAsDraft, setIsOpenedAsDraft] = useState(false);
-  const [draftMeta, setDraftMeta] = useState<{ savedAt: string; expiresAt: string } | null>(() => {
-    const d = loadNewUserDraft();
-    return d ? { savedAt: d.savedAt, expiresAt: d.expiresAt } : null;
-  });
-  const [draftValues, setDraftValues] = useState<typeof initialCreateValues | null>(() => {
-    const d = loadNewUserDraft();
-    return d ? d.values : null;
-  });
-  const [genPassword, setGenPassword] = useState('');
-  const [showGenPw, setShowGenPw] = useState(false);
 
   // ── Changes log dialog ────────────────────────────────────────────────────────
   const [changesLogOpen, setChangesLogOpen] = useState(false);
@@ -100,10 +127,9 @@ const useUserManagement = () => {
   // ── Login data dialog ─────────────────────────────────────────────────────────
   const [loginDataOpen, setLoginDataOpen] = useState(false);
 
-  // ── Captain profile dialog ─────────────────────────────────────────────────
-
-  // ── Change profile (role) dialog ──────────────────────────────────────────────
+  // ── Change profile (role / status) dialog ────────────────────────────────────
   const [changeProfileOpen, setChangeProfileOpen] = useState(false);
+  const [changeProfileMode, setChangeProfileMode] = useState<'role' | 'status'>('role');
   const [changeProfileRole, setChangeProfileRole] = useState('');
   const [changeProfileReasonCode, setChangeProfileReasonCode] = useState('');
   const [changeProfileNoteText, setChangeProfileNoteText] = useState('');
@@ -128,37 +154,36 @@ const useUserManagement = () => {
   const [resetPwReason, setResetPwReason] = useState('');
   const [resetPwErrors, setResetPwErrors] = useState<ResetPwErrors>({});
 
-  // ── Admin controls ────────────────────────────────────────────────────────────
-  const [adminControlsOpen, setAdminControlsOpen] = useState(false);
-
-  const { themeName: selectedTheme, setThemeName } = useThemeContext();
-
-  const handleThemeChange = (theme: string) => {
-    setThemeName(theme);
-  };
-
   // ── Fetch ─────────────────────────────────────────────────────────────────────
   const fetchUsers = useCallback(async () => {
     try {
       setIsLoading(true);
-      const [usersResult, driverHireResult, vehicleRentalResult] = await Promise.all([
-        authAction({ action: 'get-all-users' }).unwrap(),
-        authAction({ action: 'get-driver-hire-requests' }).unwrap().catch(() => ({ data: [] })),
-        authAction({ action: 'get-vehicle-rental-requests' }).unwrap().catch(() => ({ data: [] })),
-      ]);
-      const users: IAuthUser[] = usersResult.data || [];
-      setAllUsers(users);
-      setAdmins(users.filter((u) => u.role === 'admin'));
-      setCaptains(users.filter((u) => u.role === 'captain'));
+      const [onboardingsResult, driverHireResult, vehicleRentalResult, parcelResult] =
+        await Promise.all([
+          authAction({ action: 'get-customer-onboardings' })
+            .unwrap()
+            .catch(() => ({ data: [] })),
+          authAction({ action: 'get-driver-hire-requests' })
+            .unwrap()
+            .catch(() => ({ data: [] })),
+          authAction({ action: 'get-vehicle-rental-requests' })
+            .unwrap()
+            .catch(() => ({ data: [] })),
+          authAction({ action: 'get-parcel-requests' })
+            .unwrap()
+            .catch(() => ({ data: [] })),
+        ]);
+      setCustomerOnboardings(
+        ((onboardingsResult.data || []) as CustomerOnboardingRow[]).map((r, i) => ({
+          ...r,
+          sno: i + 1,
+        })),
+      );
       setDriverHireRequests(driverHireResult.data || []);
       setVehicleRentalRequests(vehicleRentalResult.data || []);
-      setSelectedRow((prev) => {
-        if (!prev) return null;
-        const fresh = users.find((u) => u.id === prev.id);
-        return fresh ? { ...fresh, sno: prev.sno } : null;
-      });
+      setParcelRequests(parcelResult.data || []);
     } catch {
-      notify.error('Failed to load users');
+      notify.error('Failed to load data');
     } finally {
       setIsLoading(false);
     }
@@ -169,36 +194,128 @@ const useUserManagement = () => {
     fetchUsers();
   }, [fetchUsers]);
 
-  const handleRowClick = (row: UserRow) => {
-    setSelectedRow((prev) => (prev?.id === row.id ? null : row));
-  };
-
-  const handleToggleAccess = async (row: UserRow, e: React.ChangeEvent<HTMLInputElement>) => {
-    e.stopPropagation();
-    const newVal = e.target.checked;
-    setTogglingIds((prev) => new Set(prev).add(row.id));
-    try {
-      await authAction({
-        action: newVal ? 'activate-user' : 'deactivate-user',
-        userId: row.id,
-      }).unwrap();
-      const patch = (u: IAuthUser) => (u.id === row.id ? { ...u, isActive: newVal } : u);
-      setAllUsers((p) => p.map(patch));
-      setAdmins((p) => p.map(patch));
-      setCaptains((p) => p.map(patch));
-      if (selectedRow?.id === row.id) setSelectedRow((p) => (p ? { ...p, isActive: newVal } : p));
-    } catch {
-      notify.error(`Failed to update access for ${row.name}`);
-    } finally {
-      setTogglingIds((prev) => {
-        const n = new Set(prev);
-        n.delete(row.id);
-        return n;
-      });
+  const handleOnboardingRowClick = (row: CustomerOnboardingRow) => {
+    const isDeselecting = selectedOnboarding?.id === row.id;
+    setSelectedOnboarding(isDeselecting ? null : row);
+    if (isDeselecting) {
+      setSelectedRow(null);
+    } else {
+      setSelectedRow({
+        id: row.id,
+        name: `${row.firstName} ${row.lastName}`.trim(),
+        firstName: row.firstName,
+        lastName: row.lastName,
+        email: row.email || '',
+        phone: row.phone || '',
+        role: 'user',
+        status: row.status,
+        isActive: row.status === 'approved',
+        sno: row.sno,
+      } as unknown as UserRow);
     }
   };
 
-  // ── Edit ──────────────────────────────────────────────────────────────────────
+  const handleOpenEditOnboarding = () => {
+    if (!selectedOnboarding) return;
+    const form: EditOnboardingFormShape = {
+      firstName: selectedOnboarding.firstName || '',
+      lastName: selectedOnboarding.lastName || '',
+      phone: selectedOnboarding.phone || '',
+      email: selectedOnboarding.email || '',
+      city: selectedOnboarding.city || '',
+      area: selectedOnboarding.area || '',
+      pincode: selectedOnboarding.pincode || '',
+      serviceCategory: selectedOnboarding.serviceCategory || '',
+      vehicleType: selectedOnboarding.vehicleType || '',
+      vehicleSubType: selectedOnboarding.vehicleSubType || '',
+      fuelType: selectedOnboarding.fuelType || '',
+      tripPreference: selectedOnboarding.tripPreference || '',
+      vehicleNumber: selectedOnboarding.vehicleNumber || '',
+      rcNumber: selectedOnboarding.rcNumber || '',
+      rcExpiry: selectedOnboarding.rcExpiry || '',
+      dlNumber: selectedOnboarding.dlNumber || '',
+      dlExpiry: selectedOnboarding.dlExpiry || '',
+      insuranceNumber: selectedOnboarding.insuranceNumber || '',
+      insuranceExpiry: selectedOnboarding.insuranceExpiry || '',
+      pucNumber: selectedOnboarding.pucNumber || '',
+      pucExpiry: selectedOnboarding.pucExpiry || '',
+      fitnessNumber: selectedOnboarding.fitnessNumber || '',
+      fitnessExpiry: selectedOnboarding.fitnessExpiry || '',
+      permitNumber: selectedOnboarding.permitNumber || '',
+      permitExpiry: selectedOnboarding.permitExpiry || '',
+      idProofType: selectedOnboarding.idProofType || '',
+      idProofNumber: selectedOnboarding.idProofNumber || '',
+      bundleTypes: selectedOnboarding.bundleTypes || '',
+      bundleDiscount:
+        selectedOnboarding.bundleDiscount !== null &&
+        selectedOnboarding.bundleDiscount !== undefined
+          ? String(selectedOnboarding.bundleDiscount)
+          : '',
+      rentalVehiclePref: selectedOnboarding.rentalVehiclePref || '',
+      rentalDuration: selectedOnboarding.rentalDuration || '',
+      rentalPickupZone: selectedOnboarding.rentalPickupZone || '',
+      driverHireCount:
+        selectedOnboarding.driverHireCount !== null &&
+        selectedOnboarding.driverHireCount !== undefined
+          ? String(selectedOnboarding.driverHireCount)
+          : '',
+      driverHireShift: selectedOnboarding.driverHireShift || '',
+      driverHireBudget: selectedOnboarding.driverHireBudget || '',
+      additionalVehicles: selectedOnboarding.additionalVehicles || '',
+      parcelComboTypes: selectedOnboarding.parcelComboTypes || '',
+      parcelMaxWeight: selectedOnboarding.parcelMaxWeight || '',
+      parcelRadiusPref: selectedOnboarding.parcelRadiusPref || '',
+      cargoCoRideMax:
+        selectedOnboarding.cargoCoRideMax !== null &&
+        selectedOnboarding.cargoCoRideMax !== undefined
+          ? String(selectedOnboarding.cargoCoRideMax)
+          : '',
+      cargoCoRideHaulPref: selectedOnboarding.cargoCoRideHaulPref || '',
+      cargoCoRideRatePref: selectedOnboarding.cargoCoRideRatePref || '',
+      accessFromDate: selectedOnboarding.accessFromDate || '',
+      accessToDate: selectedOnboarding.accessToDate || '',
+      status: selectedOnboarding.status || '',
+      adminNotes: selectedOnboarding.adminNotes || '',
+    };
+    setEditOnboardingForm(form);
+    setEditOnboardingOriginal(form);
+    setEditOnboardingOpen(true);
+  };
+
+  const handleSaveEditOnboarding = async () => {
+    if (!selectedOnboarding) return;
+    setIsSavingOnboarding(true);
+    try {
+      await authAction({
+        action: 'update-customer-onboarding',
+        id: selectedOnboarding.id,
+        data: {
+          ...editOnboardingForm,
+          accessFromDate: editOnboardingForm.accessFromDate
+            ? new Date(editOnboardingForm.accessFromDate).toISOString()
+            : null,
+          accessToDate: editOnboardingForm.accessToDate
+            ? new Date(editOnboardingForm.accessToDate).toISOString()
+            : null,
+          rcExpiry: editOnboardingForm.rcExpiry || null,
+          dlExpiry: editOnboardingForm.dlExpiry || null,
+          insuranceExpiry: editOnboardingForm.insuranceExpiry || null,
+          pucExpiry: editOnboardingForm.pucExpiry || null,
+        },
+      }).unwrap();
+      notify.success('Onboarding updated successfully');
+      setEditOnboardingOpen(false);
+      fetchUsers();
+    } catch (err: unknown) {
+      notify.error(
+        (err as { data?: { message?: string } })?.data?.message || 'Failed to update onboarding',
+      );
+    } finally {
+      setIsSavingOnboarding(false);
+    }
+  };
+
+  // ── Edit (user) ───────────────────────────────────────────────────────────────
   const handleOpenEdit = () => {
     if (!selectedRow) return;
     const form = buildEditForm(selectedRow);
@@ -211,18 +328,19 @@ const useUserManagement = () => {
     if (!selectedRow) return;
     setIsSavingEdit(true);
     try {
-      const updateData: Record<string, unknown> = {
-        ...editForm,
-        name: `${editForm.firstName} ${editForm.lastName}`,
-        accessFromDate: editForm.accessFromDate
-          ? new Date(editForm.accessFromDate).toISOString()
-          : null,
-        accessToDate: editForm.accessToDate ? new Date(editForm.accessToDate).toISOString() : null,
-      };
       await authAction({
         action: 'update-user',
         userId: selectedRow.id,
-        data: updateData,
+        data: {
+          ...editForm,
+          name: `${editForm.firstName} ${editForm.lastName}`,
+          accessFromDate: editForm.accessFromDate
+            ? new Date(editForm.accessFromDate).toISOString()
+            : null,
+          accessToDate: editForm.accessToDate
+            ? new Date(editForm.accessToDate).toISOString()
+            : null,
+        },
       }).unwrap();
       notify.success('User updated successfully');
       setEditOpen(false);
@@ -237,89 +355,19 @@ const useUserManagement = () => {
   };
 
   // ── Create ────────────────────────────────────────────────────────────────────
-  const createFormik = useFormWithSessionStorage('um_new_user', {
-    initialValues: initialCreateValues,
-    validationSchema: AdminCreateUserSchema,
-    enableReinitialize: false,
-    onSubmit: async (values, helpers) => {
-      try {
-        await authAction({ action: 'create-user', ...values }).unwrap();
-        notify.success(
-          'User created successfully. A welcome email with credentials has been sent.',
-        );
-        clearNewUserDraft();
-        setDraftMeta(null);
-        setDraftValues(null);
-        setCreateOpen(false);
-        helpers.resetForm();
-        fetchUsers();
-      } catch (err: unknown) {
-        notify.error(
-          (err as { data?: { message?: string } })?.data?.message || 'Failed to create user',
-        );
-        helpers.setSubmitting(false);
-      }
-    },
-  });
+  const handleOpenNew = () => setCreateOpen(true);
 
-  const handleOpenNew = () => {
-    const pw = generateTempPassword();
-    setGenPassword(pw);
-    setShowGenPw(false);
-    setIsOpenedAsDraft(false);
+  const handleCreateSubmit = async (data: Record<string, unknown>) => {
     try {
-      const raw = sessionStorage.getItem(UM_SESSION_KEY);
-      if (raw) {
-        const saved = JSON.parse(raw);
-        createFormik.resetForm({
-          values: { ...initialCreateValues, ...saved, password: '', confirmPassword: '' },
-        });
-      } else {
-        createFormik.resetForm({
-          values: { ...initialCreateValues, password: '', confirmPassword: '' },
-        });
-      }
-    } catch {
-      createFormik.resetForm({
-        values: { ...initialCreateValues, password: '', confirmPassword: '' },
-      });
+      await authAction({ action: 'create-customer-onboarding', data }).unwrap();
+      notify.success('Customer onboarding submitted successfully.');
+      setCreateOpen(false);
+      fetchUsers();
+    } catch (err: unknown) {
+      notify.error(
+        (err as { data?: { message?: string } })?.data?.message || 'Failed to submit onboarding',
+      );
     }
-    setCreateOpen(true);
-  };
-
-  const handleOpenDraft = () => {
-    if (!draftValues) return;
-    const pw = generateTempPassword();
-    setGenPassword(pw);
-    setShowGenPw(false);
-    setIsOpenedAsDraft(true);
-    createFormik.resetForm({ values: { ...draftValues, password: '', confirmPassword: '' } });
-    setCreateOpen(true);
-  };
-
-  const handleRegeneratePw = () => {
-    setGenPassword(generateTempPassword());
-  };
-
-  const handleApplyGenPw = () => {
-    createFormik.setFieldValue('password', genPassword);
-    createFormik.setFieldValue('confirmPassword', genPassword);
-    notify.success('Temporary password applied to the fields above');
-  };
-
-  const handleSaveDraft = () => {
-    const draft = saveNewUserDraft(createFormik.values);
-    setDraftMeta({ savedAt: draft.savedAt, expiresAt: draft.expiresAt });
-    setDraftValues(createFormik.values);
-    setCreateOpen(false);
-    const expiryDate = new Date(draft.expiresAt).toLocaleDateString();
-    notify.success(
-      `Draft saved — available until ${expiryDate}. It will be deleted automatically after ${DRAFT_DAYS} days.`,
-    );
-  };
-
-  const handleCancelCreate = () => {
-    setCreateOpen(false);
   };
 
   // ── Changes log ───────────────────────────────────────────────────────────────
@@ -474,6 +522,7 @@ const useUserManagement = () => {
   // ── Change profile ────────────────────────────────────────────────────────────
   const handleOpenChangeProfile = () => {
     if (!selectedRow) return;
+    setChangeProfileMode(selectedOnboarding ? 'status' : 'role');
     setChangeProfileRole('');
     setChangeProfileReasonCode('');
     setChangeProfileNoteText('');
@@ -487,8 +536,10 @@ const useUserManagement = () => {
     const errors: ChangeProfileErrors = {};
     if (!changeProfileRole) {
       errors.role = 'required';
-    } else if (changeProfileRole === selectedRow?.role) {
+    } else if (changeProfileMode === 'role' && changeProfileRole === selectedRow?.role) {
       errors.role = 'Must be different from current role';
+    } else if (changeProfileMode === 'status' && changeProfileRole === selectedOnboarding?.status) {
+      errors.role = 'Must be different from current status';
     }
     if (!changeProfileReasonCode) {
       errors.reasonCode = 'required';
@@ -507,20 +558,32 @@ const useUserManagement = () => {
     if (!selectedRow) return;
     setIsSavingProfile(true);
     try {
-      await authAction({
-        action: 'update-user',
-        userId: selectedRow.id,
-        data: { role: changeProfileRole },
-        reasonCode: changeProfileReasonCode,
-        reasonNotes: changeProfileNoteText,
-      }).unwrap();
-      notify.success(`Role changed to ${changeProfileRole}`);
+      if (changeProfileMode === 'status' && selectedOnboarding) {
+        await authAction({
+          action: 'update-customer-onboarding',
+          id: selectedOnboarding.id,
+          data: { status: changeProfileRole },
+          reasonCode: changeProfileReasonCode,
+          reasonNotes: changeProfileNoteText,
+        }).unwrap();
+        notify.success(`Status changed to ${changeProfileRole.replace(/_/g, ' ')}`);
+      } else {
+        await authAction({
+          action: 'update-user',
+          userId: selectedRow.id,
+          data: { role: changeProfileRole },
+          reasonCode: changeProfileReasonCode,
+          reasonNotes: changeProfileNoteText,
+        }).unwrap();
+        notify.success(`Role changed to ${changeProfileRole}`);
+      }
       setChangeProfileOpen(false);
       setChangeProfileConfirmOpen(false);
       fetchUsers();
     } catch (err: unknown) {
       notify.error(
-        (err as { data?: { message?: string } })?.data?.message || 'Failed to change role',
+        (err as { data?: { message?: string } })?.data?.message ||
+          (changeProfileMode === 'status' ? 'Failed to change status' : 'Failed to change role'),
       );
     } finally {
       setIsSavingProfile(false);
@@ -583,73 +646,160 @@ const useUserManagement = () => {
     }
   };
 
-  // ── Columns ───────────────────────────────────────────────────────────────────
-  const columns: Column<UserRow>[] = useMemo(
+  // ── Smart expiry colour helper ────────────────────────────────────────────────
+  const expiryNode = (expiryStr: string | null, createdAt: string): React.ReactNode => {
+    if (!expiryStr) return <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>—</span>;
+    const now = Date.now();
+    const expiry = new Date(expiryStr).getTime();
+    const start = new Date(createdAt).getTime();
+    const total = expiry - start;
+    const remaining = expiry - now;
+
+    let color = '#16a34a';
+    if (remaining <= 0) {
+      color = '#dc2626';
+    } else if (remaining <= 6 * 3_600_000) {
+      color = '#dc2626';
+    } else if (total > 0 && (now - start) / total >= 0.5) {
+      color = '#d97706';
+    }
+
+    const label = remaining <= 0 ? 'Expired' : fmtDateUser(expiryStr, undefined, undefined);
+    return (
+      <span
+        style={{ color, fontWeight: remaining <= 6 * 3_600_000 ? 700 : 500, fontSize: '0.82rem' }}
+      >
+        {label}
+      </span>
+    );
+  };
+
+  // ── CustomerOnboarding columns ────────────────────────────────────────────────
+  const columns: Column<CustomerOnboardingRow>[] = useMemo(
     () => [
-      { id: 'sno', label: 'S.No', minWidth: 60, sortable: false },
+      { id: 'sno', label: 'S.No', minWidth: 55, sortable: false },
       {
-        id: 'name',
+        id: 'firstName',
         label: 'Name',
-        minWidth: 130,
-        format: (_v: unknown, row: UserRow): React.ReactNode =>
-          React.createElement(
-            'span',
-            {
-              role: 'button',
-              tabIndex: 0,
-              style: {
-                fontWeight: 500,
-                cursor: 'pointer',
-                textDecoration: selectedRow?.id === row.id ? 'underline' : 'none',
-              },
-              onClick: (e: React.MouseEvent) => {
-                e.stopPropagation();
-                handleRowClick(row);
-              },
-              onKeyDown: (e: React.KeyboardEvent) => {
-                if (e.key === 'Enter') handleRowClick(row);
-              },
-            },
-            String(row.name || '-'),
-          ),
-      },
-      { id: 'email', label: 'Work Email', minWidth: 180, format: (v) => String(v || '-') },
-      {
-        id: 'role',
-        label: 'User Role',
         minWidth: 150,
+        format: (_v: unknown, row: CustomerOnboardingRow): React.ReactNode => (
+          <span style={{ fontWeight: 600 }}>
+            {`${row.firstName} ${row.lastName}`.trim() || '—'}
+          </span>
+        ),
+      },
+      { id: 'phone', label: 'Phone', minWidth: 125, format: (v) => String(v || '—') },
+      { id: 'email', label: 'Email', minWidth: 185, format: (v) => String(v || '—') },
+      { id: 'city', label: 'City', minWidth: 100, format: (v) => String(v || '—') },
+      {
+        id: 'serviceCategory',
+        label: 'Service',
+        minWidth: 110,
         format: (v): React.ReactNode => {
-          const role = String(v || '');
-          if (!role || role === '-') return '-';
-          const colorMap: Record<string, 'warning' | 'success' | 'primary'> = {
-            admin: 'warning',
-            captain: 'success',
-            user: 'primary',
-          };
+          const s = String(v || '');
           return (
             <Chip
-              label={role.charAt(0).toUpperCase() + role.slice(1)}
-              color={colorMap[role] || 'default'}
+              label={s.charAt(0).toUpperCase() + s.slice(1)}
+              color={s === 'mobility' ? 'primary' : 'secondary'}
               size='small'
-              sx={{ fontWeight: 600, fontSize: '0.7rem' }}
+              variant='outlined'
+              sx={{ fontWeight: 700, fontSize: '0.68rem' }}
             />
           );
         },
       },
       {
-        id: 'status' as keyof UserRow,
-        label: 'Status',
+        id: 'vehicleType',
+        label: 'Veh. Type',
+        minWidth: 110,
+        format: (v) =>
+          String(v || '—')
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, (c) => c.toUpperCase()),
+      },
+      { id: 'vehicleNumber', label: 'Veh. No.', minWidth: 115, format: (v) => String(v || '—') },
+      { id: 'rcNumber', label: 'RC No.', minWidth: 130, format: (v) => String(v || '—') },
+      {
+        id: 'rcExpiry' as keyof CustomerOnboardingRow,
+        label: 'RC Expiry',
+        minWidth: 130,
+        format: (_v: unknown, row: CustomerOnboardingRow): React.ReactNode =>
+          expiryNode(row.rcExpiry ?? null, row.createdAt),
+      },
+      { id: 'dlNumber', label: 'DL No.', minWidth: 130, format: (v) => String(v || '—') },
+      {
+        id: 'dlExpiry',
+        label: 'DL Expiry',
+        minWidth: 130,
+        format: (_v: unknown, row: CustomerOnboardingRow): React.ReactNode =>
+          expiryNode(row.dlExpiry, row.createdAt),
+      },
+      {
+        id: 'insuranceNumber' as keyof CustomerOnboardingRow,
+        label: 'Ins. No.',
         minWidth: 120,
+        format: (v) => String(v || '—'),
+      },
+      {
+        id: 'insuranceExpiry' as keyof CustomerOnboardingRow,
+        label: 'Ins. Expiry',
+        minWidth: 120,
+        format: (_v: unknown, row: CustomerOnboardingRow): React.ReactNode =>
+          expiryNode(row.insuranceExpiry ?? null, row.createdAt),
+      },
+      {
+        id: 'idProofType',
+        label: 'ID Type',
+        minWidth: 90,
         format: (v): React.ReactNode => {
-          const status = String(v || '');
-          if (!status || status === '-') return '-';
-          const label = status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-          const color =
-            status === 'active' ? 'success' : status === 'inactive' ? 'default' : 'warning';
+          const t = String(v || '').toLowerCase();
+          if (!t) return <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>—</span>;
           return (
             <Chip
-              label={label}
-              color={color as 'success' | 'default' | 'warning'}
+              label={t === 'aadhaar' ? 'Aadhaar' : t === 'pan' ? 'PAN' : t}
+              color={t === 'aadhaar' ? 'info' : 'default'}
+              size='small'
+              variant='outlined'
+              sx={{ fontSize: '0.68rem' }}
+            />
+          );
+        },
+      },
+      { id: 'idProofNumber', label: 'ID No.', minWidth: 130, format: (v) => String(v || '—') },
+      {
+        id: 'accessFromDate' as keyof CustomerOnboardingRow,
+        label: 'Access From',
+        minWidth: 120,
+        format: (v) =>
+          v ? (
+            fmtDateUser(v as string, undefined, undefined)
+          ) : (
+            <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>—</span>
+          ),
+      },
+      {
+        id: 'accessToDate' as keyof CustomerOnboardingRow,
+        label: 'Access Until',
+        minWidth: 130,
+        format: (_v: unknown, row: CustomerOnboardingRow): React.ReactNode =>
+          expiryNode(row.accessToDate ?? null, row.accessFromDate ?? row.createdAt),
+      },
+      {
+        id: 'status',
+        label: 'Status',
+        minWidth: 130,
+        format: (v): React.ReactNode => {
+          const s = String(v || '');
+          const colorMap: Record<string, 'warning' | 'success' | 'error' | 'default'> = {
+            pending: 'warning',
+            approved: 'success',
+            rejected: 'error',
+            under_review: 'default',
+          };
+          return (
+            <Chip
+              label={s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+              color={colorMap[s] ?? 'default'}
               size='small'
               variant='outlined'
               sx={{ fontWeight: 600, fontSize: '0.7rem' }}
@@ -658,64 +808,31 @@ const useUserManagement = () => {
         },
       },
       {
-        id: 'isActive' as keyof UserRow,
-        label: 'Access',
-        minWidth: 90,
-        sortable: false,
-        format: (_v, row: UserRow): React.ReactNode => (
-          <Switch
-            size='small'
-            checked={!!row.isActive}
-            color='success'
-            disabled={togglingIds.has(row.id) || row.id === currentUser?.id}
-            onChange={(e) => handleToggleAccess(row, e)}
-            onClick={(e) => e.stopPropagation()}
-          />
-        ),
-      },
-      {
-        id: 'accessFromDate' as keyof UserRow,
-        label: 'Access Start Date',
-        minWidth: 180,
-        format: (v) => fmtDate(v as string),
-      },
-      {
-        id: 'accessToDate' as keyof UserRow,
-        label: 'Access End Date',
-        minWidth: 180,
-        format: (v) => fmtDate(v as string),
-      },
-      {
-        id: 'source' as keyof UserRow,
-        label: 'Source',
-        minWidth: 140,
-        format: (v) => SOURCE_LABELS[String(v).toLowerCase()] || (v ? String(v) : '-'),
-      },
-      {
-        id: 'createdAt' as keyof UserRow,
-        label: 'Joined',
-        minWidth: 140,
-        format: (v) => fmtDateUser(v as string, undefined, undefined),
-      },
-      {
-        id: 'lastActivityAt' as keyof UserRow,
-        label: 'Last Activity',
-        minWidth: 180,
-        format: (v) => fmtDateTimeUser(v as string, undefined, undefined, undefined),
+        id: 'submittedAt',
+        label: 'Submitted',
+        minWidth: 115,
+        format: (v) =>
+          v ? (
+            fmtDateUser(v as string, undefined, undefined)
+          ) : (
+            <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>Pending</span>
+          ),
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [selectedRow],
+    [],
   );
-
-  const getTableData = (users: IAuthUser[], startFrom = 1): UserRow[] =>
-    users.map((u, i) => ({ ...u, sno: startFrom + i }));
 
   const driverHireColumns: Column<DriverHireRow>[] = [
     { id: 'sno', label: 'S.No', minWidth: 60, align: 'center', sortable: false },
     { id: 'name', label: 'Name', minWidth: 150, format: (v: unknown) => String(v || '-') },
     { id: 'email', label: 'Email', minWidth: 210, format: (v: unknown) => String(v || '-') },
-    { id: 'vehicleType', label: 'Vehicle Type', minWidth: 140, format: (v: unknown) => String(v || '-') },
+    {
+      id: 'vehicleType',
+      label: 'Vehicle Type',
+      minWidth: 140,
+      format: (v: unknown) => String(v || '-'),
+    },
     { id: 'location', label: 'Location', minWidth: 140, format: (v: unknown) => String(v || '-') },
     { id: 'duration', label: 'Duration', minWidth: 120, format: (v: unknown) => String(v || '-') },
     {
@@ -726,7 +843,10 @@ const useUserManagement = () => {
       format: (v: unknown): React.ReactNode => {
         const s = String(v || '');
         const colorMap: Record<string, 'warning' | 'info' | 'success' | 'error' | 'default'> = {
-          pending: 'warning', matched: 'info', completed: 'success', rejected: 'error',
+          pending: 'warning',
+          matched: 'info',
+          completed: 'success',
+          rejected: 'error',
         };
         return (
           <Chip
@@ -743,10 +863,20 @@ const useUserManagement = () => {
     { id: 'sno', label: 'S.No', minWidth: 60, align: 'center', sortable: false },
     { id: 'name', label: 'Name', minWidth: 150, format: (v: unknown) => String(v || '-') },
     { id: 'email', label: 'Email', minWidth: 210, format: (v: unknown) => String(v || '-') },
-    { id: 'vehicleType', label: 'Vehicle Type', minWidth: 140, format: (v: unknown) => String(v || '-') },
+    {
+      id: 'vehicleType',
+      label: 'Vehicle Type',
+      minWidth: 140,
+      format: (v: unknown) => String(v || '-'),
+    },
     { id: 'location', label: 'Location', minWidth: 140, format: (v: unknown) => String(v || '-') },
     { id: 'duration', label: 'Duration', minWidth: 120, format: (v: unknown) => String(v || '-') },
-    { id: 'startDate', label: 'Start Date', minWidth: 130, format: (v: unknown) => String(v || '-') },
+    {
+      id: 'startDate',
+      label: 'Start Date',
+      minWidth: 130,
+      format: (v: unknown) => String(v || '-'),
+    },
     {
       id: 'status',
       label: 'Status',
@@ -755,7 +885,10 @@ const useUserManagement = () => {
       format: (v: unknown): React.ReactNode => {
         const s = String(v || '');
         const colorMap: Record<string, 'warning' | 'info' | 'success' | 'error' | 'default'> = {
-          pending: 'warning', active: 'info', completed: 'success', rejected: 'error',
+          pending: 'warning',
+          active: 'info',
+          completed: 'success',
+          rejected: 'error',
         };
         return (
           <Chip
@@ -768,67 +901,83 @@ const useUserManagement = () => {
     },
   ];
 
-  const draftRow: UserRow | null =
-    draftMeta && draftValues
-      ? ({
-          id: -1,
-          sno: 0,
-          firstName: draftValues.firstName || '',
-          lastName: draftValues.lastName || '',
-          name:
-            [draftValues.firstName, draftValues.lastName].filter(Boolean).join(' ') ||
-            '(Draft User)',
-          email: draftValues.email || '—',
-          phone: draftValues.phone || null,
-          businessUnit: draftValues.businessUnit || null,
-          employeeId: draftValues.employeeId || null,
-          dateOfBirth: null,
-          profilePicture: null,
-          reasonForAccess: draftValues.reasonForAccess || null,
-          role: draftValues.role as UserRole,
-          requestedRole: null,
-          status: 'draft',
-          reviewedBy: null,
-          reviewedAt: null,
-          adminNotes: `Draft saved ${new Date(draftMeta.savedAt).toLocaleDateString()} · Expires in ${getDraftDaysRemaining(draftMeta.expiresAt)} days`,
-          isActive: false,
-          createdAt: draftMeta.savedAt,
-          updatedAt: draftMeta.savedAt,
-          accessFromDate: draftMeta.savedAt,
-          accessToDate: draftMeta.expiresAt,
-          application: null,
-          applicationLead: null,
-          captainProfileUpdated: false,
-          mustResetPassword: false,
-          source: 'draft',
-          lastActivityAt: null,
-        } as unknown as UserRow)
-      : null;
+  const parcelColumns: Column<ParcelRow>[] = [
+    { id: 'sno', label: 'S.No', minWidth: 60, align: 'center', sortable: false },
+    { id: 'name', label: 'Name', minWidth: 150, format: (v: unknown) => String(v || '-') },
+    { id: 'email', label: 'Email', minWidth: 210, format: (v: unknown) => String(v || '-') },
+    {
+      id: 'pickupLocation',
+      label: 'Pickup Location',
+      minWidth: 160,
+      format: (v: unknown) => String(v || '-'),
+    },
+    {
+      id: 'dropLocation',
+      label: 'Drop Location',
+      minWidth: 160,
+      format: (v: unknown) => String(v || '-'),
+    },
+    {
+      id: 'parcelType',
+      label: 'Parcel Type',
+      minWidth: 130,
+      format: (v: unknown) => String(v || '-'),
+    },
+    { id: 'weight', label: 'Weight', minWidth: 100, format: (v: unknown) => String(v || '-') },
+    {
+      id: 'status',
+      label: 'Status',
+      minWidth: 120,
+      align: 'center',
+      format: (v: unknown): React.ReactNode => {
+        const s = String(v || '');
+        const colorMap: Record<string, 'warning' | 'info' | 'success' | 'error' | 'default'> = {
+          pending: 'warning',
+          in_transit: 'info',
+          delivered: 'success',
+          rejected: 'error',
+        };
+        return (
+          <Chip
+            label={s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+            color={colorMap[s] ?? 'default'}
+            size='small'
+          />
+        );
+      },
+    },
+  ];
 
   return {
     // table
-    allUsers,
-    admins,
-    captains,
+    customerOnboardings,
+    selectedOnboarding,
+    setSelectedOnboarding,
+    handleOnboardingRowClick,
+    // edit onboarding
+    editOnboardingOpen,
+    setEditOnboardingOpen,
+    editOnboardingForm,
+    setEditOnboardingForm,
+    isSavingOnboarding,
+    isOnboardingDirty,
+    handleOpenEditOnboarding,
+    handleSaveEditOnboarding,
     driverHireRequests,
     vehicleRentalRequests,
+    parcelRequests,
     isLoading,
     isMobile,
     tabValue,
     setTabValue,
     tableSearch,
     setTableSearch,
-    togglingIds,
     selectedRow,
     setSelectedRow,
-    fetchUsers,
-    handleRowClick,
-    handleToggleAccess,
     columns,
     driverHireColumns,
     vehicleRentalColumns,
-    getTableData,
-    draftRow,
+    parcelColumns,
     currentUser,
     // edit
     editOpen,
@@ -837,31 +986,13 @@ const useUserManagement = () => {
     setEditForm,
     isSavingEdit,
     isDirty,
-    adminNotes,
-    setAdminNotes,
     handleOpenEdit,
     handleSaveEdit,
     // create
     createOpen,
     setCreateOpen,
-    isOpenedAsDraft,
-    setIsOpenedAsDraft,
-    draftMeta,
-    setDraftMeta,
-    draftValues,
-    setDraftValues,
-    genPassword,
-    setGenPassword,
-    showGenPw,
-    setShowGenPw,
-    createFormik,
     handleOpenNew,
-    handleOpenDraft,
-    handleRegeneratePw,
-    handleApplyGenPw,
-    handleSaveDraft,
-    handleCancelCreate,
-    reqError,
+    handleCreateSubmit,
     // changes log
     changesLogOpen,
     setChangesLogOpen,
@@ -901,6 +1032,7 @@ const useUserManagement = () => {
     // change profile
     changeProfileOpen,
     setChangeProfileOpen,
+    changeProfileMode,
     changeProfileRole,
     setChangeProfileRole,
     changeProfileReasonCode,
@@ -945,11 +1077,6 @@ const useUserManagement = () => {
     setResetPwErrors,
     handleOpenResetPw,
     handleResetPassword,
-    // admin controls
-    adminControlsOpen,
-    setAdminControlsOpen,
-    selectedTheme,
-    handleThemeChange,
   };
 };
 

@@ -32,19 +32,30 @@ import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { useStyles } from './styles';
-import { UserRow, ChangeLogEntry } from '../../types/userManagement.types';
+import { UserRow, ChangeLogEntry, CustomerOnboardingRow } from '../../types/userManagement.types';
 import {
   LOG_COLUMNS,
   CHANGE_TYPE_COLORS,
   ROLE_CHANGE_REASON_CODES,
+  STATUS_CHANGE_REASON_CODES,
   formatChangeType,
   fmtDateTime,
 } from '../../utils/userManagement.utils';
+
+const ALL_REASON_CODES = [...ROLE_CHANGE_REASON_CODES, ...STATUS_CHANGE_REASON_CODES];
+
+const STATUS_COLORS: Record<string, 'warning' | 'default' | 'success' | 'error'> = {
+  pending: 'warning',
+  under_review: 'default',
+  approved: 'success',
+  rejected: 'error',
+};
 
 interface ChangesLogDialogProps {
   open: boolean;
   onClose: () => void;
   selectedRow: UserRow | null;
+  selectedOnboarding?: CustomerOnboardingRow | null;
   changeLog: ChangeLogEntry[];
   isLoadingLog: boolean;
   logSearch: string;
@@ -80,6 +91,7 @@ const ChangesLogDialog = ({
   open,
   onClose,
   selectedRow,
+  selectedOnboarding,
   changeLog,
   isLoadingLog,
   logSearch,
@@ -161,15 +173,28 @@ const ChangesLogDialog = ({
               {selectedRow?.email}
             </Typography>
             <Box className={classes.chipRowInline}>
-              <Chip
-                label={
-                  selectedRow?.role
-                    ? selectedRow.role.charAt(0).toUpperCase() + selectedRow.role.slice(1)
-                    : '-'
-                }
-                size='small'
-                className={classes.roleChip}
-              />
+              {selectedOnboarding ? (
+                <Chip
+                  label={
+                    (selectedOnboarding.status || '-')
+                      .replace(/_/g, ' ')
+                      .replace(/\b\w/g, (c) => c.toUpperCase())
+                  }
+                  size='small'
+                  color={STATUS_COLORS[selectedOnboarding.status] ?? 'default'}
+                  className={classes.roleChip}
+                />
+              ) : (
+                <Chip
+                  label={
+                    selectedRow?.role
+                      ? selectedRow.role.charAt(0).toUpperCase() + selectedRow.role.slice(1)
+                      : '-'
+                  }
+                  size='small'
+                  className={classes.roleChip}
+                />
+              )}
               <Typography variant='caption' className={classes.metaCaption}>
                 {changeLog.length > 0
                   ? `Last change: ${fmtDateTime(changeLog[0]?.createdAt)}`
@@ -305,7 +330,7 @@ const ChangesLogDialog = ({
                   }}
                 >
                   <MenuItem value=''>All Reasons</MenuItem>
-                  {ROLE_CHANGE_REASON_CODES.map((r) => (
+                  {ALL_REASON_CODES.map((r) => (
                     <MenuItem key={r.value} value={r.value}>
                       {r.label}
                     </MenuItem>
@@ -354,7 +379,7 @@ const ChangesLogDialog = ({
               )}
               {logFilterReason && (
                 <Chip
-                  label={`Reason: ${ROLE_CHANGE_REASON_CODES.find((r) => r.value === logFilterReason)?.label || logFilterReason}`}
+                  label={`Reason: ${ALL_REASON_CODES.find((r) => r.value === logFilterReason)?.label || logFilterReason}`}
                   size='small'
                   onDelete={() => onLogFilterReasonChange('')}
                   sx={{ height: 20, fontSize: '0.7rem' }}
@@ -450,7 +475,7 @@ const ChangesLogDialog = ({
                     {log.reasonCode ? (
                       <Chip
                         label={
-                          ROLE_CHANGE_REASON_CODES.find((r) => r.value === log.reasonCode)?.label ||
+                          ALL_REASON_CODES.find((r) => r.value === log.reasonCode)?.label ||
                           log.reasonCode
                         }
                         size='small'

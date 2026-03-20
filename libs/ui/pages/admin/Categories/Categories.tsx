@@ -1,6 +1,5 @@
 import { Box, Loader, DataTable } from '@bandi/component';
 import { Typography, Tabs, Divider, TextField, InputAdornment } from '@mui/material';
-import GlobalStyles from '@mui/material/GlobalStyles';
 import CategoryIcon from '@mui/icons-material/Category';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
@@ -12,8 +11,10 @@ import { useCategories } from './hooks/useCategories';
 import TabPanel from './components/TabPanel';
 import DetailDialog from './dialogs/DetailDialog/DetailDialog';
 import ActionDialog from './dialogs/ActionDialog/ActionDialog';
+import { useAdminKeyframes } from '@bandi/hooks';
 
 const Categories = () => {
+  const keyframes = useAdminKeyframes();
   const { classes } = useStyles();
   const {
     isLoading,
@@ -35,18 +36,6 @@ const Categories = () => {
     setActionNotes,
     getFilteredData,
   } = useCategories();
-
-  const keyframes = (
-    <GlobalStyles
-      styles={`
-      @keyframes um-gradient-shift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-      @keyframes um-orb-drift { 0%, 100% { transform: translate(0, 0) scale(1); } 25% { transform: translate(22px, -18px) scale(1.06); } 75% { transform: translate(-16px, 12px) scale(0.94); } }
-      @keyframes um-float { 0%, 100% { transform: translateY(0px) rotate(0deg); } 40% { transform: translateY(-18px) rotate(6deg); } 70% { transform: translateY(-9px) rotate(-3deg); } }
-      @keyframes um-slide-up { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
-      @keyframes um-counter { from { opacity: 0; transform: scale(0.65) translateY(12px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-    `}
-    />
-  );
 
   if (isLoading) {
     return (

@@ -6,9 +6,14 @@ export const LazyMenuItems = {
   AdminHeaderPage: lazy(() => import('@bandi/pages/admin/Header')),
   AdminSideNavPage: lazy(() => import('@bandi/pages/admin/SideNav')),
 
+  // Team pages
+  AdminAdminsPage: lazy(() => import('@bandi/pages/admin/Admins')),
+  AdminUserDetailPage: lazy(() => import('@bandi/pages/admin/UserDetail')),
+
   // Governance pages
   AdminDashboardPage: lazy(() => import('@bandi/pages/admin/Dashboard')),
-  AdminAccessRequestPage: lazy(() => import('@bandi/pages/admin/AccessRequest')),
+  AdminConsultantPage: lazy(() => import('@bandi/pages/admin/Consultant')),
+  AdminAccessManagementPage: lazy(() => import('@bandi/pages/admin/AccessManagement')),
   AdminAuditTrailsPage: lazy(() => import('@bandi/pages/admin/AuditTrails')),
   AdminEventsPage: lazy(() => import('@bandi/pages/admin/Events')),
 
@@ -23,9 +28,40 @@ export const LazyMenuItems = {
   AdminUserManagementPage: lazy(() => import('@bandi/pages/admin/UserManagement')),
   AdminSettingsPage: lazy(() => import('@bandi/pages/admin/Settings')),
 
+  // Operations pages
+  AdminRidesPage: lazy(() => import('@bandi/pages/admin/Rides')),
+
   // Mobility Services pages
   AdminDriverHirePage: lazy(() => import('@bandi/pages/admin/DriverHire')),
   AdminVehicleRentalPage: lazy(() => import('@bandi/pages/admin/VehicleRental')),
+  AdminParcelPage: lazy(() => import('@bandi/pages/admin/Parcel')),
+  AdminLogisticsPage: lazy(() => import('@bandi/pages/admin/Logistics')),
+
+  // Finance pages
+  AdminTransactionsPage: lazy(() => import('@bandi/pages/admin/Transactions')),
+  AdminDriverEarningsPage: lazy(() => import('@bandi/pages/admin/DriverEarnings')),
+  AdminCommissionsPage: lazy(() => import('@bandi/pages/admin/Commissions')),
+
+  // Requests pages
+  AdminKycPage: lazy(() => import('@bandi/pages/admin/Kyc')),
+  AdminCreateManagementPage: lazy(() =>
+    import('@bandi/pages/admin/CreateTicket').then((m) => ({ default: m.CreateManagement })),
+  ),
+  AdminCreateManagementFormPage: lazy(() =>
+    import('@bandi/pages/admin/CreateTicket').then((m) => ({ default: m.CreateManagementForm })),
+  ),
+  AdminCreateCustomerPage: lazy(() => import('@bandi/pages/admin/CreateCustomer')),
+
+  // Reports pages
+  AdminAnalyticsPage: lazy(() => import('@bandi/pages/admin/Analytics')),
+
+  // Configuration pages
+  AdminPricingPage: lazy(() => import('@bandi/pages/admin/Pricing')),
+  AdminServiceTypesPage: lazy(() => import('@bandi/pages/admin/ServiceTypes')),
+  AdminBusinessRulesPage: lazy(() => import('@bandi/pages/admin/BusinessRules')),
+  AdminFeatureFlagsPage: lazy(() => import('@bandi/pages/admin/FeatureFlags')),
+  AdminZonesPage: lazy(() => import('@bandi/pages/admin/Zones')),
+  AdminIntegrationsPage: lazy(() => import('@bandi/pages/admin/Integrations')),
 
   // Supporting pages
   AdminProfilePage: lazy(() => import('@bandi/pages/admin/Profile')),

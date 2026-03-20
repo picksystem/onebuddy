@@ -152,9 +152,9 @@ const Profile = () => {
     firstName: '',
     lastName: '',
     phone: '',
-    dateOfBirth: '',
     employeeId: '',
     businessUnit: '',
+    reasonForAccess: '',
   });
 
   // ── Password form ───────────────────────────────────────────────────────────
@@ -171,9 +171,9 @@ const Profile = () => {
       firstName: user.firstName || '',
       lastName: user.lastName || '',
       phone: user.phone || '',
-      dateOfBirth: user.dateOfBirth || '',
       employeeId: user.employeeId || '',
       businessUnit: user.businessUnit || '',
+      reasonForAccess: user.reasonForAccess || '',
     });
   }, [user]);
 
@@ -212,7 +212,11 @@ const Profile = () => {
       const prev = profilePic;
       setProfilePic(b64);
       try {
-        await authAction({ action: 'update-my-profile', data: { profilePicture: b64 } }).unwrap();
+        await authAction({
+          action: 'update-user',
+          userId: user?.id,
+          data: { profilePicture: b64 },
+        }).unwrap();
         dispatch(updateUser({ profilePicture: b64 }));
         notify.success('Profile photo updated');
       } catch {
@@ -225,9 +229,14 @@ const Profile = () => {
   };
 
   const handleRemovePhoto = async () => {
+    if (!user) return;
     setProfilePic(null);
     try {
-      await authAction({ action: 'update-my-profile', data: { profilePicture: null } }).unwrap();
+      await authAction({
+        action: 'update-user',
+        userId: user.id,
+        data: { profilePicture: null },
+      }).unwrap();
       dispatch(updateUser({ profilePicture: null }));
       notify.success('Photo removed');
     } catch {
@@ -237,18 +246,23 @@ const Profile = () => {
 
   // ── Save profile ────────────────────────────────────────────────────────────
   const handleSave = async () => {
+    if (!user) return;
     try {
-      const result = (await authAction({
-        action: 'update-my-profile',
-        data: form,
-      }).unwrap()) as { message?: string };
+      await authAction({
+        action: 'update-user',
+        userId: user.id,
+        data: {
+          ...form,
+          name: `${form.firstName} ${form.lastName}`,
+        },
+      }).unwrap();
       dispatch(
         updateUser({
           ...form,
           name: `${form.firstName} ${form.lastName}`,
         }),
       );
-      notify.success(result?.message || 'Profile updated');
+      notify.success('Profile updated');
       setIsEditing(false);
     } catch (err: unknown) {
       notify.error(
@@ -263,9 +277,9 @@ const Profile = () => {
       firstName: user.firstName || '',
       lastName: user.lastName || '',
       phone: user.phone || '',
-      dateOfBirth: user.dateOfBirth || '',
       employeeId: user.employeeId || '',
       businessUnit: user.businessUnit || '',
+      reasonForAccess: user.reasonForAccess || '',
     });
     setIsEditing(false);
   };
@@ -459,7 +473,6 @@ const Profile = () => {
               >
                 Edit Profile
               </Button>
-
             ) : (
               <Chip label='Editing' color='warning' size='small' className={classes.editingChip} />
             )}
@@ -516,35 +529,28 @@ const Profile = () => {
                   type='tel'
                   slotProps={{ htmlInput: { maxLength: 20 } }}
                 />
-                <TextField
-                  label='Date of Birth'
-                  value={f('dateOfBirth')}
-                  onChange={(e) => setForm((p) => ({ ...p, dateOfBirth: e.target.value }))}
-                  fullWidth
-                  size='small'
-                  type='date'
-                  slotProps={{ inputLabel: { shrink: true } }}
-                />
               </Box>
             ) : (
               <Box className={classes.fieldGrid}>
                 <ReadField label='First Name' value={user?.firstName} classes={classes} />
                 <ReadField label='Last Name' value={user?.lastName} classes={classes} />
                 <ReadField label='Phone' value={user?.phone} classes={classes} />
-                <ReadField
-                  label='Date of Birth'
-                  value={user?.dateOfBirth ? fmtDate(user.dateOfBirth) : null}
-                  classes={classes}
-                />
+                {user?.dateOfBirth && (
+                  <ReadField
+                    label='Date of Birth'
+                    value={fmtDate(user.dateOfBirth)}
+                    classes={classes}
+                  />
+                )}
               </Box>
             )}
           </Box>
 
-          {/* Organization */}
+          {/* Work Details */}
           <Box className={classes.sectionCard}>
             <SectionHeader
               icon={<BusinessIcon sx={{ fontSize: 16 }} />}
-              title='Organization'
+              title='Work Details'
               classes={classes}
             />
             {isEditing ? (
@@ -589,15 +595,63 @@ const Profile = () => {
                     },
                   }}
                 />
+                <TextField
+                  label='Reason for Access'
+                  value={f('reasonForAccess')}
+                  onChange={(e) => setForm((p) => ({ ...p, reasonForAccess: e.target.value }))}
+                  fullWidth
+                  size='small'
+                  multiline
+                  minRows={2}
+                  slotProps={{ htmlInput: { maxLength: 500 } }}
+                  sx={{ gridColumn: '1 / -1' }}
+                />
               </Box>
             ) : (
               <Box className={classes.fieldGrid}>
                 <ReadField label='Email' value={user?.email} classes={classes} />
                 <ReadField label='Business Unit' value={user?.businessUnit} classes={classes} />
                 <ReadField label='Employee ID' value={user?.employeeId} classes={classes} />
+                {user?.reasonForAccess && (
+                  <ReadField
+                    label='Reason for Access'
+                    value={user.reasonForAccess}
+                    classes={classes}
+                  />
+                )}
               </Box>
             )}
           </Box>
+
+          {/* Account & Access */}
+          {!isEditing && (user?.accessFromDate || user?.accessToDate || user?.adminNotes) && (
+            <Box className={classes.sectionCard}>
+              <SectionHeader
+                icon={<CalendarTodayIcon sx={{ fontSize: 16 }} />}
+                title='Account & Access'
+                classes={classes}
+              />
+              <Box className={classes.fieldGrid}>
+                {user?.accessFromDate && (
+                  <ReadField
+                    label='Access From'
+                    value={fmtDate(user.accessFromDate)}
+                    classes={classes}
+                  />
+                )}
+                {user?.accessToDate && (
+                  <ReadField
+                    label='Access Until'
+                    value={fmtDate(user.accessToDate)}
+                    classes={classes}
+                  />
+                )}
+                {user?.adminNotes && (
+                  <ReadField label='Admin Notes' value={user.adminNotes} classes={classes} />
+                )}
+              </Box>
+            </Box>
+          )}
 
           {isEditing && (
             <Box className={classes.saveBar}>
@@ -634,33 +688,25 @@ const Profile = () => {
 
             <Box className={classes.securityGrid}>
               <Box className={classes.securityItem}>
-                <Typography className={classes.securityItemLabel}>
-                  Account Created
-                </Typography>
+                <Typography className={classes.securityItemLabel}>Account Created</Typography>
                 <Typography className={classes.securityItemValue}>
                   {fmtDate(user?.createdAt)}
                 </Typography>
               </Box>
               <Box className={classes.securityItem}>
-                <Typography className={classes.securityItemLabel}>
-                  Last Updated
-                </Typography>
+                <Typography className={classes.securityItemLabel}>Last Updated</Typography>
                 <Typography className={classes.securityItemValue}>
                   {fmtDate(user?.updatedAt)}
                 </Typography>
               </Box>
               <Box className={classes.securityItem}>
-                <Typography className={classes.securityItemLabel}>
-                  Last Active
-                </Typography>
+                <Typography className={classes.securityItemLabel}>Last Active</Typography>
                 <Typography className={classes.securityItemValue}>
                   {user?.lastActivityAt ? fmtDate(user.lastActivityAt) : '—'}
                 </Typography>
               </Box>
               <Box className={classes.securityItem}>
-                <Typography className={classes.securityItemLabel}>
-                  Role
-                </Typography>
+                <Typography className={classes.securityItemLabel}>Role</Typography>
                 <Box className={classes.securityItemChipBox}>
                   <Chip
                     label={user?.role?.toUpperCase()}
@@ -671,9 +717,7 @@ const Profile = () => {
                 </Box>
               </Box>
               <Box className={classes.securityItem}>
-                <Typography className={classes.securityItemLabel}>
-                  Status
-                </Typography>
+                <Typography className={classes.securityItemLabel}>Status</Typography>
                 <Box className={classes.securityItemChipBox}>
                   <Chip
                     label={String(user?.status || '')
@@ -686,9 +730,7 @@ const Profile = () => {
                 </Box>
               </Box>
               <Box className={classes.securityItem}>
-                <Typography className={classes.securityItemLabel}>
-                  Source
-                </Typography>
+                <Typography className={classes.securityItemLabel}>Source</Typography>
                 <Typography
                   variant='body2'
                   fontWeight={600}

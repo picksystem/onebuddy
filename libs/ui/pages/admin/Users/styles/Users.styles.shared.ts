@@ -46,8 +46,7 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
       width: 280,
       height: 280,
       borderRadius: '50%',
-      background:
-        'radial-gradient(circle at center, rgba(14,165,233,0.3) 0%, transparent 70%)',
+      background: 'radial-gradient(circle at center, rgba(14,165,233,0.3) 0%, transparent 70%)',
       animation: 'um-orb-drift 10s ease-in-out infinite reverse',
       pointerEvents: 'none',
     },
@@ -64,8 +63,7 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
     width: 180,
     height: 180,
     borderRadius: '50%',
-    background:
-      'radial-gradient(circle at center, rgba(251,191,36,0.22) 0%, transparent 70%)',
+    background: 'radial-gradient(circle at center, rgba(251,191,36,0.22) 0%, transparent 70%)',
     animation: 'um-float 9s ease-in-out infinite',
     pointerEvents: 'none',
     zIndex: 0,
@@ -244,6 +242,7 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
   toolbar: {
     padding: theme.spacing(1.5, 2),
     marginTop: theme.spacing(1),
+    marginBottom: theme.spacing(1.5),
     background: 'rgba(255,255,255,0.87) !important',
     backdropFilter: 'blur(20px)',
     borderRadius: '14px !important',
@@ -264,7 +263,7 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
     '& > span': { flex: 1, minWidth: 0 },
     '& > .MuiButton-root': { flex: 1, minWidth: 0 },
     '& span > .MuiButton-root': { width: '100%' },
-    [theme.breakpoints.down('md')]: {
+    [theme.breakpoints.down('sm')]: {
       flexDirection: 'column' as const,
       alignItems: 'stretch',
       gap: theme.spacing(0.75),
@@ -456,11 +455,15 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
   },
 
   selectionIndicator: {
-    display: 'block',
+    display: 'flex',
+    alignItems: 'center',
+    flexWrap: 'wrap' as const,
+    gap: theme.spacing(0.75),
     marginTop: theme.spacing(1),
     paddingTop: theme.spacing(0.75),
     borderTop: '1px solid rgba(79,70,229,0.08)',
     fontSize: '0.78rem',
     color: 'rgba(0,0,0,0.45)',
+    animation: 'um-slide-up 0.55s cubic-bezier(0.34,1.56,0.64,1) both',
   },
 });

@@ -13,18 +13,24 @@ import {
 } from '@mui/material';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
-import HowToRegIcon from '@mui/icons-material/HowToReg';
+import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import CloseIcon from '@mui/icons-material/Close';
-import { IAuthUser } from '@bandi/interfaces';
 import { CaptainsRow, ActionType } from '../../types/captains.types';
 import DetailField from '../../components/DetailField';
 import { useStyles } from './styles';
 
 interface DetailDialogProps {
-  detailUser: IAuthUser | null;
+  detailUser: CaptainsRow | null;
   onClose: () => void;
   onOpenAction: (user: CaptainsRow, type: ActionType) => void;
 }
+
+const statusColor: Record<string, 'warning' | 'default' | 'success' | 'error'> = {
+  pending: 'warning',
+  under_review: 'default',
+  approved: 'success',
+  rejected: 'error',
+};
 
 const DetailDialog = ({ detailUser, onClose, onOpenAction }: DetailDialogProps) => {
   const { classes } = useStyles();
@@ -41,48 +47,42 @@ const DetailDialog = ({ detailUser, onClose, onOpenAction }: DetailDialogProps) 
           {/* Header banner */}
           <Box className={classes.dialogHeader}>
             <Box className={classes.dialogHeaderBadge}>
-              <HowToRegIcon className={classes.dialogHeaderBadgeIcon} />
+              <DirectionsCarIcon className={classes.dialogHeaderBadgeIcon} />
               <Typography
                 variant='caption'
                 fontWeight={700}
                 className={classes.dialogHeaderBadgeText}
               >
-                Access Request Review
+                Captain Onboarding Review
               </Typography>
             </Box>
             <Box className={classes.dialogHeaderUserRow}>
-              <Avatar
-                src={detailUser.profilePicture || undefined}
-                className={classes.dialogHeaderAvatar}
-              >
-                {!detailUser.profilePicture &&
-                  `${detailUser.firstName?.[0] ?? ''}${detailUser.lastName?.[0] ?? ''}`.toUpperCase()}
+              <Avatar className={classes.dialogHeaderAvatar}>
+                {`${detailUser.firstName?.[0] ?? ''}${detailUser.lastName?.[0] ?? ''}`.toUpperCase()}
               </Avatar>
               <Box className={classes.dialogHeaderUserInfo}>
                 <Typography variant='h6' fontWeight={700} className={classes.dialogHeaderTitle}>
-                  {detailUser.name}
+                  {`${detailUser.firstName} ${detailUser.lastName}`.trim()}
                 </Typography>
                 <Typography variant='body2' className={classes.dialogHeaderSubtitle}>
-                  {detailUser.email}
+                  {detailUser.email || detailUser.phone}
                 </Typography>
                 <Box className={classes.dialogHeaderChipsRow}>
                   <Chip
-                    label={
-                      (detailUser.requestedRole || 'user').charAt(0).toUpperCase() +
-                      (detailUser.requestedRole || 'user').slice(1)
-                    }
+                    label={detailUser.status
+                      .replace(/_/g, ' ')
+                      .replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                    color={statusColor[detailUser.status] ?? 'default'}
                     size='small'
-                    className={classes.roleChip}
                   />
-                  {detailUser.status === 'pending_approval' && (
-                    <Chip label='Pending Review' size='small' className={classes.pendingChip} />
-                  )}
-                  {(detailUser.status === 'active' || detailUser.status === 'invited') && (
-                    <Chip label='Approved' size='small' className={classes.approvedChip} />
-                  )}
-                  {detailUser.status === 'rejected' && (
-                    <Chip label='Rejected' size='small' className={classes.rejectedChip} />
-                  )}
+                  <Chip
+                    label={detailUser.serviceCategory
+                      .replace(/_/g, ' ')
+                      .replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                    size='small'
+                    variant='outlined'
+                    color='primary'
+                  />
                 </Box>
               </Box>
               <IconButton onClick={onClose} className={classes.closeButton}>
@@ -103,74 +103,136 @@ const DetailDialog = ({ detailUser, onClose, onOpenAction }: DetailDialogProps) 
                 <DetailField label='Last Name' value={detailUser.lastName} />
               </Grid>
               <Grid size={{ xs: 6 }}>
+                <DetailField label='Phone' value={detailUser.phone} />
+              </Grid>
+              <Grid size={{ xs: 6 }}>
                 <DetailField label='Email' value={detailUser.email} />
               </Grid>
               <Grid size={{ xs: 6 }}>
-                <DetailField label='Phone' value={detailUser.phone} />
+                <DetailField label='City' value={detailUser.city} />
+              </Grid>
+              <Grid size={{ xs: 6 }}>
+                <DetailField label='Area' value={detailUser.area} />
               </Grid>
             </Grid>
 
             <Divider sx={{ my: 2 }} />
 
             <Typography variant='subtitle2' color='primary' className={classes.sectionTitle}>
-              Work Details
+              Vehicle Details
             </Typography>
             <Grid container spacing={2} sx={{ mb: 2 }}>
               <Grid size={{ xs: 6 }}>
-                <DetailField label='Business Unit' value={detailUser.businessUnit} />
+                <DetailField
+                  label='Vehicle Type'
+                  value={detailUser.vehicleType
+                    ?.replace(/_/g, ' ')
+                    .replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                />
               </Grid>
               <Grid size={{ xs: 6 }}>
-                <DetailField label='Employee ID' value={detailUser.employeeId} />
+                <DetailField label='Vehicle Number' value={detailUser.vehicleNumber} />
+              </Grid>
+              <Grid size={{ xs: 6 }}>
+                <DetailField
+                  label='Fuel Type'
+                  value={detailUser.fuelType
+                    ?.replace(/_/g, ' ')
+                    .replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                />
+              </Grid>
+              <Grid size={{ xs: 6 }}>
+                <DetailField label='Trip Preference' value={detailUser.tripPreference} />
               </Grid>
             </Grid>
 
             <Divider sx={{ my: 2 }} />
 
             <Typography variant='subtitle2' color='primary' className={classes.sectionTitle}>
-              Access Request
+              Documents
+            </Typography>
+            <Grid container spacing={2} sx={{ mb: 2 }}>
+              <Grid size={{ xs: 6 }}>
+                <DetailField label='RC Number' value={detailUser.rcNumber} />
+              </Grid>
+              <Grid size={{ xs: 6 }}>
+                <DetailField label='RC Expiry' value={detailUser.rcExpiry} />
+              </Grid>
+              <Grid size={{ xs: 6 }}>
+                <DetailField label='DL Number' value={detailUser.dlNumber} />
+              </Grid>
+              <Grid size={{ xs: 6 }}>
+                <DetailField label='DL Expiry' value={detailUser.dlExpiry} />
+              </Grid>
+              {detailUser.insuranceNumber && (
+                <>
+                  <Grid size={{ xs: 6 }}>
+                    <DetailField label='Insurance No.' value={detailUser.insuranceNumber} />
+                  </Grid>
+                  <Grid size={{ xs: 6 }}>
+                    <DetailField label='Insurance Expiry' value={detailUser.insuranceExpiry} />
+                  </Grid>
+                </>
+              )}
+              {detailUser.pucNumber && (
+                <>
+                  <Grid size={{ xs: 6 }}>
+                    <DetailField label='PUC Number' value={detailUser.pucNumber} />
+                  </Grid>
+                  <Grid size={{ xs: 6 }}>
+                    <DetailField label='PUC Expiry' value={detailUser.pucExpiry} />
+                  </Grid>
+                </>
+              )}
+              <Grid size={{ xs: 6 }}>
+                <DetailField label='ID Proof Type' value={detailUser.idProofType} />
+              </Grid>
+              <Grid size={{ xs: 6 }}>
+                <DetailField label='ID Proof Number' value={detailUser.idProofNumber} />
+              </Grid>
+            </Grid>
+
+            <Divider sx={{ my: 2 }} />
+
+            <Typography variant='subtitle2' color='primary' className={classes.sectionTitle}>
+              Onboarding Status
             </Typography>
             <Grid container spacing={2}>
               <Grid size={{ xs: 6 }}>
                 <DetailField
-                  label='Requested Role'
+                  label='Status'
                   value={
                     <Chip
-                      label={
-                        (detailUser.requestedRole || 'user').charAt(0).toUpperCase() +
-                        (detailUser.requestedRole || 'user').slice(1)
-                      }
-                      color='primary'
+                      label={detailUser.status
+                        .replace(/_/g, ' ')
+                        .replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                      color={statusColor[detailUser.status] ?? 'default'}
                       size='small'
-                      variant='outlined'
                     />
                   }
                 />
               </Grid>
               <Grid size={{ xs: 6 }}>
                 <DetailField
-                  label='Account Status'
-                  value={detailUser.isActive ? 'Active' : 'Inactive'}
+                  label='Submitted'
+                  value={
+                    detailUser.submittedAt
+                      ? new Date(detailUser.submittedAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })
+                      : '-'
+                  }
                 />
               </Grid>
-              <Grid size={{ xs: 12 }}>
-                <DetailField
-                  label='Signup Date'
-                  value={new Date(detailUser.createdAt).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                />
-              </Grid>
-              {detailUser.reasonForAccess && (
+              {detailUser.adminNotes && (
                 <Grid size={{ xs: 12 }}>
                   <Box className={classes.reasonBox}>
                     <Typography variant='caption' color='text.secondary'>
-                      Reason for Access
+                      Admin Notes
                     </Typography>
-                    <Typography variant='body2'>{detailUser.reasonForAccess}</Typography>
+                    <Typography variant='body2'>{detailUser.adminNotes}</Typography>
                   </Box>
                 </Grid>
               )}
@@ -181,7 +243,7 @@ const DetailDialog = ({ detailUser, onClose, onOpenAction }: DetailDialogProps) 
             <Button onClick={onClose} variant='outlined' className={classes.closeActionButton}>
               Close
             </Button>
-            {detailUser.status === 'pending_approval' && (
+            {(detailUser.status === 'pending' || detailUser.status === 'under_review') && (
               <>
                 <Button
                   variant='outlined'
@@ -189,7 +251,7 @@ const DetailDialog = ({ detailUser, onClose, onOpenAction }: DetailDialogProps) 
                   startIcon={<CancelOutlinedIcon />}
                   className={classes.rejectButton}
                   onClick={() => {
-                    onOpenAction(detailUser as CaptainsRow, 'reject');
+                    onOpenAction(detailUser, 'reject');
                     onClose();
                   }}
                 >
@@ -201,7 +263,7 @@ const DetailDialog = ({ detailUser, onClose, onOpenAction }: DetailDialogProps) 
                   startIcon={<CheckCircleOutlineIcon />}
                   className={classes.approveButton}
                   onClick={() => {
-                    onOpenAction(detailUser as CaptainsRow, 'approve');
+                    onOpenAction(detailUser, 'approve');
                     onClose();
                   }}
                 >

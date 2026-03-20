@@ -17,8 +17,10 @@ import {
   InputLabel,
   FormHelperText,
   Grid,
+  Avatar,
 } from '@mui/material';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CloseIcon from '@mui/icons-material/Close';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
@@ -30,8 +32,29 @@ import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import { useFieldError } from '@bandi/hooks';
 import { useStyles } from './styles';
-import { UserRow, ChangeProfileErrors } from '../../types/userManagement.types';
-import { ROLE_CHANGE_REASON_CODES } from '../../utils/userManagement.utils';
+import { UserRow, ChangeProfileErrors, CustomerOnboardingRow } from '../../types/userManagement.types';
+import { ROLE_CHANGE_REASON_CODES, STATUS_CHANGE_REASON_CODES } from '../../utils/userManagement.utils';
+
+const ONBOARDING_STATUSES = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'under_review', label: 'Under Review' },
+  { value: 'approved', label: 'Approved' },
+  { value: 'rejected', label: 'Rejected' },
+];
+
+const STATUS_COLORS: Record<string, 'warning' | 'default' | 'success' | 'error'> = {
+  pending: 'warning',
+  under_review: 'default',
+  approved: 'success',
+  rejected: 'error',
+};
+
+const getInitials = (firstName: string, lastName: string) => {
+  const f = (firstName || '').trim();
+  const l = (lastName || '').trim();
+  if (!f && !l) return '?';
+  return `${f.charAt(0)}${l.charAt(0)}`.toUpperCase();
+};
 
 interface ChangeProfileDialogProps {
   open: boolean;
@@ -39,6 +62,8 @@ interface ChangeProfileDialogProps {
   confirmOpen: boolean;
   onConfirmClose: () => void;
   selectedRow: UserRow | null;
+  selectedOnboarding?: CustomerOnboardingRow | null;
+  mode?: 'role' | 'status';
   changeProfileRole: string;
   onRoleChange: (v: string) => void;
   changeProfileReasonCode: string;
@@ -62,6 +87,8 @@ const ChangeProfileDialog = ({
   confirmOpen,
   onConfirmClose,
   selectedRow,
+  selectedOnboarding,
+  mode = 'role',
   changeProfileRole,
   onRoleChange,
   changeProfileReasonCode,
@@ -81,6 +108,27 @@ const ChangeProfileDialog = ({
   const { classes } = useStyles();
   const reqError = useFieldError();
 
+  const isStatusMode = mode === 'status';
+  const reasonCodes = isStatusMode ? STATUS_CHANGE_REASON_CODES : ROLE_CHANGE_REASON_CODES;
+
+  // Current value display
+  const currentValue = isStatusMode
+    ? (selectedOnboarding?.status || '-')
+    : (selectedRow?.role || '-');
+
+  const formatStatus = (v: string) =>
+    v.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+  const currentValueLabel = isStatusMode ? formatStatus(currentValue) : (
+    currentValue.charAt(0).toUpperCase() + currentValue.slice(1)
+  );
+
+  const newValueLabel = changeProfileRole
+    ? isStatusMode
+      ? formatStatus(changeProfileRole)
+      : changeProfileRole.charAt(0).toUpperCase() + changeProfileRole.slice(1)
+    : '?';
+
   return (
     <>
       <Dialog
@@ -93,39 +141,57 @@ const ChangeProfileDialog = ({
         {/* Header */}
         <Box className={classes.header}>
           <Box className={classes.badgeRow}>
-            <WarningAmberIcon className={classes.badgeIcon} />
+            {isStatusMode ? (
+              <SwapHorizIcon className={classes.badgeIcon} />
+            ) : (
+              <WarningAmberIcon className={classes.badgeIcon} />
+            )}
             <Typography variant='caption' fontWeight={700} className={classes.badgeLabel}>
-              Role Change Warning
+              {isStatusMode ? 'Status Change' : 'Role Change Warning'}
             </Typography>
           </Box>
 
           <Box className={classes.userCard}>
-            <UserAvatar user={selectedRow ?? {}} size={56} className={classes.headerAvatar} />
+            {isStatusMode && selectedOnboarding ? (
+              <Avatar
+                sx={{
+                  width: 56,
+                  height: 56,
+                  bgcolor: 'primary.main',
+                  fontSize: '1.25rem',
+                  fontWeight: 700,
+                }}
+              >
+                {getInitials(selectedOnboarding.firstName, selectedOnboarding.lastName)}
+              </Avatar>
+            ) : (
+              <UserAvatar user={selectedRow ?? {}} size={56} className={classes.headerAvatar} />
+            )}
             <Box className={classes.infoBox}>
               <Typography variant='h6' fontWeight={700} className={classes.headerTitle}>
                 {selectedRow?.name}
               </Typography>
               <Typography variant='body2' className={classes.headerEmail}>
-                {selectedRow?.email}
+                {isStatusMode && selectedOnboarding
+                  ? (selectedOnboarding.phone || selectedRow?.email)
+                  : selectedRow?.email}
               </Typography>
               <Box className={classes.roleRow}>
                 <Chip
-                  label={
-                    selectedRow?.role
-                      ? selectedRow.role.charAt(0).toUpperCase() + selectedRow.role.slice(1)
-                      : '-'
-                  }
+                  label={currentValueLabel}
                   size='small'
+                  color={isStatusMode ? (STATUS_COLORS[currentValue] ?? 'default') : undefined}
                   className={classes.roleChip}
                 />
                 <ArrowForwardIcon className={classes.roleArrowIcon} />
                 <Chip
-                  label={
-                    changeProfileRole
-                      ? changeProfileRole.charAt(0).toUpperCase() + changeProfileRole.slice(1)
-                      : '?'
-                  }
+                  label={newValueLabel}
                   size='small'
+                  color={
+                    isStatusMode && changeProfileRole
+                      ? (STATUS_COLORS[changeProfileRole] ?? 'default')
+                      : undefined
+                  }
                   className={
                     changeProfileRole ? classes.newRoleChipSelected : classes.newRoleChipEmpty
                   }
@@ -140,16 +206,12 @@ const ChangeProfileDialog = ({
         </Box>
 
         <DialogContent sx={{ pt: 3, pb: 1 }}>
-          {/* Role fields */}
+          {/* Role / Status fields */}
           <Grid container spacing={2} alignItems='flex-start'>
             <Grid size={{ xs: 12, sm: 4 }}>
               <TextField
-                label='Current Role'
-                value={
-                  selectedRow?.role
-                    ? selectedRow.role.charAt(0).toUpperCase() + selectedRow.role.slice(1)
-                    : '-'
-                }
+                label={isStatusMode ? 'Current Status' : 'Current Role'}
+                value={currentValueLabel}
                 fullWidth
                 size='small'
                 disabled
@@ -159,21 +221,23 @@ const ChangeProfileDialog = ({
             <Grid size={{ xs: 12, sm: 4 }}>
               <FormControl fullWidth size='small' error={!!changeProfileErrors.role}>
                 <InputLabel shrink required>
-                  Change role to
+                  {isStatusMode ? 'Change status to' : 'Change role to'}
                 </InputLabel>
                 <Select
                   value={changeProfileRole}
-                  label='Change role to'
+                  label={isStatusMode ? 'Change status to' : 'Change role to'}
                   displayEmpty
                   notched
                   renderValue={(val) =>
                     val ? (
                       <Typography variant='body2'>
-                        {(val as string).charAt(0).toUpperCase() + (val as string).slice(1)}
+                        {isStatusMode
+                          ? formatStatus(val as string)
+                          : (val as string).charAt(0).toUpperCase() + (val as string).slice(1)}
                       </Typography>
                     ) : (
                       <Typography variant='body2' color='text.disabled'>
-                        Select new role…
+                        {isStatusMode ? 'Select new status…' : 'Select new role…'}
                       </Typography>
                     )
                   }
@@ -183,13 +247,21 @@ const ChangeProfileDialog = ({
                   }}
                   sx={{ borderRadius: 2 }}
                 >
-                  {(['user', 'captain', 'admin'] as const)
-                    .filter((r) => r !== selectedRow?.role)
-                    .map((r) => (
-                      <MenuItem key={r} value={r}>
-                        {r.charAt(0).toUpperCase() + r.slice(1)}
-                      </MenuItem>
-                    ))}
+                  {isStatusMode
+                    ? ONBOARDING_STATUSES
+                        .filter((s) => s.value !== selectedOnboarding?.status)
+                        .map((s) => (
+                          <MenuItem key={s.value} value={s.value}>
+                            {s.label}
+                          </MenuItem>
+                        ))
+                    : (['user', 'captain', 'admin'] as const)
+                        .filter((r) => r !== selectedRow?.role)
+                        .map((r) => (
+                          <MenuItem key={r} value={r}>
+                            {r.charAt(0).toUpperCase() + r.slice(1)}
+                          </MenuItem>
+                        ))}
                 </Select>
                 {changeProfileErrors.role && (
                   <FormHelperText sx={{ ml: 0.5 }}>
@@ -211,8 +283,7 @@ const ChangeProfileDialog = ({
                   renderValue={(val) =>
                     val ? (
                       <Typography variant='body2'>
-                        {ROLE_CHANGE_REASON_CODES.find((r) => r.value === val)?.label ??
-                          String(val)}
+                        {reasonCodes.find((r) => r.value === val)?.label ?? String(val)}
                       </Typography>
                     ) : (
                       <Typography variant='body2' color='text.disabled'>
@@ -226,7 +297,7 @@ const ChangeProfileDialog = ({
                   }}
                   sx={{ borderRadius: 2 }}
                 >
-                  {ROLE_CHANGE_REASON_CODES.map((rc) => (
+                  {reasonCodes.map((rc) => (
                     <MenuItem key={rc.value} value={rc.value}>
                       {rc.label}
                     </MenuItem>
@@ -244,7 +315,7 @@ const ChangeProfileDialog = ({
           {/* Rich-text note */}
           <Box sx={{ mt: 2.5 }}>
             <Typography variant='body2' fontWeight={600} color='text.primary' sx={{ mb: 0.75 }}>
-              Role change note{' '}
+              {isStatusMode ? 'Status change note' : 'Role change note'}{' '}
               <Box component='span' sx={{ color: 'error.main' }}>
                 *
               </Box>
@@ -319,7 +390,11 @@ const ChangeProfileDialog = ({
               minRows={5}
               maxRows={10}
               value={changeProfileNoteText}
-              placeholder='Describe the reason for this role change…'
+              placeholder={
+                isStatusMode
+                  ? 'Describe the reason for this status change…'
+                  : 'Describe the reason for this role change…'
+              }
               onChange={(e) => {
                 if (e.target.value.length <= 32000) {
                   onNoteTextChange(e.target.value);
@@ -389,34 +464,57 @@ const ChangeProfileDialog = ({
             disabled={isSaving}
             sx={{ borderRadius: 2, px: 3 }}
           >
-            Update Role
+            {isStatusMode ? 'Update Status' : 'Update Role'}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Confirmation sub-dialog */}
       <Dialog open={confirmOpen} onClose={onConfirmClose} maxWidth='xs' fullWidth>
-        <DialogTitle>Confirm Role Change</DialogTitle>
+        <DialogTitle>
+          {isStatusMode ? 'Confirm Status Change' : 'Confirm Role Change'}
+        </DialogTitle>
         <DialogContent>
-          <Typography variant='body2'>
-            You are about to change <strong>{selectedRow?.name}</strong>&apos;s role from{' '}
-            <Chip
-              label={selectedRow?.role}
-              size='small'
-              sx={{ mx: 0.5, verticalAlign: 'middle' }}
-            />{' '}
-            to{' '}
-            <Chip
-              label={changeProfileRole}
-              color='primary'
-              size='small'
-              sx={{ mx: 0.5, verticalAlign: 'middle' }}
-            />
-            .
-          </Typography>
+          {isStatusMode ? (
+            <Typography variant='body2'>
+              You are about to change <strong>{selectedRow?.name}</strong>&apos;s status from{' '}
+              <Chip
+                label={formatStatus(selectedOnboarding?.status || '-')}
+                color={STATUS_COLORS[selectedOnboarding?.status || ''] ?? 'default'}
+                size='small'
+                sx={{ mx: 0.5, verticalAlign: 'middle' }}
+              />{' '}
+              to{' '}
+              <Chip
+                label={formatStatus(changeProfileRole)}
+                color={STATUS_COLORS[changeProfileRole] ?? 'default'}
+                size='small'
+                sx={{ mx: 0.5, verticalAlign: 'middle' }}
+              />
+              .
+            </Typography>
+          ) : (
+            <Typography variant='body2'>
+              You are about to change <strong>{selectedRow?.name}</strong>&apos;s role from{' '}
+              <Chip
+                label={selectedRow?.role}
+                size='small'
+                sx={{ mx: 0.5, verticalAlign: 'middle' }}
+              />{' '}
+              to{' '}
+              <Chip
+                label={changeProfileRole}
+                color='primary'
+                size='small'
+                sx={{ mx: 0.5, verticalAlign: 'middle' }}
+              />
+              .
+            </Typography>
+          )}
           <Typography variant='body2' color='text.secondary' sx={{ mt: 1.5 }}>
-            This will affect the user&apos;s access and permissions immediately. Do you want to
-            proceed?
+            {isStatusMode
+              ? 'This will update the onboarding record status immediately. Do you want to proceed?'
+              : "This will affect the user's access and permissions immediately. Do you want to proceed?"}
           </Typography>
         </DialogContent>
         <DialogActions>

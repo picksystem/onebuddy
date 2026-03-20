@@ -5,8 +5,9 @@ const CAPTAIN_BASE = '/app/captain';
 const AdminPath = {
   // Governance
   DASHBOARD: `${ADMIN_BASE}/dashboard`,
+  CONSULTANT: `${ADMIN_BASE}/consultant`,
   APIS: `${ADMIN_BASE}/apis`,
-  ACCESS_REQUEST: `${ADMIN_BASE}/access-request`,
+  ACCESS_MANAGEMENT: `${ADMIN_BASE}/access-management`,
   AUDIT_TRAILS: `${ADMIN_BASE}/audit-trails`,
   EVENTS: `${ADMIN_BASE}/events`,
 
@@ -27,19 +28,69 @@ const AdminPath = {
   // Mobility Services
   DRIVER_HIRE: `${ADMIN_BASE}/driver-hire`,
   VEHICLE_RENTAL: `${ADMIN_BASE}/vehicle-rental`,
+  PARCEL: `${ADMIN_BASE}/parcel`,
+  LOGISTICS: `${ADMIN_BASE}/logistics`,
+
+  // Operations
+  RIDES: `${ADMIN_BASE}/rides`,
+
+  // Finance
+  TRANSACTIONS: `${ADMIN_BASE}/transactions`,
+  DRIVER_EARNINGS: `${ADMIN_BASE}/driver-earnings`,
+  COMMISSIONS: `${ADMIN_BASE}/commissions`,
+
+  // Requests
+  KYC: `${ADMIN_BASE}/kyc`,
+
+  // Reports
+  ANALYTICS: `${ADMIN_BASE}/analytics`,
+
+  // Configuration
+  PRICING: `${ADMIN_BASE}/pricing`,
+  SERVICES: `${ADMIN_BASE}/service-types`,
+  RULES: `${ADMIN_BASE}/business-rules`,
+  FEATURE_FLAGS: `${ADMIN_BASE}/feature-flags`,
+  ZONES: `${ADMIN_BASE}/zones`,
+  INTEGRATIONS: `${ADMIN_BASE}/integrations`,
+
+  // Team
+  ADMINS: `${ADMIN_BASE}/admins`,
 
   // Supporting
   PROFILE: `${ADMIN_BASE}/profile`,
+  CREATE_CUSTOMER: `${ADMIN_BASE}/create-customer`,
 
-  // Legacy — kept for backwards compatibility with old page files
+  // User Detail
+  USER_DETAIL: `${ADMIN_BASE}/user/:id`,
+
+  // Ticket / Incident Management
   INCIDENT_DETAIL: `${ADMIN_BASE}/incident/:number`,
   TICKET_DETAIL: `${ADMIN_BASE}/ticket/:number`,
   INCIDENT_MANAGEMENT: `${ADMIN_BASE}/incident-management`,
-  CREATE_TICKET: `${ADMIN_BASE}/create-ticket`,
+  CREATE_MANAGEMENT: `${ADMIN_BASE}/create-management`,
+  CREATE_MANAGEMENT_TYPE: `${ADMIN_BASE}/create-management/:type`,
   CREATE_TICKET_TYPE: `${ADMIN_BASE}/:type`,
   SUGGESTED_SOLUTION: `${ADMIN_BASE}/suggested-solution`,
   CONFIGURATION: `${ADMIN_BASE}/configuration`,
   ROLE_REQUESTS: `${ADMIN_BASE}/role-requests`,
+};
+
+const AuthPath = {
+  SIGNIN: '/signin',
+  SIGNUP: '/signup',
+  FORGOT_PASSWORD: '/forgot-password',
+};
+
+/**
+ * Combined Path object for auth/shared components.
+ * Admin components should use constants.AdminPath.
+ * User components should use constants.UserPath.
+ */
+const Path = {
+  DEFAULT_PAGE: '/',
+  NOT_FOUND: '*',
+  ...AuthPath,
+  ...AdminPath,
 };
 
 const UserPath = {
@@ -58,39 +109,10 @@ const CaptainPath = {
   CREATE_TICKET: `${CAPTAIN_BASE}/create-ticket`,
 };
 
-const AuthPath = {
-  SIGNIN: '/signin',
-  SIGNUP: '/signup',
-  FORGOT_PASSWORD: '/forgot-password',
-};
-
-const DefalutPage = {
-  ADMIN_DEFAULT_PAGE: '/app/admin/*',
-  USER_DEFAULT_PAGE: '/app/user/*',
-  CAPTAIN_DEFAULT_PAGE: '/app/captain/*',
-};
-
-/**
- * Combined Path object.
- * - Admin components should use constants.AdminPath
- * - User components should use constants.UserPath
- * - Auth/shared components should use constants.Path for auth routes
- */
-const Path = {
-  DEFAULT_PAGE: '/',
-  ...AuthPath,
-  ...AdminPath,
-  NOT_FOUND: '*',
-};
-
 export const constants = {
   Path,
   AdminPath,
+  AuthPath,
   UserPath,
   CaptainPath,
-  AuthPath,
-  ADMIN_BASE,
-  USER_BASE,
-  CAPTAIN_BASE,
-  DefalutPage,
 };

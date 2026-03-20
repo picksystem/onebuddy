@@ -1,23 +1,35 @@
 import { Box, Loader, DataTable } from '@bandi/component';
-import { Typography, Tabs, Divider, TextField, InputAdornment, Paper, Button, Tooltip, Link } from '@mui/material';
-import GlobalStyles from '@mui/material/GlobalStyles';
+import {
+  Typography,
+  Tabs,
+  Divider,
+  TextField,
+  InputAdornment,
+  Paper,
+  Button,
+  Tooltip,
+} from '@mui/material';
 import PeopleIcon from '@mui/icons-material/People';
+import PendingActionsIcon from '@mui/icons-material/PendingActions';
+import ReviewsIcon from '@mui/icons-material/Reviews';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import PersonOffIcon from '@mui/icons-material/PersonOff';
-import BlockIcon from '@mui/icons-material/Block';
+import CancelIcon from '@mui/icons-material/Cancel';
 import SearchIcon from '@mui/icons-material/Search';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
-import { IAuthUser } from '@bandi/interfaces';
+import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import { useStyles } from './styles';
 import { useUsers } from './hooks/useUsers';
 import TabPanel from './components/TabPanel';
 import DetailDialog from './dialogs/DetailDialog/DetailDialog';
 import ActionDialog from './dialogs/ActionDialog/ActionDialog';
+import { useAdminKeyframes } from '@bandi/hooks';
+import { UsersRow } from './types/users.types';
 
 const Users = () => {
   const { classes } = useStyles();
+  const keyframes = useAdminKeyframes();
   const {
     isLoading,
     tabValue,
@@ -39,18 +51,13 @@ const Users = () => {
     handleCloseAction,
     setActionNotes,
     getFilteredData,
+    allRequests,
+    pendingRequests,
+    underReviewRequests,
+    approvedRequests,
+    rejectedRequests,
   } = useUsers();
   const sel = selectedRow;
-
-  const keyframes = (
-    <GlobalStyles styles={`
-      @keyframes um-gradient-shift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-      @keyframes um-orb-drift { 0%, 100% { transform: translate(0, 0) scale(1); } 25% { transform: translate(22px, -18px) scale(1.06); } 75% { transform: translate(-16px, 12px) scale(0.94); } }
-      @keyframes um-float { 0%, 100% { transform: translateY(0px) rotate(0deg); } 40% { transform: translateY(-18px) rotate(6deg); } 70% { transform: translateY(-9px) rotate(-3deg); } }
-      @keyframes um-slide-up { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
-      @keyframes um-counter { from { opacity: 0; transform: scale(0.65) translateY(12px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-    `} />
-  );
 
   if (isLoading) {
     return (
@@ -64,11 +71,50 @@ const Users = () => {
   }
 
   const statCards = [
-    { label: 'Total Users', value: tabLists[0]?.length ?? 0, Icon: PeopleIcon, cls: classes.statCard0, sub: 'Registered on the platform', color: '#4f46e5' },
-    { label: 'Active', value: tabLists[1]?.length ?? 0, Icon: CheckCircleIcon, cls: classes.statCard2, sub: 'Currently active accounts', color: '#10b981' },
-    { label: 'Inactive', value: tabLists[2]?.length ?? 0, Icon: PersonOffIcon, cls: classes.statCard1, sub: 'Suspended or deactivated', color: '#f59e0b' },
-    { label: 'Suspended', value: tabLists[3]?.length ?? 0, Icon: BlockIcon, cls: classes.statCard3, sub: 'Restricted from access', color: '#0ea5e9' },
+    {
+      label: 'Total Requests',
+      value: allRequests.length,
+      Icon: PeopleIcon,
+      cls: classes.statCard0,
+      sub: 'All onboarding requests',
+      color: '#4f46e5',
+    },
+    {
+      label: 'Pending',
+      value: pendingRequests.length,
+      Icon: PendingActionsIcon,
+      cls: classes.statCard1,
+      sub: 'Awaiting review',
+      color: '#f59e0b',
+    },
+    {
+      label: 'Under Review',
+      value: underReviewRequests.length,
+      Icon: ReviewsIcon,
+      cls: classes.statCard2,
+      sub: 'Currently being reviewed',
+      color: '#0ea5e9',
+    },
+    {
+      label: 'Approved',
+      value: approvedRequests.length,
+      Icon: CheckCircleIcon,
+      cls: classes.statCard3,
+      sub: 'Successfully onboarded',
+      color: '#10b981',
+    },
+    {
+      label: 'Rejected',
+      value: rejectedRequests.length,
+      Icon: CancelIcon,
+      cls: classes.statCard3,
+      sub: 'Requests not approved',
+      color: '#ef4444',
+    },
   ];
+
+  const canAction = sel && (sel.status === 'pending' || sel.status === 'under_review');
+  const selName = sel ? `${sel.firstName} ${sel.lastName}`.trim() : '';
 
   return (
     <>
@@ -79,11 +125,11 @@ const Users = () => {
           <Box className={classes.headerOrb3} />
           <Box className={classes.pageHeaderRow}>
             <Typography variant='h5' className={classes.title}>
-              Users
+              End Users
             </Typography>
           </Box>
           <Typography variant='body2' className={classes.description}>
-            Manage all registered users and their access across the platform.
+            Monitor and manage end user onboarding requests for logistics services.
           </Typography>
         </Box>
 
@@ -93,16 +139,24 @@ const Users = () => {
             <Box key={label} className={`${classes.statCard} ${cls}`}>
               <Box className={classes.statCardTop}>
                 <Box>
-                  <Typography className={classes.statValue} sx={{ color }}>{value}</Typography>
+                  <Typography className={classes.statValue} sx={{ color }}>
+                    {value}
+                  </Typography>
                   <Typography className={classes.statLabel}>{label}</Typography>
                 </Box>
-                <Box className={classes.statIconWrap} sx={{ background: `${color}14`, border: `1.5px solid ${color}28` }}>
+                <Box
+                  className={classes.statIconWrap}
+                  sx={{ background: `${color}14`, border: `1.5px solid ${color}28` }}
+                >
                   <Icon className={classes.statIcon} sx={{ color }} />
                 </Box>
               </Box>
               <Divider className={classes.statDivider} />
               <Box className={classes.statSubRow}>
-                <Box className={classes.statSubDot} sx={{ background: color, boxShadow: `0 0 6px ${color}` }} />
+                <Box
+                  className={classes.statSubDot}
+                  sx={{ background: color, boxShadow: `0 0 6px ${color}` }}
+                />
                 <Typography className={classes.statSub}>{sub}</Typography>
               </Box>
             </Box>
@@ -155,7 +209,10 @@ const Users = () => {
                   sx={{
                     background: sel ? 'linear-gradient(135deg, #4f46e5, #7c3aed)' : undefined,
                     boxShadow: sel ? '0 4px 14px rgba(79,70,229,0.4)' : undefined,
-                    '&:hover': { transform: sel ? 'translateY(-1px)' : undefined, boxShadow: sel ? '0 6px 20px rgba(79,70,229,0.5)' : undefined },
+                    '&:hover': {
+                      transform: sel ? 'translateY(-1px)' : undefined,
+                      boxShadow: sel ? '0 6px 20px rgba(79,70,229,0.5)' : undefined,
+                    },
                     transition: 'all 0.22s ease',
                   }}
                 >
@@ -166,18 +223,26 @@ const Users = () => {
 
             <Divider orientation='vertical' flexItem className={classes.dividerMobile} />
 
-            <Tooltip title={sel && sel.status === 'pending_approval' ? 'Approve access request' : sel ? 'Only pending requests can be approved' : 'Select a user first'}>
+            <Tooltip
+              title={
+                canAction
+                  ? 'Approve access request'
+                  : sel
+                    ? 'Only pending or under-review requests can be approved'
+                    : 'Select a user first'
+              }
+            >
               <span>
                 <Button
                   size='small'
                   variant='contained'
                   color='success'
                   startIcon={<CheckCircleOutlineIcon />}
-                  disabled={!sel || sel.status !== 'pending_approval'}
+                  disabled={!canAction}
                   onClick={() => sel && handleOpenAction(sel, 'approve')}
                   sx={{
-                    boxShadow: sel?.status === 'pending_approval' ? '0 4px 14px rgba(16,185,129,0.38)' : undefined,
-                    '&:hover': { transform: sel?.status === 'pending_approval' ? 'translateY(-1px)' : undefined },
+                    boxShadow: canAction ? '0 4px 14px rgba(16,185,129,0.38)' : undefined,
+                    '&:hover': { transform: canAction ? 'translateY(-1px)' : undefined },
                     transition: 'all 0.22s ease',
                   }}
                 >
@@ -186,18 +251,29 @@ const Users = () => {
               </span>
             </Tooltip>
 
-            <Tooltip title={sel && sel.status === 'pending_approval' ? 'Reject access request' : sel ? 'Only pending requests can be rejected' : 'Select a user first'}>
+            <Tooltip
+              title={
+                canAction
+                  ? 'Reject access request'
+                  : sel
+                    ? 'Only pending or under-review requests can be rejected'
+                    : 'Select a user first'
+              }
+            >
               <span>
                 <Button
                   size='small'
                   variant='outlined'
                   color='error'
                   startIcon={<CancelOutlinedIcon />}
-                  disabled={!sel || sel.status !== 'pending_approval'}
+                  disabled={!canAction}
                   onClick={() => sel && handleOpenAction(sel, 'reject')}
                   sx={{
-                    borderColor: sel?.status === 'pending_approval' ? '#ef4444' : undefined,
-                    '&:hover': { transform: sel?.status === 'pending_approval' ? 'translateY(-1px)' : undefined, boxShadow: sel?.status === 'pending_approval' ? '0 4px 14px rgba(239,68,68,0.25)' : undefined },
+                    borderColor: canAction ? '#ef4444' : undefined,
+                    '&:hover': {
+                      transform: canAction ? 'translateY(-1px)' : undefined,
+                      boxShadow: canAction ? '0 4px 14px rgba(239,68,68,0.25)' : undefined,
+                    },
                     transition: 'all 0.22s ease',
                   }}
                 >
@@ -208,12 +284,34 @@ const Users = () => {
           </Box>
 
           {sel && (
-            <Typography variant='caption' className={classes.selectionIndicator}>
-              Selected: <strong>{sel.name}</strong> ({sel.email}) &nbsp;·&nbsp;
-              <Link component='button' variant='caption' onClick={() => setSelectedRow(null)}>
+            <Box className={classes.selectionIndicator}>
+              <Typography variant='caption' color='text.secondary'>
+                Selected: <strong>{selName}</strong> ({sel.phone})
+              </Typography>
+              <Button
+                size='small'
+                variant='outlined'
+                startIcon={<HighlightOffIcon sx={{ fontSize: '0.9rem !important' }} />}
+                onClick={() => setSelectedRow(null)}
+                sx={{
+                  borderRadius: '50px',
+                  fontSize: '0.7rem',
+                  py: 0.3,
+                  px: 1.5,
+                  borderColor: 'rgba(239,68,68,0.4)',
+                  color: 'rgba(239,68,68,0.85)',
+                  '&:hover': {
+                    borderColor: '#ef4444',
+                    background: 'rgba(239,68,68,0.06)',
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 3px 10px rgba(239,68,68,0.2)',
+                  },
+                  transition: 'all 0.2s ease',
+                }}
+              >
                 Clear
-              </Link>
-            </Typography>
+              </Button>
+            </Box>
           )}
         </Paper>
 
@@ -235,7 +333,11 @@ const Users = () => {
                   rowKey='id'
                   searchable={false}
                   initialRowsPerPage={10}
-                  onRowClick={(row) => setSelectedRow((prev) => prev?.id === (row as IAuthUser).id ? null : row as typeof sel)}
+                  onRowClick={(row) =>
+                    setSelectedRow((prev: UsersRow | null) =>
+                      prev?.id === (row as UsersRow).id ? null : (row as UsersRow),
+                    )
+                  }
                   activeRowKey={sel?.id}
                 />
               </Box>

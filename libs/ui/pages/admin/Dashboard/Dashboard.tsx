@@ -1,7 +1,6 @@
 import Chart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
 import { Avatar, Box, Typography, useMediaQuery, useTheme } from '@mui/material';
-import GlobalStyles from '@mui/material/GlobalStyles';
 import Divider from '@mui/material/Divider';
 
 // Icons – Ride modes
@@ -11,39 +10,45 @@ import ElectricRickshawIcon from '@mui/icons-material/ElectricRickshaw';
 import AirportShuttleIcon from '@mui/icons-material/AirportShuttle';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 
-// Icons – KPI & metrics
+// Icons – KPI & Operations
 import CurrencyRupeeIcon from '@mui/icons-material/CurrencyRupee';
 import StarIcon from '@mui/icons-material/Star';
-import GroupIcon from '@mui/icons-material/Group';
-import BusinessIcon from '@mui/icons-material/Business';
-import SubscriptionsIcon from '@mui/icons-material/Subscriptions';
-import LocalOfferIcon from '@mui/icons-material/LocalOffer';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import NearMeIcon from '@mui/icons-material/NearMe';
+import RouteIcon from '@mui/icons-material/Route';
+import LocalTaxiIcon from '@mui/icons-material/LocalTaxi';
+
+// Icons – Governance
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
+import QueryStatsIcon from '@mui/icons-material/QueryStats';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import ManageSearchIcon from '@mui/icons-material/ManageSearch';
+
+// Icons – People & Organizations
+import PeopleIcon from '@mui/icons-material/People';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import CorporateFareIcon from '@mui/icons-material/CorporateFare';
+import PersonSearchIcon from '@mui/icons-material/PersonSearch';
+import CarRentalIcon from '@mui/icons-material/CarRental';
+import Inventory2Icon from '@mui/icons-material/Inventory2';
 
 // Icons – Activity feed
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import CancelIcon from '@mui/icons-material/Cancel';
-import PaymentIcon from '@mui/icons-material/Payment';
-import VerifiedIcon from '@mui/icons-material/Verified';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import RouteIcon from '@mui/icons-material/Route';
 
 // Icons – Trend
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 
-import { useCurrentDate } from '../../../hooks';
+import { useAdminKeyframes, useCurrentDate } from '../../../hooks';
 import { useAuth } from '@bandi/hooks';
 import { useStyles } from './styles';
 import { DATE_FORMATS } from '../../../../utils';
+import { useDashboard } from './hooks/useDashboard';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CHART CONFIGS
+// CHART OPTION TEMPLATES  (series are injected from real API data)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Stacked bar – rides by mode (monthly)
-const ridesByModeOptions: ApexOptions = {
+// Stacked bar – monthly onboardings by vehicle type
+const onboardingByVehicleOptions: ApexOptions = {
   chart: {
     type: 'bar',
     stacked: true,
@@ -53,20 +58,7 @@ const ridesByModeOptions: ApexOptions = {
   colors: ['#f59e0b', '#10b981', '#4f46e5', '#0ea5e9', '#8b5cf6'],
   plotOptions: { bar: { borderRadius: 4, columnWidth: '62%' } },
   xaxis: {
-    categories: [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ],
+    categories: [],
     labels: { style: { fontSize: '11px', colors: '#94a3b8' } },
     axisBorder: { show: false },
     axisTicks: { show: false },
@@ -74,7 +66,7 @@ const ridesByModeOptions: ApexOptions = {
   yaxis: {
     labels: {
       style: { fontSize: '11px', colors: '#94a3b8' },
-      formatter: (v) => `${(v / 1000).toFixed(0)}K`,
+      formatter: (v) => String(Math.round(v)),
     },
   },
   grid: { borderColor: 'rgba(79,70,229,0.06)', strokeDashArray: 4 },
@@ -83,24 +75,13 @@ const ridesByModeOptions: ApexOptions = {
   tooltip: {
     shared: true,
     intersect: false,
-    y: { formatter: (v) => `${v.toLocaleString()} rides` },
+    y: { formatter: (v) => `${v.toLocaleString()} onboardings` },
   },
   fill: { opacity: 1 },
 };
 
-const ridesByModeSeries = [
-  {
-    name: 'Bike',
-    data: [4200, 5100, 4800, 6200, 7100, 8400, 6900, 9100, 10200, 11400, 9800, 13200],
-  },
-  { name: 'Auto', data: [2100, 2600, 2400, 3100, 3500, 4100, 3400, 4600, 5100, 5700, 4900, 6600] },
-  { name: 'Car', data: [1400, 1800, 1600, 2100, 2400, 2700, 2200, 3000, 3400, 3900, 3300, 4500] },
-  { name: 'Shuttle', data: [800, 1100, 900, 1300, 1500, 1700, 1400, 1900, 2100, 2400, 2000, 2800] },
-  { name: 'Goods', data: [400, 600, 500, 700, 800, 900, 750, 1000, 1100, 1300, 1100, 1500] },
-];
-
-// Area – Revenue trend
-const revenueOptions: ApexOptions = {
+// Area – monthly onboarding trend
+const onboardingTrendOptions: ApexOptions = {
   chart: { type: 'area', toolbar: { show: false }, animations: { enabled: true, speed: 900 } },
   colors: ['#4f46e5'],
   stroke: { curve: 'smooth', width: 2.5 },
@@ -109,20 +90,7 @@ const revenueOptions: ApexOptions = {
     gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.02, stops: [0, 90] },
   },
   xaxis: {
-    categories: [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ],
+    categories: [],
     labels: { style: { fontSize: '11px', colors: '#94a3b8' } },
     axisBorder: { show: false },
     axisTicks: { show: false },
@@ -130,393 +98,100 @@ const revenueOptions: ApexOptions = {
   yaxis: {
     labels: {
       style: { fontSize: '11px', colors: '#94a3b8' },
-      formatter: (v) => `₹${(v / 1000).toFixed(0)}K`,
+      formatter: (v) => String(Math.round(v)),
     },
   },
   grid: { borderColor: 'rgba(79,70,229,0.06)', strokeDashArray: 4 },
   dataLabels: { enabled: false },
-  tooltip: { y: { formatter: (v) => `₹${(v / 1000).toFixed(1)}K` } },
+  tooltip: { y: { formatter: (v) => `${v.toLocaleString()} onboardings` } },
 };
 
-const revenueSeries = [
-  {
-    name: 'Revenue',
-    data: [
-      380000, 490000, 445000, 615000, 720000, 840000, 660000, 920000, 1050000, 1240000, 1080000,
-      1420000,
-    ],
-  },
-];
-
-// Donut – trip status today
+// Donut – onboarding status base config
 const tripStatusOptions: ApexOptions = {
   chart: { type: 'donut', toolbar: { show: false }, animations: { enabled: true, speed: 700 } },
   colors: ['#10b981', '#ef4444', '#f59e0b', '#4f46e5'],
-  labels: ['Completed', 'Cancelled', 'Ongoing', 'Scheduled'],
+  labels: ['Approved', 'Rejected', 'Under Review', 'Pending'],
   legend: { position: 'bottom', fontSize: '11px', fontWeight: 600 },
   dataLabels: { enabled: false },
-  plotOptions: {
-    pie: {
-      donut: {
-        size: '70%',
-        labels: {
-          show: true,
-          total: {
-            show: true,
-            label: "Today's Trips",
-            fontSize: '11px',
-            color: '#64748b',
-            fontWeight: 700,
-            formatter: () => '5,284',
-          },
-        },
-      },
-    },
-  },
+  plotOptions: { pie: { donut: { size: '70%' } } },
   stroke: { width: 0 },
-  tooltip: { y: { formatter: (v) => `${v.toLocaleString()} trips` } },
+  tooltip: { y: { formatter: (v) => `${v.toLocaleString()} onboardings` } },
 };
-const tripStatusSeries = [4471, 312, 289, 212];
 
-// Donut – Revenue by channel
-const revenueChannelOptions: ApexOptions = {
+// Donut – vehicle type distribution base config
+const vehicleTypeDistOptions: ApexOptions = {
   chart: { type: 'donut', toolbar: { show: false }, animations: { enabled: true, speed: 700 } },
-  colors: ['#f59e0b', '#10b981', '#4f46e5', '#0ea5e9', '#8b5cf6'],
-  labels: ['Bike Rides', 'Auto Rides', 'Car Rides', 'Shuttle', 'Goods'],
+  colors: ['#f59e0b', '#10b981', '#4f46e5', '#0ea5e9', '#8b5cf6', '#ef4444'],
+  labels: [],
   legend: { position: 'bottom', fontSize: '11px', fontWeight: 600 },
   dataLabels: { enabled: false },
-  plotOptions: {
-    pie: {
-      donut: {
-        size: '68%',
-        labels: {
-          show: true,
-          total: {
-            show: true,
-            label: 'Total Revenue',
-            fontSize: '11px',
-            color: '#64748b',
-            fontWeight: 700,
-            formatter: () => '₹2.84L',
-          },
-        },
-      },
-    },
-  },
+  plotOptions: { pie: { donut: { size: '68%' } } },
   stroke: { width: 0 },
-  tooltip: { y: { formatter: (v) => `₹${v.toLocaleString()}` } },
+  tooltip: { y: { formatter: (v) => `${v.toLocaleString()} captains` } },
 };
-const revenueChannelSeries = [98000, 62000, 74000, 36000, 14000];
+
+// Bar – access request pipeline base config
+const accessRequestOptions: ApexOptions = {
+  chart: { type: 'bar', toolbar: { show: false }, animations: { enabled: true, speed: 900 } },
+  colors: ['#10b981', '#ef4444'],
+  plotOptions: { bar: { borderRadius: 5, columnWidth: '52%' } },
+  xaxis: {
+    categories: [],
+    labels: { style: { fontSize: '11px', colors: '#94a3b8' } },
+    axisBorder: { show: false },
+    axisTicks: { show: false },
+  },
+  yaxis: { labels: { style: { fontSize: '11px', colors: '#94a3b8' } } },
+  grid: { borderColor: 'rgba(79,70,229,0.06)', strokeDashArray: 4 },
+  legend: { position: 'top', fontSize: '11px', fontWeight: 600 },
+  dataLabels: { enabled: false },
+  tooltip: { shared: true, intersect: false },
+};
+
+// Bar – city onboardings (horizontal)
+const cityBarOptions: ApexOptions = {
+  chart: { type: 'bar', toolbar: { show: false }, animations: { enabled: true, speed: 900 } },
+  colors: ['#4f46e5'],
+  plotOptions: { bar: { borderRadius: 5, horizontal: true, barHeight: '60%' } },
+  xaxis: {
+    categories: [],
+    labels: { style: { fontSize: '11px', colors: '#94a3b8' } },
+    axisBorder: { show: false },
+    axisTicks: { show: false },
+  },
+  yaxis: { labels: { style: { fontSize: '11px', colors: '#374151' }, align: 'left' } },
+  grid: { borderColor: 'rgba(79,70,229,0.06)', strokeDashArray: 4 },
+  dataLabels: { enabled: false },
+  tooltip: { y: { formatter: (v) => `${v.toLocaleString()} onboardings` } },
+};
+
+// Donut – service category distribution base config
+const userDistributionOptions: ApexOptions = {
+  chart: { type: 'donut', toolbar: { show: false }, animations: { enabled: true, speed: 700 } },
+  colors: ['#4f46e5', '#10b981', '#f59e0b', '#0ea5e9', '#8b5cf6', '#ef4444'],
+  labels: [],
+  legend: { position: 'bottom', fontSize: '11px', fontWeight: 600 },
+  dataLabels: { enabled: false },
+  plotOptions: { pie: { donut: { size: '68%' } } },
+  stroke: { width: 0 },
+  tooltip: { y: { formatter: (v) => `${v.toLocaleString()} onboardings` } },
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
-// STATIC DATA
+// HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
-
-const KPI_CARDS = [
-  {
-    label: 'Total Trips Today',
-    value: '5,284',
-    sub: '84.6% completion',
-    Icon: NearMeIcon,
-    color: '#4f46e5',
-    cls: 'kpiCard0',
-    trend: '+14.2%',
-    trendUp: true,
-    trendLabel: 'vs yesterday',
-  },
-  {
-    label: 'Captains Online',
-    value: '1,847',
-    sub: '2,341 registered',
-    Icon: DirectionsCarIcon,
-    color: '#10b981',
-    cls: 'kpiCard1',
-    trend: '+62 now',
-    trendUp: true,
-    trendLabel: 'live count',
-  },
-  {
-    label: 'Revenue Today',
-    value: '₹2.84L',
-    sub: '₹14.2L this month',
-    Icon: CurrencyRupeeIcon,
-    color: '#f59e0b',
-    cls: 'kpiCard2',
-    trend: '+22.4%',
-    trendUp: true,
-    trendLabel: 'vs last month',
-  },
-  {
-    label: 'Avg Trip Rating',
-    value: '4.73★',
-    sub: 'Based on 4.8K reviews',
-    Icon: StarIcon,
-    color: '#0ea5e9',
-    cls: 'kpiCard3',
-    trend: '+0.04',
-    trendUp: true,
-    trendLabel: 'vs last week',
-  },
-];
-
-const SERVICE_MODES = [
-  {
-    label: 'Bike Rides',
-    value: '2,142',
-    sub: '+18% today',
-    Icon: TwoWheelerIcon,
-    color: '#f59e0b',
-    bg: '#fffbeb',
-    pct: 82,
-    delay: '0s',
-  },
-  {
-    label: 'Auto Rides',
-    value: '1,284',
-    sub: '+11% today',
-    Icon: ElectricRickshawIcon,
-    color: '#10b981',
-    bg: '#f0fdf4',
-    pct: 64,
-    delay: '0.08s',
-  },
-  {
-    label: 'Car Rides',
-    value: '924',
-    sub: '+9% today',
-    Icon: DirectionsCarIcon,
-    color: '#4f46e5',
-    bg: '#eef2ff',
-    pct: 52,
-    delay: '0.16s',
-  },
-  {
-    label: 'Shuttle',
-    value: '647',
-    sub: '+28% today',
-    Icon: AirportShuttleIcon,
-    color: '#0ea5e9',
-    bg: '#f0f9ff',
-    pct: 38,
-    delay: '0.24s',
-  },
-  {
-    label: 'Goods / Freight',
-    value: '287',
-    sub: '+7% today',
-    Icon: LocalShippingIcon,
-    color: '#8b5cf6',
-    bg: '#f5f3ff',
-    pct: 22,
-    delay: '0.32s',
-  },
-];
-
-const SEC_METRICS = [
-  { label: 'Total Users', value: '11,687', Icon: GroupIcon, color: '#4f46e5', bg: '#eef2ff' },
-  { label: 'Corporate Accounts', value: '64', Icon: BusinessIcon, color: '#10b981', bg: '#f0fdf4' },
-  {
-    label: 'Active Subscriptions',
-    value: '8,291',
-    Icon: SubscriptionsIcon,
-    color: '#8b5cf6',
-    bg: '#f5f3ff',
-  },
-  {
-    label: 'FastTag Active',
-    value: '2,341',
-    Icon: LocalOfferIcon,
-    color: '#f59e0b',
-    bg: '#fffbeb',
-  },
-];
-
-const HEALTH = [
-  { label: 'Trip Completion Rate', value: '84.6%', pct: 84.6, color: '#10b981' },
-  { label: 'Payment Success', value: '98.2%', pct: 98.2, color: '#4f46e5' },
-  { label: 'Captain Acceptance', value: '87.4%', pct: 87.4, color: '#0ea5e9' },
-  { label: 'API Uptime', value: '99.9%', pct: 99.9, color: '#8b5cf6' },
-  { label: 'Shuttle Fill Rate', value: '76.3%', pct: 76.3, color: '#f59e0b' },
-  { label: 'Goods Delivery Rate', value: '93.1%', pct: 93.1, color: '#ef4444' },
-];
-
-const TOP_CITIES = [
-  {
-    rank: 1,
-    name: 'Mumbai',
-    state: 'Maharashtra',
-    trips: '1,284',
-    pct: 100,
-    color: '#4f46e5',
-    bg: '#eef2ff',
-  },
-  {
-    rank: 2,
-    name: 'Delhi NCR',
-    state: 'Delhi',
-    trips: '1,047',
-    pct: 82,
-    color: '#10b981',
-    bg: '#f0fdf4',
-  },
-  {
-    rank: 3,
-    name: 'Bangalore',
-    state: 'Karnataka',
-    trips: '924',
-    pct: 72,
-    color: '#f59e0b',
-    bg: '#fffbeb',
-  },
-  {
-    rank: 4,
-    name: 'Pune',
-    state: 'Maharashtra',
-    trips: '741',
-    pct: 58,
-    color: '#0ea5e9',
-    bg: '#f0f9ff',
-  },
-  {
-    rank: 5,
-    name: 'Hyderabad',
-    state: 'Telangana',
-    trips: '612',
-    pct: 48,
-    color: '#8b5cf6',
-    bg: '#f5f3ff',
-  },
-  {
-    rank: 6,
-    name: 'Chennai',
-    state: 'Tamil Nadu',
-    trips: '487',
-    pct: 38,
-    color: '#ef4444',
-    bg: '#fef2f2',
-  },
-];
-
-const TOP_CAPTAINS = [
-  {
-    initials: 'AK',
-    name: 'Arjun Kumar',
-    city: 'Mumbai',
-    trips: 284,
-    earning: '₹18,420',
-    rating: '4.96',
-    bg: '#eef2ff',
-    color: '#4f46e5',
-    top: true,
-  },
-  {
-    initials: 'PS',
-    name: 'Priya Sharma',
-    city: 'Delhi',
-    trips: 261,
-    earning: '₹16,890',
-    rating: '4.94',
-    bg: '#f0fdf4',
-    color: '#10b981',
-    top: false,
-  },
-  {
-    initials: 'RV',
-    name: 'Ravi Verma',
-    city: 'Bangalore',
-    trips: 248,
-    earning: '₹15,740',
-    rating: '4.92',
-    bg: '#fffbeb',
-    color: '#f59e0b',
-    top: false,
-  },
-  {
-    initials: 'SM',
-    name: 'Sanjay Mehta',
-    city: 'Pune',
-    trips: 233,
-    earning: '₹14,210',
-    rating: '4.91',
-    bg: '#f0f9ff',
-    color: '#0ea5e9',
-    top: false,
-  },
-  {
-    initials: 'DN',
-    name: 'Divya Nair',
-    city: 'Chennai',
-    trips: 219,
-    earning: '₹13,650',
-    rating: '4.89',
-    bg: '#f5f3ff',
-    color: '#8b5cf6',
-    top: false,
-  },
-];
-
-const ACTIVITY = [
-  {
-    Icon: NearMeIcon,
-    color: '#4f46e5',
-    bg: '#eef2ff',
-    text: 'Shuttle trip Mumbai→Pune completed — ₹840 collected (BlaBlaCar route)',
-    time: '1m ago',
-  },
-  {
-    Icon: LocalShippingIcon,
-    color: '#8b5cf6',
-    bg: '#f5f3ff',
-    text: 'Goods delivery #GD-1024 confirmed for TechCorp (Blackbuck partner route)',
-    time: '4m ago',
-  },
-  {
-    Icon: PersonAddIcon,
-    color: '#10b981',
-    bg: '#f0fdf4',
-    text: 'New corporate account registered — FinServ Pvt. Ltd. (50 seats)',
-    time: '9m ago',
-  },
-  {
-    Icon: CancelIcon,
-    color: '#ef4444',
-    bg: '#fef2f2',
-    text: 'Bike ride #T-28389 cancelled — driver no-show reported by user',
-    time: '17m ago',
-  },
-  {
-    Icon: VerifiedIcon,
-    color: '#f59e0b',
-    bg: '#fffbeb',
-    text: 'FastTag approved for Shuttle route — Ravi Patel (Bangalore↔Mysore)',
-    time: '29m ago',
-  },
-  {
-    Icon: PaymentIcon,
-    color: '#4f46e5',
-    bg: '#eef2ff',
-    text: 'Subscription renewed — TechCorp Premium Plan ₹4,999/mo × 50 seats',
-    time: '42m ago',
-  },
-  {
-    Icon: RouteIcon,
-    color: '#0ea5e9',
-    bg: '#f0f9ff',
-    text: 'New shuttle route added: Hyderabad↔Vijayawada (3 shared seats)',
-    time: '1h ago',
-  },
-  {
-    Icon: WarningAmberIcon,
-    color: '#f59e0b',
-    bg: '#fffbeb',
-    text: '3 Access requests pending for over 24h — requires admin review',
-    time: '1h ago',
-  },
-];
+const SectionLabel = ({ label, classes }: { label: string; classes: Record<string, string> }) => (
+  <Box className={classes.sectionLabel}>
+    <Box className={classes.sectionLabelBar} />
+    <Typography className={classes.sectionLabelText}>{label}</Typography>
+    <Box className={classes.sectionLabelBar} />
+  </Box>
+);
 
 // ─────────────────────────────────────────────────────────────────────────────
 const Dashboard = () => {
   const { classes, cx } = useStyles();
+  const keyframes = useAdminKeyframes();
   const { user } = useAuth();
   const userName =
     user?.name || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Admin';
@@ -534,48 +209,409 @@ const Dashboard = () => {
   const barChartHeight = isMobile ? 180 : isTablet ? 220 : 252;
   const areaChartHeight = isMobile ? 160 : isTablet ? 200 : 224;
   const donutChartHeight = isMobile ? 180 : isTablet ? 200 : 236;
+  const accessBarHeight = isMobile ? 160 : 210;
+  const subscriptionBarHeight = isMobile ? 140 : 188;
 
-  const keyframes = (
-    <GlobalStyles
-      styles={`
-      @keyframes db-gradient-shift {
-        0%   { background-position: 0% 50%; }
-        50%  { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-      }
-      @keyframes db-orb {
-        0%,100% { transform: translate(0,0) scale(1); }
-        25%  { transform: translate(20px,-18px) scale(1.06); }
-        75%  { transform: translate(-14px,12px) scale(0.94); }
-      }
-      @keyframes db-float {
-        0%,100% { transform: translateY(0) rotate(0deg); }
-        40%  { transform: translateY(-16px) rotate(5deg); }
-        70%  { transform: translateY(-8px) rotate(-3deg); }
-      }
-      @keyframes db-slide-up {
-        from { opacity:0; transform:translateY(20px); }
-        to   { opacity:1; transform:translateY(0); }
-      }
-      @keyframes db-counter {
-        from { opacity:0; transform:scale(0.7) translateY(10px); }
-        to   { opacity:1; transform:scale(1) translateY(0); }
-      }
-      @keyframes db-pulse {
-        0%,100% { opacity:1; transform:scale(1); }
-        50%     { opacity:0.55; transform:scale(1.35); }
-      }
-      @keyframes db-shimmer {
-        0%   { transform: translateX(-100%) skewX(-12deg); }
-        60%,100% { transform: translateX(280%) skewX(-12deg); }
-      }
-      @keyframes db-ring-spin {
-        from { transform: rotate(0deg); }
-        to   { transform: rotate(360deg); }
-      }
-    `}
-    />
+  // ── Live API data ─────────────────────────────────────────────────────────────
+  const {
+    isLoading: dashLoading,
+    captainsOnline,
+    totalOnboardings,
+    mobilityCount,
+    logisticsCount,
+    pendingOnboardingsCount,
+    underReviewCount,
+    approvedCount,
+    rejectedCount,
+    driverHireCount,
+    vehicleRentalCount,
+    parcelCount,
+    modeCounts,
+    sortedCities,
+    maxCityCount,
+    topCityLabels,
+    topCityCounts,
+    statusCounts,
+    pipelineMonths,
+    approvedPerMonth,
+    rejectedPerMonth,
+    months12Labels,
+    monthlyOnboardingCounts,
+    monthlyByVehicleType,
+    vehicleTypeDistLabels,
+    vehicleTypeDistSeries,
+    vehicleTypeDistTotal,
+    serviceCategoryCounts,
+    healthMetrics,
+    recentOnboardings,
+    topCaptainsList,
+  } = useDashboard();
+
+  const V = (n: number) => (dashLoading ? '—' : n.toLocaleString());
+
+  // ── KPI cards (all real data) ─────────────────────────────────────────────
+  const kpiCards = [
+    {
+      label: 'Total Onboardings',
+      value: V(totalOnboardings),
+      sub: `${V(approvedCount)} approved`,
+      Icon: PeopleIcon,
+      color: '#4f46e5',
+      cls: 'kpiCard0',
+      trend: V(pendingOnboardingsCount),
+      trendUp: pendingOnboardingsCount === 0,
+      trendLabel: 'pending review',
+    },
+    {
+      label: 'Approved Captains',
+      value: V(captainsOnline),
+      sub: `${V(mobilityCount)} mobility onboardings`,
+      Icon: LocalTaxiIcon,
+      color: '#10b981',
+      cls: 'kpiCard1',
+      trend: V(underReviewCount),
+      trendUp: true,
+      trendLabel: 'under review',
+    },
+    {
+      label: 'Pending Reviews',
+      value: V(pendingOnboardingsCount),
+      sub: `${V(underReviewCount)} under review`,
+      Icon: RouteIcon,
+      color: '#f59e0b',
+      cls: 'kpiCard2',
+      trend: V(rejectedCount),
+      trendUp: rejectedCount === 0,
+      trendLabel: 'total rejected',
+    },
+    {
+      label: 'Service Requests',
+      value: V(driverHireCount + vehicleRentalCount + parcelCount),
+      sub: `${V(driverHireCount)} hire · ${V(vehicleRentalCount)} rental · ${V(parcelCount)} parcel`,
+      Icon: CurrencyRupeeIcon,
+      color: '#0ea5e9',
+      cls: 'kpiCard3',
+      trend: V(logisticsCount),
+      trendUp: true,
+      trendLabel: 'logistics onboardings',
+    },
+  ];
+
+  // ── Governance stats (all real data) ─────────────────────────────────────
+  const governanceStats = [
+    {
+      label: 'Pending Onboardings',
+      value: V(pendingOnboardingsCount),
+      sub: 'Awaiting admin review',
+      Icon: VpnKeyIcon,
+      color: '#f59e0b',
+      bg: '#fffbeb',
+    },
+    {
+      label: 'Under Review',
+      value: V(underReviewCount),
+      sub: 'Being processed',
+      Icon: QueryStatsIcon,
+      color: '#0ea5e9',
+      bg: '#f0f9ff',
+    },
+    {
+      label: 'Approved',
+      value: V(approvedCount),
+      sub: 'Total approved onboardings',
+      Icon: CalendarMonthIcon,
+      color: '#10b981',
+      bg: '#f0fdf4',
+    },
+    {
+      label: 'Rejected',
+      value: V(rejectedCount),
+      sub: 'Total rejected',
+      Icon: ManageSearchIcon,
+      color: '#ef4444',
+      bg: '#fef2f2',
+    },
+  ];
+
+  // ── Service Modes (all real data) ─────────────────────────────────────────
+  const MODE_DEFS = [
+    {
+      label: 'Bike Rides',
+      key: 'bike',
+      Icon: TwoWheelerIcon,
+      color: '#f59e0b',
+      bg: '#fffbeb',
+      delay: '0s',
+    },
+    {
+      label: 'Auto Rides',
+      key: 'auto',
+      Icon: ElectricRickshawIcon,
+      color: '#10b981',
+      bg: '#f0fdf4',
+      delay: '0.08s',
+    },
+    {
+      label: 'Car Rides',
+      key: 'car',
+      Icon: DirectionsCarIcon,
+      color: '#4f46e5',
+      bg: '#eef2ff',
+      delay: '0.16s',
+    },
+    {
+      label: 'Shuttle',
+      key: 'shuttle',
+      Icon: AirportShuttleIcon,
+      color: '#0ea5e9',
+      bg: '#f0f9ff',
+      delay: '0.24s',
+    },
+    {
+      label: 'Goods / Freight',
+      key: 'goods',
+      Icon: LocalShippingIcon,
+      color: '#8b5cf6',
+      bg: '#f5f3ff',
+      delay: '0.32s',
+    },
+    {
+      label: 'Parcel Delivery',
+      key: 'parcel',
+      Icon: Inventory2Icon,
+      color: '#ea580c',
+      bg: '#fff7ed',
+      delay: '0.40s',
+    },
+  ];
+  const parcelCount_ = parcelCount;
+  const allModeCounts: Record<string, number> = { ...modeCounts, parcel: parcelCount_ };
+  const maxAllModes = Math.max(...Object.values(allModeCounts), 1);
+  const serviceModes = MODE_DEFS.map(({ label, key, Icon, color, bg, delay }) => {
+    const count = allModeCounts[key] ?? 0;
+    return {
+      label,
+      Icon,
+      color,
+      bg,
+      delay,
+      value: V(count),
+      pct: Math.round((count / maxAllModes) * 100),
+      sub: `${count} onboardings`,
+    };
+  });
+
+  // ── Fleet Stats (all real data) ───────────────────────────────────────────
+  const fleetStats = [
+    {
+      label: 'Total Onboardings',
+      value: V(totalOnboardings),
+      sub: 'All onboardings',
+      Icon: PeopleIcon,
+      color: '#4f46e5',
+      bg: '#eef2ff',
+    },
+    {
+      label: 'Mobility',
+      value: V(mobilityCount),
+      sub: 'Mobility onboardings',
+      Icon: AdminPanelSettingsIcon,
+      color: '#7c3aed',
+      bg: '#f5f3ff',
+    },
+    {
+      label: 'Approved Captains',
+      value: V(captainsOnline),
+      sub: 'Approved & active',
+      Icon: LocalTaxiIcon,
+      color: '#10b981',
+      bg: '#f0fdf4',
+    },
+    {
+      label: 'Logistics',
+      value: V(logisticsCount),
+      sub: 'Logistics onboardings',
+      Icon: CorporateFareIcon,
+      color: '#0ea5e9',
+      bg: '#f0f9ff',
+    },
+    {
+      label: 'Driver Hire',
+      value: V(driverHireCount),
+      sub: 'Driver hire requests',
+      Icon: PersonSearchIcon,
+      color: '#f59e0b',
+      bg: '#fffbeb',
+    },
+    {
+      label: 'Vehicle Rental',
+      value: V(vehicleRentalCount),
+      sub: 'Vehicle rental requests',
+      Icon: CarRentalIcon,
+      color: '#ef4444',
+      bg: '#fef2f2',
+    },
+    {
+      label: 'Parcel',
+      value: V(parcelCount),
+      sub: 'Parcel requests',
+      Icon: Inventory2Icon,
+      color: '#ea580c',
+      bg: '#fff7ed',
+    },
+  ];
+
+  // ── Monthly onboarding by vehicle type (stacked bar) ─────────────────────
+  const onboardingByVehicleDynOptions: ApexOptions = {
+    ...onboardingByVehicleOptions,
+    xaxis: { ...onboardingByVehicleOptions.xaxis, categories: months12Labels },
+  };
+
+  // ── Monthly onboarding trend (area chart) ─────────────────────────────────
+  const onboardingTrendDynOptions: ApexOptions = {
+    ...onboardingTrendOptions,
+    xaxis: { ...onboardingTrendOptions.xaxis, categories: months12Labels },
+  };
+  const onboardingTrendSeries = [{ name: 'Onboardings', data: monthlyOnboardingCounts }];
+
+  // ── Onboarding status donut ────────────────────────────────────────────────
+  const onboardingStatusSeries = [
+    statusCounts.approved,
+    statusCounts.rejected,
+    statusCounts.under_review,
+    statusCounts.pending,
+  ];
+  const onboardingTotal = Object.values(statusCounts).reduce((a, b) => a + b, 0);
+  const tripStatusDynOptions: ApexOptions = {
+    ...tripStatusOptions,
+    plotOptions: {
+      pie: {
+        donut: {
+          size: '70%',
+          labels: {
+            show: true,
+            total: {
+              show: true,
+              label: 'Onboardings',
+              fontSize: '11px',
+              color: '#64748b',
+              fontWeight: 700,
+              formatter: () => (dashLoading ? '…' : onboardingTotal.toLocaleString()),
+            },
+          },
+        },
+      },
+    },
+  };
+
+  // ── Vehicle type distribution donut ───────────────────────────────────────
+  const vehicleTypeDistDynOptions: ApexOptions = {
+    ...vehicleTypeDistOptions,
+    labels: vehicleTypeDistLabels.length > 0 ? vehicleTypeDistLabels : ['No Data'],
+    plotOptions: {
+      pie: {
+        donut: {
+          size: '68%',
+          labels: {
+            show: true,
+            total: {
+              show: true,
+              label: 'Captains',
+              fontSize: '11px',
+              color: '#64748b',
+              fontWeight: 700,
+              formatter: () => (dashLoading ? '…' : vehicleTypeDistTotal.toLocaleString()),
+            },
+          },
+        },
+      },
+    },
+  };
+
+  // ── Access-request pipeline ────────────────────────────────────────────────
+  const dynamicAccessRequestOptions: ApexOptions = {
+    ...accessRequestOptions,
+    xaxis: { ...accessRequestOptions.xaxis, categories: pipelineMonths },
+  };
+  const dynamicAccessRequestSeries = [
+    { name: 'Approved', data: approvedPerMonth },
+    { name: 'Rejected', data: rejectedPerMonth },
+  ];
+
+  // ── City bar chart (replacing Subscriptions) ──────────────────────────────
+  const cityBarDynOptions: ApexOptions = {
+    ...cityBarOptions,
+    xaxis: { ...cityBarOptions.xaxis, categories: topCityLabels },
+  };
+  const cityBarSeries = [{ name: 'Onboardings', data: topCityCounts }];
+
+  // ── Service-category donut ─────────────────────────────────────────────────
+  const userDistLabels = Object.keys(serviceCategoryCounts).map(
+    (k) => k.charAt(0).toUpperCase() + k.slice(1),
   );
+  const userDistSeries = Object.values(serviceCategoryCounts);
+  const userDistTotal = userDistSeries.reduce((a, b) => a + b, 0);
+  const userDistributionDynOptions: ApexOptions = {
+    ...userDistributionOptions,
+    labels: userDistLabels.length > 0 ? userDistLabels : ['No Data'],
+    plotOptions: {
+      pie: {
+        donut: {
+          size: '68%',
+          labels: {
+            show: true,
+            total: {
+              show: true,
+              label: 'Onboardings',
+              fontSize: '11px',
+              color: '#64748b',
+              fontWeight: 700,
+              formatter: () => (dashLoading ? '…' : userDistTotal.toLocaleString()),
+            },
+          },
+        },
+      },
+    },
+  };
+
+  // ── Top Cities ────────────────────────────────────────────────────────────
+  const CITY_COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#0ea5e9', '#8b5cf6', '#ef4444'];
+  const CITY_BGS = ['#eef2ff', '#f0fdf4', '#fffbeb', '#f0f9ff', '#f5f3ff', '#fef2f2'];
+  const topCitiesDisplay = sortedCities.map(([name, count], idx) => ({
+    rank: idx + 1,
+    name,
+    trips: count.toLocaleString(),
+    pct: Math.round((count / maxCityCount) * 100),
+    color: CITY_COLORS[idx % CITY_COLORS.length],
+    bg: CITY_BGS[idx % CITY_BGS.length],
+  }));
+
+  // ── Top Captains ──────────────────────────────────────────────────────────
+  const CAPTAIN_COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#0ea5e9', '#8b5cf6'];
+  const CAPTAIN_BGS = ['#eef2ff', '#f0fdf4', '#fffbeb', '#f0f9ff', '#f5f3ff'];
+  const topCaptainsDisplay = topCaptainsList.map((captain, idx) => {
+    const name = `${captain.firstName} ${captain.lastName}`.trim();
+    const initials = name
+      .split(' ')
+      .map((n: string) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+    const vt = (captain.vehicleType || '')
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (c: string) => c.toUpperCase());
+    return {
+      initials,
+      name,
+      city: captain.city || '—',
+      sub: vt || 'Captain',
+      earning: 'Approved',
+      rating: captain.vehicleNumber || '—',
+      bg: CAPTAIN_BGS[idx % CAPTAIN_BGS.length],
+      color: CAPTAIN_COLORS[idx % CAPTAIN_COLORS.length],
+      top: idx === 0,
+    };
+  });
 
   return (
     <>
@@ -583,14 +619,11 @@ const Dashboard = () => {
       <Box className={classes.container}>
         {/* ══ HERO ═══════════════════════════════════════════════════════════ */}
         <Box className={classes.heroHeader}>
-          {/* Decorative layers */}
           <Box className={classes.heroGridOverlay} />
           <Box className={classes.heroShimmer} />
           <Box className={classes.heroOrb} />
           <Box className={classes.heroOrb2} />
           <Box className={classes.heroOrb3} />
-
-          {/* Main content */}
           <Box className={classes.heroContent}>
             <Box className={classes.heroLeft}>
               <Box className={classes.heroWelcomeRow}>
@@ -629,9 +662,10 @@ const Dashboard = () => {
           </Box>
         </Box>
 
-        {/* ══ PRIMARY KPIs ═══════════════════════════════════════════════════ */}
+        {/* ══ OPERATIONS — PRIMARY KPIs ══════════════════════════════════════ */}
+        <SectionLabel label='Operations Overview' classes={classes} />
         <Box className={classes.kpiGrid}>
-          {KPI_CARDS.map(({ label, value, sub, Icon, color, cls, trend, trendUp, trendLabel }) => (
+          {kpiCards.map(({ label, value, Icon, color, cls, trend, trendUp, trendLabel }) => (
             <Box key={label} className={cx(classes.kpiCard, classes[cls as keyof typeof classes])}>
               <Box className={classes.kpiTop}>
                 <Box>
@@ -669,9 +703,31 @@ const Dashboard = () => {
           ))}
         </Box>
 
+        {/* ══ GOVERNANCE OVERVIEW ════════════════════════════════════════════ */}
+        <SectionLabel label='Governance' classes={classes} />
+        <Box className={classes.secRow}>
+          {governanceStats.map(({ label, value, sub, Icon, color, bg }) => (
+            <Box key={label} className={classes.secCard}>
+              <Box className={classes.secIcon} sx={{ background: bg }}>
+                <Icon sx={{ color }} />
+              </Box>
+              <Box>
+                <Typography className={classes.secValue} sx={{ color }}>
+                  {value}
+                </Typography>
+                <Typography className={classes.secLabel}>{label}</Typography>
+                <Typography sx={{ fontSize: '0.65rem', color: 'rgba(0,0,0,0.38)', mt: 0.25 }}>
+                  {sub}
+                </Typography>
+              </Box>
+            </Box>
+          ))}
+        </Box>
+
         {/* ══ SERVICE MODE BREAKDOWN ═════════════════════════════════════════ */}
+        <SectionLabel label='Service Modes — Today' classes={classes} />
         <Box className={classes.modeGrid}>
-          {SERVICE_MODES.map(({ label, value, sub, Icon, color, bg, pct, delay }) => (
+          {serviceModes.map(({ label, value, sub, Icon, color, bg, pct, delay }) => (
             <Box
               key={label}
               className={classes.modeCard}
@@ -703,9 +759,10 @@ const Dashboard = () => {
           ))}
         </Box>
 
-        {/* ══ SECONDARY BUSINESS METRICS ════════════════════════════════════ */}
-        <Box className={classes.secRow}>
-          {SEC_METRICS.map(({ label, value, Icon, color, bg }) => (
+        {/* ══ PEOPLE & ORGANIZATIONS ═════════════════════════════════════════ */}
+        <SectionLabel label='People & Organizations' classes={classes} />
+        <Box className={classes.fleetGrid}>
+          {fleetStats.map(({ label, value, sub, Icon, color, bg }) => (
             <Box key={label} className={classes.secCard}>
               <Box className={classes.secIcon} sx={{ background: bg }}>
                 <Icon sx={{ color }} />
@@ -715,26 +772,30 @@ const Dashboard = () => {
                   {value}
                 </Typography>
                 <Typography className={classes.secLabel}>{label}</Typography>
+                <Typography sx={{ fontSize: '0.65rem', color: 'rgba(0,0,0,0.38)', mt: 0.25 }}>
+                  {sub}
+                </Typography>
               </Box>
             </Box>
           ))}
         </Box>
 
-        {/* ══ RIDES BY MODE CHART + REVENUE AREA ════════════════════════════ */}
+        {/* ══ OPERATIONS ANALYTICS ════════════════════════════════════════════ */}
+        <SectionLabel label='Operations Analytics' classes={classes} />
         <Box className={classes.chartRow}>
           <Box className={classes.chartPanel}>
             <Box className={classes.panelHead}>
               <Typography className={classes.panelTitle}>
-                Rides by Service Mode — Monthly
+                Onboardings by Vehicle Type — Monthly
               </Typography>
               <Box className={classes.panelBadge} sx={{ background: '#eef2ff', color: '#4f46e5' }}>
-                FY 2024–25
+                Last 12 Months
               </Box>
             </Box>
             <Box sx={{ p: 2 }}>
               <Chart
-                options={ridesByModeOptions}
-                series={ridesByModeSeries}
+                options={onboardingByVehicleDynOptions}
+                series={monthlyByVehicleType}
                 type='bar'
                 height={barChartHeight}
               />
@@ -743,13 +804,13 @@ const Dashboard = () => {
 
           <Box className={classes.panel}>
             <Box className={classes.panelHead}>
-              <Typography className={classes.panelTitle}>Platform Health</Typography>
+              <Typography className={classes.panelTitle}>Onboarding Health</Typography>
               <Box className={classes.panelBadge} sx={{ background: '#f0fdf4', color: '#10b981' }}>
                 Live
               </Box>
             </Box>
             <Box className={classes.panelBody}>
-              {HEALTH.map(({ label, value, pct, color }) => (
+              {healthMetrics.map(({ label, value, pct, color }) => (
                 <Box key={label} className={classes.healthRow}>
                   <Typography className={classes.healthLabel}>
                     <Box
@@ -774,19 +835,19 @@ const Dashboard = () => {
           </Box>
         </Box>
 
-        {/* ══ REVENUE TREND + TRIP STATUS + REVENUE BY CHANNEL ══════════════ */}
+        {/* ══ ONBOARDING TREND + STATUS + VEHICLE TYPE ═══════════════════════ */}
         <Box className={classes.twoColRow}>
           <Box className={classes.chartPanel}>
             <Box className={classes.panelHead}>
-              <Typography className={classes.panelTitle}>Monthly Revenue Trend</Typography>
+              <Typography className={classes.panelTitle}>Monthly Onboarding Trend</Typography>
               <Box className={classes.panelBadge} sx={{ background: '#eef2ff', color: '#4f46e5' }}>
-                ₹14.2L this month
+                {dashLoading ? '…' : `${totalOnboardings.toLocaleString()} total`}
               </Box>
             </Box>
             <Box sx={{ p: 2 }}>
               <Chart
-                options={revenueOptions}
-                series={revenueSeries}
+                options={onboardingTrendDynOptions}
+                series={onboardingTrendSeries}
                 type='area'
                 height={areaChartHeight}
               />
@@ -796,18 +857,18 @@ const Dashboard = () => {
           <Box className={classes.twoColRow} sx={{ mb: 0 }}>
             <Box className={classes.panel}>
               <Box className={classes.panelHead}>
-                <Typography className={classes.panelTitle}>Trip Status Today</Typography>
+                <Typography className={classes.panelTitle}>Onboarding Status</Typography>
                 <Box
                   className={classes.panelBadge}
                   sx={{ background: '#eef2ff', color: '#4f46e5' }}
                 >
-                  5,284
+                  {dashLoading ? '…' : onboardingTotal.toLocaleString()}
                 </Box>
               </Box>
               <Box sx={{ p: 1 }}>
                 <Chart
-                  options={tripStatusOptions}
-                  series={tripStatusSeries}
+                  options={tripStatusDynOptions}
+                  series={onboardingStatusSeries}
                   type='donut'
                   height={donutChartHeight}
                 />
@@ -816,18 +877,18 @@ const Dashboard = () => {
 
             <Box className={classes.panel}>
               <Box className={classes.panelHead}>
-                <Typography className={classes.panelTitle}>Revenue by Mode</Typography>
+                <Typography className={classes.panelTitle}>Vehicle Type Distribution</Typography>
                 <Box
                   className={classes.panelBadge}
                   sx={{ background: '#fffbeb', color: '#f59e0b' }}
                 >
-                  ₹2.84L
+                  {dashLoading ? '…' : `${vehicleTypeDistTotal.toLocaleString()} captains`}
                 </Box>
               </Box>
               <Box sx={{ p: 1 }}>
                 <Chart
-                  options={revenueChannelOptions}
-                  series={revenueChannelSeries}
+                  options={vehicleTypeDistDynOptions}
+                  series={vehicleTypeDistSeries.length > 0 ? vehicleTypeDistSeries : [1]}
                   type='donut'
                   height={donutChartHeight}
                 />
@@ -836,25 +897,80 @@ const Dashboard = () => {
           </Box>
         </Box>
 
-        {/* ══ TOP CITIES + TOP CAPTAINS + LIVE ACTIVITY ═════════════════════ */}
-        <Box className={classes.threeColRow}>
-          {/* Top Cities */}
+        {/* ══ GOVERNANCE ANALYTICS ══════════════════════════════════════════ */}
+        <SectionLabel label='Governance Analytics' classes={classes} />
+        <Box className={classes.twoColRow}>
           <Box className={classes.panel}>
             <Box className={classes.panelHead}>
-              <Typography className={classes.panelTitle}>Top Cities by Trips</Typography>
+              <Typography className={classes.panelTitle}>Onboarding Pipeline</Typography>
+              <Box className={classes.panelBadge} sx={{ background: '#f0fdf4', color: '#10b981' }}>
+                Last 6 Months
+              </Box>
+            </Box>
+            <Box sx={{ p: 2 }}>
+              <Chart
+                options={dynamicAccessRequestOptions}
+                series={dynamicAccessRequestSeries}
+                type='bar'
+                height={accessBarHeight}
+              />
+            </Box>
+          </Box>
+
+          <Box className={classes.panel}>
+            <Box className={classes.panelHead}>
+              <Typography className={classes.panelTitle}>Onboardings by City</Typography>
+              <Box className={classes.panelBadge} sx={{ background: '#f5f3ff', color: '#4f46e5' }}>
+                {dashLoading ? '…' : `${sortedCities.length} cities`}
+              </Box>
+            </Box>
+            <Box sx={{ p: 2 }}>
+              <Chart
+                options={cityBarDynOptions}
+                series={cityBarSeries}
+                type='bar'
+                height={subscriptionBarHeight}
+              />
+            </Box>
+          </Box>
+        </Box>
+
+        {/* ══ PEOPLE DISTRIBUTION ════════════════════════════════════════════ */}
+        <SectionLabel label='User & Role Distribution' classes={classes} />
+        <Box className={classes.twoColRow}>
+          <Box className={classes.panel}>
+            <Box className={classes.panelHead}>
+              <Typography className={classes.panelTitle}>Onboarding Distribution</Typography>
               <Box className={classes.panelBadge} sx={{ background: '#eef2ff', color: '#4f46e5' }}>
-                Today
+                {dashLoading ? '…' : `${userDistTotal.toLocaleString()} Total`}
+              </Box>
+            </Box>
+            <Box sx={{ p: 1 }}>
+              <Chart
+                options={userDistributionDynOptions}
+                series={userDistSeries.length > 0 ? userDistSeries : [1]}
+                type='donut'
+                height={donutChartHeight + 30}
+              />
+            </Box>
+          </Box>
+
+          <Box className={classes.panel}>
+            <Box className={classes.panelHead}>
+              <Typography className={classes.panelTitle}>Top Cities by Onboardings</Typography>
+              <Box className={classes.panelBadge} sx={{ background: '#eef2ff', color: '#4f46e5' }}>
+                {dashLoading ? '…' : `${totalOnboardings.toLocaleString()} total`}
               </Box>
             </Box>
             <Box className={classes.panelBody}>
-              {TOP_CITIES.map(({ rank, name, state, trips, pct, color, bg }) => (
+              {topCitiesDisplay.map(({ rank, name, trips, pct, color, bg }) => (
                 <Box key={name} className={classes.cityItem}>
                   <Box className={classes.cityRank} sx={{ background: bg, color }}>
                     #{rank}
                   </Box>
                   <Box sx={{ flex: 1 }}>
                     <Typography className={classes.cityName}>{name}</Typography>
-                    <Typography className={classes.citySub}>{state}</Typography>
+                    <Typography className={classes.citySub}>{trips} onboardings</Typography>
                   </Box>
                   <Box className={classes.cityBar}>
                     <Box
@@ -869,18 +985,21 @@ const Dashboard = () => {
               ))}
             </Box>
           </Box>
+        </Box>
 
-          {/* Top Captains */}
+        {/* ══ TOP CAPTAINS + LIVE ACTIVITY ═══════════════════════════════════ */}
+        <SectionLabel label='Captains & Live Feed' classes={classes} />
+        <Box className={classes.twoColRow}>
           <Box className={classes.panel}>
             <Box className={classes.panelHead}>
               <Typography className={classes.panelTitle}>Top Captains</Typography>
               <Box className={classes.panelBadge} sx={{ background: '#f0fdf4', color: '#10b981' }}>
-                This Month
+                {dashLoading ? '…' : `${captainsOnline} Approved`}
               </Box>
             </Box>
             <Box className={classes.panelBody}>
-              {TOP_CAPTAINS.map(
-                ({ initials, name, city, trips, earning, rating, bg, color, top }) => (
+              {topCaptainsDisplay.map(
+                ({ initials, name, city, sub, earning, rating, bg, color, top }) => (
                   <Box key={name} className={classes.captainItem}>
                     <Box sx={{ position: 'relative' }}>
                       <Box className={classes.captainAvatar} sx={{ background: bg, color }}>
@@ -901,7 +1020,7 @@ const Dashboard = () => {
                     <Box sx={{ flex: 1 }}>
                       <Typography className={classes.captainName}>{name}</Typography>
                       <Typography className={classes.captainSub}>
-                        {city} · {trips} trips
+                        {city} · {sub}
                       </Typography>
                     </Box>
                     <Box>
@@ -916,11 +1035,10 @@ const Dashboard = () => {
             </Box>
           </Box>
 
-          {/* Live Activity Feed */}
           <Box className={classes.panel}>
             <Box className={classes.panelHead}>
-              <Typography className={classes.panelTitle}>Live Activity</Typography>
-              <Box className={classes.panelBadge} sx={{ background: '#fef2f2', color: '#ef4444' }}>
+              <Typography className={classes.panelTitle}>Recent Onboardings</Typography>
+              <Box className={classes.panelBadge} sx={{ background: '#f0fdf4', color: '#10b981' }}>
                 <Box
                   component='span'
                   sx={{
@@ -928,7 +1046,7 @@ const Dashboard = () => {
                     width: 6,
                     height: 6,
                     borderRadius: '50%',
-                    background: '#ef4444',
+                    background: '#10b981',
                     mr: 0.5,
                     animation: 'db-pulse 1.5s ease-in-out infinite',
                   }}
@@ -937,15 +1055,54 @@ const Dashboard = () => {
               </Box>
             </Box>
             <Box className={classes.panelBody}>
-              {ACTIVITY.map(({ Icon, color, bg, text, time }, i) => (
-                <Box key={i} className={classes.activityItem}>
-                  <Box className={classes.activityDot} sx={{ background: bg }}>
-                    <Icon sx={{ color }} />
-                  </Box>
-                  <Typography className={classes.activityText}>{text}</Typography>
-                  <Typography className={classes.activityTime}>{time}</Typography>
-                </Box>
-              ))}
+              {recentOnboardings.length === 0 ? (
+                <Typography
+                  sx={{ fontSize: '0.78rem', color: '#94a3b8', p: 2, textAlign: 'center' }}
+                >
+                  No onboardings yet
+                </Typography>
+              ) : (
+                recentOnboardings.map((item, i) => {
+                  const statusColors: Record<string, string> = {
+                    approved: '#10b981',
+                    pending: '#f59e0b',
+                    under_review: '#0ea5e9',
+                    rejected: '#ef4444',
+                  };
+                  const statusBgs: Record<string, string> = {
+                    approved: '#f0fdf4',
+                    pending: '#fffbeb',
+                    under_review: '#f0f9ff',
+                    rejected: '#fef2f2',
+                  };
+                  const sc = statusColors[item.status] || '#94a3b8';
+                  const sb = statusBgs[item.status] || '#f8fafc';
+                  const date = new Date(item.createdAt);
+                  const timeAgo = (() => {
+                    const diff = Date.now() - date.getTime();
+                    const mins = Math.floor(diff / 60000);
+                    if (mins < 60) return `${mins}m ago`;
+                    const hrs = Math.floor(mins / 60);
+                    if (hrs < 24) return `${hrs}h ago`;
+                    return `${Math.floor(hrs / 24)}d ago`;
+                  })();
+                  return (
+                    <Box key={i} className={classes.activityItem}>
+                      <Box className={classes.activityDot} sx={{ background: sb }}>
+                        <PersonAddIcon sx={{ color: sc, fontSize: '1rem !important' }} />
+                      </Box>
+                      <Typography className={classes.activityText}>
+                        <strong>{item.name}</strong> — {item.city} · {item.vehicleType} ·{' '}
+                        {item.serviceCategory}{' '}
+                        <Box component='span' sx={{ color: sc, fontWeight: 700 }}>
+                          [{item.status.replace(/_/g, ' ')}]
+                        </Box>
+                      </Typography>
+                      <Typography className={classes.activityTime}>{timeAgo}</Typography>
+                    </Box>
+                  );
+                })
+              )}
             </Box>
           </Box>
         </Box>

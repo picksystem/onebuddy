@@ -26,10 +26,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { useFieldError } from '@bandi/hooks';
 import { useStyles } from './styles';
 import { UserRow, EditFormShape } from '../../types/userManagement.types';
-import {
-  SOURCE_LABELS,
-  fmtDateTimeUser,
-} from '../../utils/userManagement.utils';
+import { SOURCE_LABELS, fmtDateTimeUser } from '../../utils/userManagement.utils';
 
 interface EditUserDialogProps {
   open: boolean;

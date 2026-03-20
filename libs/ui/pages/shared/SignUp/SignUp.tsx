@@ -1,4 +1,4 @@
-import { Box, Typography, Avatar } from '@mui/material';
+import { Box, Typography, Avatar, SelectChangeEvent } from '@mui/material';
 import { constants } from '@bandi/utils';
 import { useStyles } from './styles';
 import useSignUp, { STEPS } from './hooks/useSignUp';
@@ -7,7 +7,6 @@ import PersonalStep from './components/PersonalStep';
 import WorkDetailsStep from './components/WorkDetailsStep';
 import SecurityStep from './components/SecurityStep';
 import LeftPanel from './components/LeftPanel';
-
 import Button from '../../../components/Button/Button';
 
 const SignUp = () => {
@@ -25,10 +24,18 @@ const SignUp = () => {
     handleNext,
     initials,
     navigate,
+    emailExists,
+    phoneExists,
+    checkEmail,
+    checkPhone,
   } = useSignUp();
 
   const touched = formik.touched as Partial<Record<string, boolean>>;
   const errors = formik.errors as Partial<Record<string, string>>;
+
+  const handleSelectChange = (field: string) => (e: SelectChangeEvent<string>) => {
+    formik.setFieldValue(field, e.target.value);
+  };
 
   return (
     <Box className={classes.pageWrapper}>
@@ -61,6 +68,7 @@ const SignUp = () => {
             }}
             noValidate
           >
+            {/* Step 1 — Personal */}
             {step === 0 && (
               <PersonalStep
                 values={{
@@ -68,20 +76,31 @@ const SignUp = () => {
                   lastName: formik.values.lastName,
                   email: formik.values.email,
                   phone: formik.values.phone,
+                  dateOfBirth: formik.values.dateOfBirth,
+                  gender: formik.values.gender,
+                  city: formik.values.city,
                 }}
                 touched={touched}
                 errors={errors}
                 onChange={formik.handleChange}
+                onSelectChange={handleSelectChange}
+                onDateChange={(field, value) => formik.setFieldValue(field, value)}
                 onBlur={formik.handleBlur}
                 classes={classes}
+                emailExists={emailExists}
+                phoneExists={phoneExists}
+                onEmailChange={checkEmail}
+                onPhoneChange={checkPhone}
               />
             )}
 
+            {/* Step 2 — Work Details */}
             {step === 1 && (
               <WorkDetailsStep
                 values={{
                   employeeId: formik.values.employeeId,
-                  businessUnit: formik.values.businessUnit,
+                  department: formik.values.department,
+                  managerEmail: formik.values.managerEmail,
                   reasonForAccess: formik.values.reasonForAccess,
                   role: formik.values.role,
                 }}
@@ -89,16 +108,19 @@ const SignUp = () => {
                 errors={errors}
                 onChange={formik.handleChange}
                 onRoleChange={(e) => formik.setFieldValue('role', e.target.value)}
+                onDepartmentChange={(e) => formik.setFieldValue('department', e.target.value)}
                 onBlur={formik.handleBlur}
                 classes={classes}
               />
             )}
 
+            {/* Step 3 — Security */}
             {step === 2 && (
               <SecurityStep
                 values={{
                   password: formik.values.password,
                   confirmPassword: formik.values.confirmPassword,
+                  agreeToTerms: formik.values.agreeToTerms,
                 }}
                 errors={errors}
                 step2Touched={step2Touched}
@@ -113,6 +135,7 @@ const SignUp = () => {
                   setStep2Touched((p) => ({ ...p, confirmPassword: true }));
                   formik.handleBlur(e);
                 }}
+                onTermsChange={(checked) => formik.setFieldValue('agreeToTerms', checked)}
                 classes={classes}
               />
             )}

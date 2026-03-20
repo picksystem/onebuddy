@@ -61,7 +61,7 @@ const NotificationsMenu = ({
     <Divider />
     <MenuItem onClick={onViewAll}>
       <ListItemText
-        primary='View All Access Requests'
+        primary='View All Access Management'
         primaryTypographyProps={{
           fontSize: '0.85rem',
           fontWeight: 600,
