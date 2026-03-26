@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
-import { Chip } from '@mui/material';
+import { Chip, Stack, Switch, Typography, Tooltip } from '@mui/material';
 import { useAuthActionMutation } from '@bandi/services';
 import { useAuth, useNotification, useMediaQuery } from '@bandi/hooks';
+import { constants } from '@bandi/utils';
 import { IAuthUser } from '@bandi/interfaces';
 import {
   UserRow,
@@ -28,6 +29,8 @@ const useUserManagement = () => {
   const { user: currentUser } = useAuth();
   const notify = useNotification();
   const isMobile = useMediaQuery('(max-width: 599px)');
+  // Ref that always holds the currently-visible onboarding IDs (for new-tab nav)
+  const visibleOnboardingIdsRef = useRef<(string | number)[]>([]);
 
   // ── Table state ───────────────────────────────────────────────────────────────
   const [customerOnboardings, setCustomerOnboardings] = useState<CustomerOnboardingRow[]>([]);
@@ -193,6 +196,26 @@ const useUserManagement = () => {
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
+
+  // Keep visibleOnboardingIdsRef in sync for new-tab navigation
+  useEffect(() => {
+    const lists = [
+      customerOnboardings,
+      customerOnboardings.filter((r) => r.serviceCategory === 'mobility'),
+      customerOnboardings.filter((r) => r.serviceCategory === 'logistics'),
+      customerOnboardings.filter((r) => r.status === 'pending'),
+    ];
+    const active = lists[tabValue] ?? lists[0];
+    const q = tableSearch.toLowerCase();
+    const visible = q
+      ? active.filter((row) =>
+          Object.values(row).some(
+            (v) => v !== null && v !== undefined && String(v).toLowerCase().includes(q),
+          ),
+        )
+      : active;
+    visibleOnboardingIdsRef.current = visible.map((r) => r.id);
+  }, [customerOnboardings, tabValue, tableSearch]);
 
   const handleOnboardingRowClick = (row: CustomerOnboardingRow) => {
     const isDeselecting = selectedOnboarding?.id === row.id;
@@ -674,153 +697,374 @@ const useUserManagement = () => {
     );
   };
 
+  // ── Status toggle ─────────────────────────────────────────────────────────────
+  const handleStatusToggle = useCallback(
+    async (row: CustomerOnboardingRow) => {
+      const newStatus = row.status === 'approved' ? 'rejected' : 'approved';
+      // optimistic update
+      setCustomerOnboardings((prev) =>
+        prev.map((r) => (r.id === row.id ? { ...r, status: newStatus } : r)),
+      );
+      try {
+        await authAction({
+          action: 'update-customer-onboarding',
+          id: Number(row.id),
+          data: { status: newStatus },
+        }).unwrap();
+        notify.success(newStatus === 'approved' ? 'Customer activated' : 'Customer deactivated');
+      } catch {
+        // revert on failure
+        setCustomerOnboardings((prev) =>
+          prev.map((r) => (r.id === row.id ? { ...r, status: row.status } : r)),
+        );
+        notify.error('Failed to update customer status');
+      }
+    },
+    [authAction, notify],
+  );
+
+  const genOnboardingId = (row: CustomerOnboardingRow) => {
+    const prefix = row.serviceCategory === 'mobility' ? 'MOBIL' : 'LOGST';
+    return `${prefix}${String(Number(row.id) || 0).padStart(5, '0')}`;
+  };
+
   // ── CustomerOnboarding columns ────────────────────────────────────────────────
   const columns: Column<CustomerOnboardingRow>[] = useMemo(
     () => [
-      { id: 'sno', label: 'S.No', minWidth: 55, sortable: false },
       {
-        id: 'firstName',
-        label: 'Name',
-        minWidth: 150,
-        format: (_v: unknown, row: CustomerOnboardingRow): React.ReactNode => (
-          <span style={{ fontWeight: 600 }}>
-            {`${row.firstName} ${row.lastName}`.trim() || '—'}
-          </span>
+        id: 'sno',
+        label: '#',
+        minWidth: 42,
+        align: 'center',
+        sortable: false,
+        format: (_v, _r, i?: number): React.ReactNode => (
+          <Typography sx={{ fontSize: '0.78rem', fontWeight: 600, color: '#94a3b8' }}>
+            {(i ?? 0) + 1}
+          </Typography>
         ),
       },
-      { id: 'phone', label: 'Phone', minWidth: 125, format: (v) => String(v || '—') },
-      { id: 'email', label: 'Email', minWidth: 185, format: (v) => String(v || '—') },
-      { id: 'city', label: 'City', minWidth: 100, format: (v) => String(v || '—') },
+      {
+        id: 'firstName',
+        label: 'Customer',
+        minWidth: 162,
+        format: (_v: unknown, row: CustomerOnboardingRow): React.ReactNode => (
+          <Stack spacing={0.15}>
+            <Typography
+              component='span'
+              onClick={(e) => {
+                e.stopPropagation();
+                localStorage.setItem(
+                  'customer_detail_nav_ids',
+                  JSON.stringify(visibleOnboardingIdsRef.current),
+                );
+                localStorage.setItem('customer_detail_nav_ids_ts', String(Date.now()));
+                window.open(
+                  constants.AdminPath.CUSTOMER_DETAIL.replace(':id', String(row.id)),
+                  '_blank',
+                );
+              }}
+              sx={{
+                fontWeight: 700,
+                fontSize: '0.84rem',
+                cursor: 'pointer',
+                color: '#1d4ed8',
+                textDecoration: 'underline',
+                textDecorationColor: 'rgba(29,78,216,0.35)',
+                textUnderlineOffset: '3px',
+                lineHeight: 1.3,
+                '&:hover': { color: '#1e40af' },
+              }}
+            >
+              {`${row.firstName} ${row.lastName}`.trim() || '—'}
+            </Typography>
+            <Typography sx={{ fontSize: '0.71rem', color: '#64748b' }}>
+              {row.email || '—'}
+            </Typography>
+            {row.phone && (
+              <Typography sx={{ fontSize: '0.71rem', color: '#64748b' }}>{row.phone}</Typography>
+            )}
+            <Typography
+              sx={{
+                fontSize: '0.69rem',
+                fontWeight: 700,
+                fontFamily: 'monospace',
+                color: '#6366f1',
+                letterSpacing: '0.3px',
+              }}
+            >
+              {genOnboardingId(row)}
+            </Typography>
+          </Stack>
+        ),
+      },
       {
         id: 'serviceCategory',
         label: 'Service',
-        minWidth: 110,
-        format: (v): React.ReactNode => {
-          const s = String(v || '');
+        minWidth: 88,
+        format: (v: unknown, row: CustomerOnboardingRow): React.ReactNode => {
+          const isMobility = String(v || '') === 'mobility';
           return (
-            <Chip
-              label={s.charAt(0).toUpperCase() + s.slice(1)}
-              color={s === 'mobility' ? 'primary' : 'secondary'}
-              size='small'
-              variant='outlined'
-              sx={{ fontWeight: 700, fontSize: '0.68rem' }}
-            />
+            <Stack spacing={0.3}>
+              <Chip
+                label={isMobility ? 'Mobility' : 'Logistics'}
+                size='small'
+                sx={{
+                  fontSize: '0.69rem',
+                  fontWeight: 700,
+                  height: 20,
+                  width: 'fit-content',
+                  bgcolor: isMobility ? '#ede9fe' : '#fef3c7',
+                  color: isMobility ? '#6d28d9' : '#92400e',
+                  border: 'none',
+                }}
+              />
+              {row.tripPreference && (
+                <Typography
+                  sx={{
+                    fontSize: '0.67rem',
+                    color: '#94a3b8',
+                    textTransform: 'capitalize',
+                    ml: '5px',
+                  }}
+                >
+                  {row.tripPreference.replace(/_/g, ' ')}
+                </Typography>
+              )}
+            </Stack>
           );
         },
       },
       {
         id: 'vehicleType',
-        label: 'Veh. Type',
-        minWidth: 110,
-        format: (v) =>
-          String(v || '—')
-            .replace(/_/g, ' ')
-            .replace(/\b\w/g, (c) => c.toUpperCase()),
-      },
-      { id: 'vehicleNumber', label: 'Veh. No.', minWidth: 115, format: (v) => String(v || '—') },
-      { id: 'rcNumber', label: 'RC No.', minWidth: 130, format: (v) => String(v || '—') },
-      {
-        id: 'rcExpiry' as keyof CustomerOnboardingRow,
-        label: 'RC Expiry',
-        minWidth: 130,
-        format: (_v: unknown, row: CustomerOnboardingRow): React.ReactNode =>
-          expiryNode(row.rcExpiry ?? null, row.createdAt),
-      },
-      { id: 'dlNumber', label: 'DL No.', minWidth: 130, format: (v) => String(v || '—') },
-      {
-        id: 'dlExpiry',
-        label: 'DL Expiry',
-        minWidth: 130,
-        format: (_v: unknown, row: CustomerOnboardingRow): React.ReactNode =>
-          expiryNode(row.dlExpiry, row.createdAt),
-      },
-      {
-        id: 'insuranceNumber' as keyof CustomerOnboardingRow,
-        label: 'Ins. No.',
+        label: 'Vehicle',
         minWidth: 120,
-        format: (v) => String(v || '—'),
+        format: (_v: unknown, row: CustomerOnboardingRow): React.ReactNode => (
+          <Stack spacing={0.15}>
+            <Typography
+              sx={{
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                textTransform: 'capitalize',
+                color: '#1e293b',
+              }}
+            >
+              {row.vehicleType || '—'}
+              {row.vehicleSubType ? ` · ${row.vehicleSubType}` : ''}
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: '0.74rem',
+                fontFamily: 'monospace',
+                fontWeight: 700,
+                color: '#1d4ed8',
+                letterSpacing: '0.5px',
+              }}
+            >
+              {row.vehicleNumber || '—'}
+            </Typography>
+            {row.fuelType && (
+              <Typography
+                sx={{ fontSize: '0.67rem', color: '#94a3b8', textTransform: 'capitalize' }}
+              >
+                {row.fuelType}
+              </Typography>
+            )}
+          </Stack>
+        ),
       },
       {
-        id: 'insuranceExpiry' as keyof CustomerOnboardingRow,
-        label: 'Ins. Expiry',
-        minWidth: 120,
-        format: (_v: unknown, row: CustomerOnboardingRow): React.ReactNode =>
-          expiryNode(row.insuranceExpiry ?? null, row.createdAt),
-      },
-      {
-        id: 'idProofType',
-        label: 'ID Type',
-        minWidth: 90,
-        format: (v): React.ReactNode => {
-          const t = String(v || '').toLowerCase();
-          if (!t) return <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>—</span>;
+        id: 'rcNumber',
+        label: 'Vehicle Docs',
+        minWidth: 158,
+        format: (_v: unknown, row: CustomerOnboardingRow): React.ReactNode => {
+          const docs = [
+            { label: 'RC', number: row.rcNumber, expiry: row.rcExpiry },
+            { label: 'Ins', number: row.insuranceNumber, expiry: row.insuranceExpiry },
+            { label: 'PUC', number: row.pucNumber, expiry: row.pucExpiry },
+            { label: 'Fitness', number: row.fitnessNumber, expiry: row.fitnessExpiry },
+            { label: 'Permit', number: row.permitNumber, expiry: row.permitExpiry },
+          ].filter((d) => d.number);
+          if (!docs.length)
+            return <Typography sx={{ fontSize: '0.72rem', color: '#cbd5e1' }}>—</Typography>;
           return (
-            <Chip
-              label={t === 'aadhaar' ? 'Aadhaar' : t === 'pan' ? 'PAN' : t}
-              color={t === 'aadhaar' ? 'info' : 'default'}
-              size='small'
-              variant='outlined'
-              sx={{ fontSize: '0.68rem' }}
-            />
+            <Stack spacing={0.25}>
+              {docs.map((d) => (
+                <Typography key={d.label} sx={{ fontSize: '0.71rem', lineHeight: 1.4 }}>
+                  <span
+                    style={{
+                      color: '#475569',
+                      fontWeight: 700,
+                      display: 'inline-block',
+                      minWidth: 40,
+                    }}
+                  >
+                    {d.label}
+                  </span>
+                  <span style={{ fontFamily: 'monospace', color: '#1e293b' }}>{d.number}</span>
+                  {d.expiry && (
+                    <span style={{ display: 'inline-block', marginLeft: 4 }}>
+                      {expiryNode(d.expiry, row.createdAt)}
+                    </span>
+                  )}
+                </Typography>
+              ))}
+            </Stack>
           );
         },
       },
-      { id: 'idProofNumber', label: 'ID No.', minWidth: 130, format: (v) => String(v || '—') },
       {
-        id: 'accessFromDate' as keyof CustomerOnboardingRow,
-        label: 'Access From',
-        minWidth: 120,
-        format: (v) =>
-          v ? (
-            fmtDateUser(v as string, undefined, undefined)
-          ) : (
-            <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>—</span>
-          ),
+        id: 'dlNumber',
+        label: 'Driver Docs',
+        minWidth: 142,
+        format: (_v: unknown, row: CustomerOnboardingRow): React.ReactNode => {
+          const docs = [
+            { label: 'DL', number: row.dlNumber, expiry: row.dlExpiry },
+            {
+              label: (row.idProofType || 'ID').toUpperCase(),
+              number: row.idProofNumber,
+              expiry: null as string | null,
+            },
+          ].filter((d) => d.number);
+          if (!docs.length)
+            return <Typography sx={{ fontSize: '0.72rem', color: '#cbd5e1' }}>—</Typography>;
+          return (
+            <Stack spacing={0.25}>
+              {docs.map((d) => (
+                <Typography key={d.label} sx={{ fontSize: '0.71rem', lineHeight: 1.4 }}>
+                  <span
+                    style={{
+                      color: '#475569',
+                      fontWeight: 700,
+                      display: 'inline-block',
+                      minWidth: 40,
+                    }}
+                  >
+                    {d.label}
+                  </span>
+                  <span style={{ fontFamily: 'monospace', color: '#1e293b' }}>{d.number}</span>
+                  {d.expiry && (
+                    <span style={{ display: 'inline-block', marginLeft: 4 }}>
+                      {expiryNode(d.expiry, row.createdAt)}
+                    </span>
+                  )}
+                </Typography>
+              ))}
+            </Stack>
+          );
+        },
       },
       {
-        id: 'accessToDate' as keyof CustomerOnboardingRow,
-        label: 'Access Until',
-        minWidth: 130,
-        format: (_v: unknown, row: CustomerOnboardingRow): React.ReactNode =>
-          expiryNode(row.accessToDate ?? null, row.accessFromDate ?? row.createdAt),
+        id: 'city',
+        label: 'Location',
+        minWidth: 95,
+        format: (_v: unknown, row: CustomerOnboardingRow): React.ReactNode => (
+          <Stack spacing={0.15}>
+            <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#1e293b' }}>
+              {row.city || '—'}
+            </Typography>
+            {row.area && (
+              <Typography sx={{ fontSize: '0.71rem', color: '#64748b' }}>{row.area}</Typography>
+            )}
+            {row.pincode && (
+              <Typography
+                sx={{
+                  fontSize: '0.69rem',
+                  fontFamily: 'monospace',
+                  color: '#94a3b8',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                {row.pincode}
+              </Typography>
+            )}
+          </Stack>
+        ),
+      },
+      {
+        id: 'bundleTypes',
+        label: 'Bundle',
+        minWidth: 120,
+        format: (_v: unknown, row: CustomerOnboardingRow): React.ReactNode => {
+          if (!row.bundleTypes)
+            return <Typography sx={{ fontSize: '0.72rem', color: '#cbd5e1' }}>—</Typography>;
+          let types: string[] = [];
+          try {
+            const parsed = JSON.parse(row.bundleTypes);
+            types = Array.isArray(parsed) ? parsed : [String(parsed)];
+          } catch {
+            types = [row.bundleTypes];
+          }
+          return (
+            <Stack spacing={0.3}>
+              {types.map((t) => (
+                <Typography
+                  key={t}
+                  sx={{
+                    fontSize: '0.71rem',
+                    fontWeight: 600,
+                    color: '#3730a3',
+                    background: '#eef2ff',
+                    borderRadius: '4px',
+                    px: '5px',
+                    py: '1px',
+                    display: 'inline-block',
+                    width: 'fit-content',
+                    textTransform: 'capitalize',
+                  }}
+                >
+                  {t.replace(/_/g, ' ')}
+                </Typography>
+              ))}
+              {row.bundleDiscount !== null && row.bundleDiscount > 0 && (
+                <Typography sx={{ fontSize: '0.68rem', color: '#16a34a', fontWeight: 700 }}>
+                  {row.bundleDiscount}% off
+                </Typography>
+              )}
+            </Stack>
+          );
+        },
       },
       {
         id: 'status',
-        label: 'Status',
-        minWidth: 130,
-        format: (v): React.ReactNode => {
-          const s = String(v || '');
-          const colorMap: Record<string, 'warning' | 'success' | 'error' | 'default'> = {
-            pending: 'warning',
-            approved: 'success',
-            rejected: 'error',
-            under_review: 'default',
-          };
+        label: 'Active',
+        minWidth: 80,
+        align: 'center',
+        format: (_v: unknown, row: CustomerOnboardingRow): React.ReactNode => {
+          const isActive = row.status === 'approved';
+          const label = isActive
+            ? 'Active'
+            : row.status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
           return (
-            <Chip
-              label={s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
-              color={colorMap[s] ?? 'default'}
-              size='small'
-              variant='outlined'
-              sx={{ fontWeight: 600, fontSize: '0.7rem' }}
-            />
+            <Tooltip title={label} placement='top'>
+              <Stack alignItems='center' spacing={0.2}>
+                <Switch
+                  size='small'
+                  checked={isActive}
+                  onChange={() => handleStatusToggle(row)}
+                  onClick={(e) => e.stopPropagation()}
+                  sx={{
+                    '& .MuiSwitch-switchBase.Mui-checked': { color: '#16a34a' },
+                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                      backgroundColor: '#16a34a',
+                    },
+                  }}
+                />
+                <Typography
+                  sx={{
+                    fontSize: '0.62rem',
+                    color: isActive ? '#16a34a' : '#94a3b8',
+                    fontWeight: 600,
+                  }}
+                >
+                  {label}
+                </Typography>
+              </Stack>
+            </Tooltip>
           );
         },
       },
-      {
-        id: 'submittedAt',
-        label: 'Submitted',
-        minWidth: 115,
-        format: (v) =>
-          v ? (
-            fmtDateUser(v as string, undefined, undefined)
-          ) : (
-            <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>Pending</span>
-          ),
-      },
     ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [handleStatusToggle],
   );
 
   const driverHireColumns: Column<DriverHireRow>[] = [

@@ -46,8 +46,7 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
       width: 280,
       height: 280,
       borderRadius: '50%',
-      background:
-        'radial-gradient(circle at center, rgba(14,165,233,0.3) 0%, transparent 70%)',
+      background: 'radial-gradient(circle at center, rgba(14,165,233,0.3) 0%, transparent 70%)',
       animation: 'um-orb-drift 10s ease-in-out infinite reverse',
       pointerEvents: 'none',
     },
@@ -64,8 +63,7 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
     width: 180,
     height: 180,
     borderRadius: '50%',
-    background:
-      'radial-gradient(circle at center, rgba(251,191,36,0.22) 0%, transparent 70%)',
+    background: 'radial-gradient(circle at center, rgba(251,191,36,0.22) 0%, transparent 70%)',
     animation: 'um-float 9s ease-in-out infinite',
     pointerEvents: 'none',
     zIndex: 0,

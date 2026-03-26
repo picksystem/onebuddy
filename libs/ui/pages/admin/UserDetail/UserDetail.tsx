@@ -15,14 +15,22 @@ import CloseIcon from '@mui/icons-material/Close';
 import EmailIcon from '@mui/icons-material/Email';
 import PersonIcon from '@mui/icons-material/Person';
 import PhoneIcon from '@mui/icons-material/Phone';
-import WorkIcon from '@mui/icons-material/Work';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import SecurityIcon from '@mui/icons-material/Security';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import BadgeIcon from '@mui/icons-material/Badge';
 import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
-import PeopleIcon from '@mui/icons-material/People';
-import VpnKeyIcon from '@mui/icons-material/VpnKey';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+import CakeIcon from '@mui/icons-material/Cake';
+import FingerprintIcon from '@mui/icons-material/Fingerprint';
+import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
+import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import LockIcon from '@mui/icons-material/Lock';
+import KeyIcon from '@mui/icons-material/Key';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import EditNoteIcon from '@mui/icons-material/EditNote';
+import HowToRegIcon from '@mui/icons-material/HowToReg';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import HistoryIcon from '@mui/icons-material/History';
@@ -34,7 +42,11 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import DownloadIcon from '@mui/icons-material/Download';
 import TimerIcon from '@mui/icons-material/Timer';
 import { Loader } from '@bandi/component';
-import { useAuthActionMutation } from '@bandi/services';
+import {
+  useAuthActionMutation,
+  useUploadUserAttachmentsMutation,
+  useDeleteUserAttachmentMutation,
+} from '@bandi/services';
 import { useNotification } from '@bandi/hooks';
 import { IAuthUser } from '../../../../entities/interfaces';
 import { constants } from '@bandi/utils';
@@ -101,7 +113,7 @@ const getStatusProps = (status: string | null | undefined) => {
 const roleLabel = (role: string) =>
   ({ admin: 'Admin', consultant: 'Consultant', user: 'User', captain: 'Captain' })[role] ?? role;
 
-const buildRefId = (role: string, id: number | string): string => {
+const genUserId = (role: string, id: number | string): string => {
   const prefix =
     role === 'admin'
       ? 'ADMIN'
@@ -110,13 +122,8 @@ const buildRefId = (role: string, id: number | string): string => {
         : role === 'captain'
           ? 'CAPTAIN'
           : 'USER';
-  const isDraft = String(id).startsWith('draft_') || (id as number) === -1;
-  const type = isDraft ? 'DRAFT' : 'ROLE';
-  let num = 0;
-  if (!isDraft) num = Number(id);
-  else if (String(id).startsWith('draft_'))
-    num = parseInt(String(id).replace('draft_', ''), 10) || 0;
-  return `${prefix}_${type}_${String(num).padStart(5, '0')}`;
+  const num = Number(String(id).replace('draft_', '')) || 0;
+  return `${prefix}${String(num).padStart(5, '0')}`;
 };
 
 const fmtDate = (v: string | null | undefined) => {
@@ -516,6 +523,8 @@ const UserDetail = () => {
   const navigate = useNavigate();
   const { classes, cx } = useStyles();
   const [authAction] = useAuthActionMutation();
+  const [uploadAttachments] = useUploadUserAttachmentsMutation();
+  const [deleteAttachment] = useDeleteUserAttachmentMutation();
   const notify = useNotification();
 
   const [user, setUser] = useState<IAuthUser | null>(null);
@@ -540,6 +549,13 @@ const UserDetail = () => {
   const attachmentInputRef = useRef<HTMLInputElement | null>(null);
   const adminAttachmentRef = useRef<HTMLInputElement | null>(null);
   const [adminAttachments, setAdminAttachments] = useState<File[]>([]);
+  // New files staged for upload in edit mode
+  const [newAttachmentFiles, setNewAttachmentFiles] = useState<File[]>([]);
+  // Parse stored attachments from user object
+  type StoredAttachment = { name: string; url: string; size: number };
+  const storedAttachments: StoredAttachment[] = (() => {
+    try { return user?.attachments ? JSON.parse(user.attachments) : []; } catch { return []; }
+  })();
 
   // ── Changes Log dialog state ─────────────────────────────────────────────
   const [changesLogOpen, setChangesLogOpen] = useState(false);
@@ -586,7 +602,7 @@ const UserDetail = () => {
     try {
       const stored = localStorage.getItem('user_detail_nav_ids');
       const ts = localStorage.getItem('user_detail_nav_ids_ts');
-      if (stored && ts && Date.now() - Number(ts) < 30000) {
+      if (stored && ts && Date.now() - Number(ts) < 300000) {
         const ids: (number | string)[] = JSON.parse(stored);
         if (Array.isArray(ids) && ids.length > 0) {
           setUserIds(ids);
@@ -597,20 +613,31 @@ const UserDetail = () => {
       /* ignore */
     }
 
-    // Fallback: fetch real users — drafts won't be navigable without localStorage context
-    authAction({ action: 'get-all-users' })
-      .unwrap()
-      .then((res) => {
-        const list: IAuthUser[] = Array.isArray(res.data) ? res.data : [];
-        const ids: (number | string)[] = list.map((u) => u.id);
-        // If the current page is a draft, prepend its own ID so at least its position is known
-        if (id && (id === 'draft_local' || id.startsWith('draft_'))) {
-          setUserIds([id, ...ids]);
-        } else {
-          setUserIds(ids);
-        }
-      })
-      .catch(() => null);
+    // Fallback: fetch real users + drafts so navigation still works
+    Promise.allSettled([
+      authAction({ action: 'get-all-users' }).unwrap(),
+      authAction({ action: 'get-management-drafts' }).unwrap(),
+    ]).then(([usersResult, draftsResult]) => {
+      const users: IAuthUser[] =
+        usersResult.status === 'fulfilled' ? (usersResult.value as any)?.data || [] : [];
+      const drafts: any[] =
+        draftsResult.status === 'fulfilled' ? (draftsResult.value as any)?.data || [] : [];
+      const draftIds: (number | string)[] = drafts.map((d: any) => {
+        const f = d.formData?.form ?? {};
+        return f.userId || (d.type === 'admin'
+          ? `ADMIN${String(d.id).padStart(4, '0')}`
+          : `CONSULT${String(d.id).padStart(4, '0')}`);
+      });
+      const userNavIds: (number | string)[] = users.map((u: any) =>
+        u.customUserId ? u.customUserId : u.id,
+      );
+      const allIds = [...draftIds, ...userNavIds];
+      if (id && (id === 'draft_local' || id.startsWith('draft_'))) {
+        setUserIds([id, ...allIds]);
+      } else {
+        setUserIds(allIds);
+      }
+    });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -648,8 +675,15 @@ const UserDetail = () => {
 
   const navigateToUser = (userId: number | string) => {
     const uidStr = String(userId);
-    // If navigating to a draft, refresh draft_data from the stored map
-    if (uidStr === 'draft_local' || uidStr.startsWith('draft_')) {
+    // Refresh draft_data from the stored map when navigating to a draft entry
+    const isDraftKey = uidStr === 'draft_local' || uidStr.startsWith('draft_');
+    const hasDraftMapEntry = (() => {
+      try {
+        const m = localStorage.getItem('user_detail_draft_map');
+        return m ? !!JSON.parse(m)[uidStr] : false;
+      } catch { return false; }
+    })();
+    if (isDraftKey || hasDraftMapEntry) {
       try {
         const mapStr = localStorage.getItem('user_detail_draft_map');
         if (mapStr) {
@@ -883,9 +917,14 @@ const UserDetail = () => {
   // ── user as UserRow adapter ──────────────────────────────────────────────
   const userAsRow = useMemo<UserRow | null>(() => (user ? { ...user, sno: 0 } : null), [user]);
 
+  const isCustomId = !!id && (id.startsWith('ADMIN') || id.startsWith('CONSULT'));
+
   const fetchUser = async () => {
     try {
-      const res = await authAction({ action: 'get-user', userId: numId }).unwrap();
+      const payload = isCustomId
+        ? { action: 'get-user' as const, customUserId: id }
+        : { action: 'get-user' as const, userId: numId };
+      const res = await authAction(payload).unwrap();
       const u = res.data as IAuthUser;
       setUser(u);
     } catch {
@@ -906,7 +945,7 @@ const UserDetail = () => {
       try {
         const stored = localStorage.getItem('user_detail_draft_data');
         const ts = localStorage.getItem('user_detail_draft_data_ts');
-        if (stored && ts && Date.now() - Number(ts) < 60000) {
+        if (stored && ts && Date.now() - Number(ts) < 300000) {
           setUser(JSON.parse(stored) as IAuthUser);
           setIsLoading(false);
           return;
@@ -917,6 +956,24 @@ const UserDetail = () => {
       setError(true);
       setIsLoading(false);
       return;
+    }
+
+    // customUserId draft (e.g. ADMIN0003 that is still a draft in localStorage)
+    if (isCustomId) {
+      try {
+        const stored = localStorage.getItem('user_detail_draft_data');
+        const ts = localStorage.getItem('user_detail_draft_data_ts');
+        if (stored && ts && Date.now() - Number(ts) < 300000) {
+          const parsed = JSON.parse(stored) as IAuthUser;
+          if (parsed.customUserId === id && parsed.status === 'draft') {
+            setUser(parsed);
+            setIsLoading(false);
+            return;
+          }
+        }
+      } catch {
+        /* ignore */
+      }
     }
 
     fetchUser();
@@ -951,6 +1008,11 @@ const UserDetail = () => {
             : null,
         },
       }).unwrap();
+      // Upload any new attachment files
+      if (newAttachmentFiles.length > 0) {
+        await uploadAttachments({ userId: user.id, files: newAttachmentFiles }).unwrap().catch(() => {});
+        setNewAttachmentFiles([]);
+      }
       notify.success('User updated successfully');
       setIsEditing(false);
       setEditForm(null);
@@ -1031,13 +1093,78 @@ const UserDetail = () => {
               draftExpired && classes.mobileDraftTimerExpired,
             )}
           >
-            <TimerIcon sx={{ fontSize: '0.875rem' }} color={draftExpired ? 'error' : 'warning'} />
-            <Typography
-              sx={{ fontSize: '0.875rem', fontWeight: 600 }}
-              color={draftExpired ? 'error.main' : 'warning.dark'}
+            {/* Icon badge */}
+            <Box
+              sx={{
+                width: 36,
+                height: 36,
+                borderRadius: '10px',
+                background: draftExpired
+                  ? 'linear-gradient(135deg, #ef4444, #dc2626)'
+                  : 'linear-gradient(135deg, #fbbf24, #f59e0b)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                boxShadow: draftExpired
+                  ? '0 4px 10px rgba(239,68,68,0.35)'
+                  : '0 4px 10px rgba(245,158,11,0.35)',
+                ml: 0.5,
+              }}
             >
-              {draftExpired ? 'Draft Expired' : `Draft Expires In ${draftRemaining}`}
-            </Typography>
+              <TimerIcon sx={{ fontSize: '1rem', color: '#fff' }} />
+            </Box>
+
+            {/* Text */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.15, flex: 1, minWidth: 0 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                <Typography
+                  sx={{
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    color: draftExpired ? '#dc2626' : '#92400e',
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {draftExpired ? 'Draft Expired' : 'Draft Active'}
+                </Typography>
+                <Box
+                  sx={{
+                    px: 0.75,
+                    py: 0.2,
+                    borderRadius: '6px',
+                    background: draftExpired ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.18)',
+                    border: `1px solid ${draftExpired ? 'rgba(239,68,68,0.35)' : 'rgba(245,158,11,0.4)'}`,
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      fontSize: '0.62rem',
+                      fontWeight: 700,
+                      color: draftExpired ? '#ef4444' : '#d97706',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.4px',
+                    }}
+                  >
+                    {draftExpired ? 'Expired' : draftRemaining}
+                  </Typography>
+                </Box>
+              </Box>
+              <Typography
+                sx={{
+                  fontSize: '0.7rem',
+                  fontWeight: 500,
+                  color: draftExpired ? '#dc2626' : '#78350f',
+                  opacity: 0.85,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {draftExpired ? 'Expired' : 'Expires'}{' '}
+                {dayjs(user.draftExpiresAt).format('MMM D, YYYY [at] h:mm A')}
+              </Typography>
+            </Box>
           </Box>
         )}
 
@@ -1054,18 +1181,6 @@ const UserDetail = () => {
             <Typography className={classes.headerTitle}>
               {user.firstName} {user.lastName}
             </Typography>
-            <Typography
-              sx={{
-                fontSize: '0.7rem',
-                fontWeight: 700,
-                letterSpacing: '0.8px',
-                fontFamily: 'monospace',
-                color: 'rgba(255,255,255,0.7)',
-                mt: 0.25,
-              }}
-            >
-              {buildRefId(user.role, user.id)}
-            </Typography>
           </Box>
           <NavButton
             direction='next'
@@ -1076,17 +1191,83 @@ const UserDetail = () => {
           />
         </Box>
 
-        {/* ── Desktop draft banner ──────────────────────────────────────── */}
+        {/* ── Desktop/tablet draft banner ───────────────────────────────── */}
         {user.draftExpiresAt && (
           <Box className={cx(classes.draftTimerBadge, draftExpired && classes.draftTimerExpired)}>
-            <TimerIcon fontSize='small' color={draftExpired ? 'error' : 'warning'} />
-            <Typography
-              variant='body2'
-              fontWeight={600}
-              color={draftExpired ? 'error.main' : 'warning.dark'}
+            {/* Icon badge */}
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: '14px',
+                background: draftExpired
+                  ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                  : 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                boxShadow: draftExpired
+                  ? '0 6px 16px rgba(239,68,68,0.4)'
+                  : '0 6px 16px rgba(245,158,11,0.4)',
+                ml: 0.5,
+              }}
             >
-              {draftExpired ? 'Draft Expired' : `Draft Expires In ${draftRemaining}`}
-            </Typography>
+              <TimerIcon sx={{ fontSize: '1.3rem', color: '#fff' }} />
+            </Box>
+
+            {/* Left: status + pill */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.3, flex: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography
+                  sx={{
+                    fontSize: '0.9rem',
+                    fontWeight: 700,
+                    color: draftExpired ? '#b91c1c' : '#92400e',
+                    letterSpacing: '-0.1px',
+                  }}
+                >
+                  {draftExpired ? 'Draft Expired' : 'Draft In Progress'}
+                </Typography>
+                {/* Status pill */}
+                <Box
+                  sx={{
+                    px: 1.25,
+                    py: 0.3,
+                    borderRadius: '20px',
+                    background: draftExpired
+                      ? 'linear-gradient(135deg, rgba(239,68,68,0.18), rgba(220,38,38,0.10))'
+                      : 'linear-gradient(135deg, rgba(251,191,36,0.25), rgba(245,158,11,0.15))',
+                    border: `1px solid ${draftExpired ? 'rgba(239,68,68,0.4)' : 'rgba(245,158,11,0.5)'}`,
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      fontSize: '0.7rem',
+                      fontWeight: 800,
+                      color: draftExpired ? '#ef4444' : '#d97706',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.6px',
+                    }}
+                  >
+                    {draftExpired ? 'Expired' : draftRemaining}
+                  </Typography>
+                </Box>
+              </Box>
+              <Typography
+                sx={{
+                  fontSize: '0.78rem',
+                  fontWeight: 500,
+                  color: draftExpired ? '#dc2626' : '#78350f',
+                  opacity: 0.8,
+                }}
+              >
+                {draftExpired ? 'This draft expired on' : 'This draft expires on'}{' '}
+                <strong>{dayjs(user.draftExpiresAt).format('MMM D, YYYY')}</strong>
+                {' at '}
+                <strong>{dayjs(user.draftExpiresAt).format('h:mm A')}</strong>
+              </Typography>
+            </Box>
           </Box>
         )}
 
@@ -1129,60 +1310,147 @@ const UserDetail = () => {
           className={classes.infoRow}
           sx={{ display: { xs: infoRowOpen ? 'flex' : 'none', sm: 'flex' } }}
         >
+          {/* ID */}
           <Box className={classes.infoItem}>
+            <Box
+              data-info-icon
+              className={classes.infoIconWrap}
+              sx={{ background: '#6366f118', color: '#6366f1', boxShadow: '0 4px 16px #6366f130' }}
+            >
+              <BadgeIcon sx={{ fontSize: '1.4rem' }} />
+            </Box>
             <Typography className={classes.infoLabel}>
-              <EmailIcon sx={{ fontSize: '0.75rem', mr: 0.4, verticalAlign: 'middle' }} />
+              <BadgeIcon sx={{ fontSize: '0.75rem', mr: 0.4, verticalAlign: 'middle', display: { sm: 'none' } }} />
+              ID
+            </Typography>
+            <Typography className={classes.infoValue}>{(user as any).customUserId || genUserId(user.role, user.id)}</Typography>
+          </Box>
+
+          {/* Email */}
+          <Box className={classes.infoItem}>
+            <Box
+              data-info-icon
+              className={classes.infoIconWrap}
+              sx={{ background: '#3b82f618', color: '#3b82f6', boxShadow: '0 4px 16px #3b82f630' }}
+            >
+              <EmailIcon sx={{ fontSize: '1.4rem' }} />
+            </Box>
+            <Typography className={classes.infoLabel}>
+              <EmailIcon sx={{ fontSize: '0.75rem', mr: 0.4, verticalAlign: 'middle', display: { sm: 'none' } }} />
               Email
             </Typography>
             <Tooltip title={user.email}>
               <Typography className={classes.infoValue}>{user.email}</Typography>
             </Tooltip>
           </Box>
+
+          {/* Phone */}
           <Box className={classes.infoItem}>
+            <Box
+              data-info-icon
+              className={classes.infoIconWrap}
+              sx={{ background: '#10b98118', color: '#10b981', boxShadow: '0 4px 16px #10b98130' }}
+            >
+              <PhoneIcon sx={{ fontSize: '1.4rem' }} />
+            </Box>
             <Typography className={classes.infoLabel}>
-              <PhoneIcon sx={{ fontSize: '0.75rem', mr: 0.4, verticalAlign: 'middle' }} />
+              <PhoneIcon sx={{ fontSize: '0.75rem', mr: 0.4, verticalAlign: 'middle', display: { sm: 'none' } }} />
               Phone
             </Typography>
             <Typography className={classes.infoValue}>{user.phone || '—'}</Typography>
           </Box>
+
+          {/* Role */}
           <Box className={classes.infoItem}>
+            <Box
+              data-info-icon
+              className={classes.infoIconWrap}
+              sx={{ background: '#f59e0b18', color: '#f59e0b', boxShadow: '0 4px 16px #f59e0b30' }}
+            >
+              <ManageAccountsIcon sx={{ fontSize: '1.4rem' }} />
+            </Box>
             <Typography className={classes.infoLabel}>
-              <WorkIcon sx={{ fontSize: '0.75rem', mr: 0.4, verticalAlign: 'middle' }} />
+              <ManageAccountsIcon sx={{ fontSize: '0.75rem', mr: 0.4, verticalAlign: 'middle', display: { sm: 'none' } }} />
               Role
             </Typography>
             <Typography className={classes.infoValue}>{roleLabel(user.role)}</Typography>
           </Box>
+
+          {/* City / Zone */}
           <Box className={classes.infoItem}>
+            <Box
+              data-info-icon
+              className={classes.infoIconWrap}
+              sx={{ background: '#f43f5e18', color: '#f43f5e', boxShadow: '0 4px 16px #f43f5e30' }}
+            >
+              <MapPinIcon sx={{ fontSize: '1.4rem' }} />
+            </Box>
             <Typography className={classes.infoLabel}>
-              <MapPinIcon sx={{ fontSize: '0.75rem', mr: 0.4, verticalAlign: 'middle' }} />
+              <MapPinIcon sx={{ fontSize: '0.75rem', mr: 0.4, verticalAlign: 'middle', display: { sm: 'none' } }} />
               City / Zone
             </Typography>
             <Typography className={classes.infoValue}>{user.city || '—'}</Typography>
           </Box>
+
+          {/* Date of Birth */}
           <Box className={classes.infoItem}>
+            <Box
+              data-info-icon
+              className={classes.infoIconWrap}
+              sx={{ background: '#8b5cf618', color: '#8b5cf6', boxShadow: '0 4px 16px #8b5cf630' }}
+            >
+              <CakeIcon sx={{ fontSize: '1.4rem' }} />
+            </Box>
             <Typography className={classes.infoLabel}>
-              <CalendarTodayIcon sx={{ fontSize: '0.75rem', mr: 0.4, verticalAlign: 'middle' }} />
+              <CakeIcon sx={{ fontSize: '0.75rem', mr: 0.4, verticalAlign: 'middle', display: { sm: 'none' } }} />
               Date of Birth
             </Typography>
             <Typography className={classes.infoValue}>{fmtDate(user.dateOfBirth)}</Typography>
           </Box>
+
+          {/* Gender */}
           <Box className={classes.infoItem}>
+            <Box
+              data-info-icon
+              className={classes.infoIconWrap}
+              sx={{ background: '#ec489918', color: '#ec4899', boxShadow: '0 4px 16px #ec489930' }}
+            >
+              <PersonIcon sx={{ fontSize: '1.4rem' }} />
+            </Box>
             <Typography className={classes.infoLabel}>
-              <PersonIcon sx={{ fontSize: '0.75rem', mr: 0.4, verticalAlign: 'middle' }} />
+              <PersonIcon sx={{ fontSize: '0.75rem', mr: 0.4, verticalAlign: 'middle', display: { sm: 'none' } }} />
               Gender
             </Typography>
             <Typography className={classes.infoValue}>{user.gender || '—'}</Typography>
           </Box>
+
+          {/* Joined */}
           <Box className={classes.infoItem}>
+            <Box
+              data-info-icon
+              className={classes.infoIconWrap}
+              sx={{ background: '#06b6d418', color: '#06b6d4', boxShadow: '0 4px 16px #06b6d430' }}
+            >
+              <CalendarTodayIcon sx={{ fontSize: '1.4rem' }} />
+            </Box>
             <Typography className={classes.infoLabel}>
-              <CalendarTodayIcon sx={{ fontSize: '0.75rem', mr: 0.4, verticalAlign: 'middle' }} />
+              <CalendarTodayIcon sx={{ fontSize: '0.75rem', mr: 0.4, verticalAlign: 'middle', display: { sm: 'none' } }} />
               Joined
             </Typography>
             <Typography className={classes.infoValue}>{fmtDate(user.createdAt)}</Typography>
           </Box>
+
+          {/* Last Login */}
           <Box className={classes.infoItem}>
+            <Box
+              data-info-icon
+              className={classes.infoIconWrap}
+              sx={{ background: '#f9731618', color: '#f97316', boxShadow: '0 4px 16px #f9731630' }}
+            >
+              <AccessTimeIcon sx={{ fontSize: '1.4rem' }} />
+            </Box>
             <Typography className={classes.infoLabel}>
-              <AccessTimeIcon sx={{ fontSize: '0.75rem', mr: 0.4, verticalAlign: 'middle' }} />
+              <AccessTimeIcon sx={{ fontSize: '0.75rem', mr: 0.4, verticalAlign: 'middle', display: { sm: 'none' } }} />
               Last Login
             </Typography>
             <Typography className={classes.infoValue}>{fmtDateTime(user.lastLoginAt)}</Typography>
@@ -1400,24 +1668,41 @@ const UserDetail = () => {
 
                 <SectionDivider label='Created By' isEditing={isEditing} />
 
-                <FieldCard
-                  icon={<PersonIcon sx={iconMd} />}
-                  label='Full Name'
-                  value={`${user.firstName} ${user.lastName}`}
-                  accent='#4338ca'
-                />
-                <FieldCard
-                  icon={<EmailIcon sx={iconSm} />}
-                  label='Email'
-                  value={user.email}
-                  accent='#6366f1'
-                />
-                <FieldCard
-                  icon={<BadgeIcon sx={iconSm} />}
-                  label='Reference'
-                  value={user.source ?? ''}
-                  accent='#7c3aed'
-                />
+                {user.createdByName || user.createdByEmail ? (
+                  <>
+                    <FieldCard
+                      icon={<PersonIcon sx={iconSm} />}
+                      label='Name'
+                      value={user.createdByName ?? ''}
+                      accent='#6366f1'
+                    />
+                    <FieldCard
+                      icon={<EmailIcon sx={iconSm} />}
+                      label='Email'
+                      value={user.createdByEmail ?? ''}
+                      accent='#6366f1'
+                    />
+                    <FieldCard
+                      icon={<PhoneIcon sx={iconSm} />}
+                      label='Phone'
+                      value={user.createdByPhone ?? '—'}
+                      accent='#0891b2'
+                    />
+                    <FieldCard
+                      icon={<FingerprintIcon sx={iconSm} />}
+                      label='Reference'
+                      value={user.createdByRef ?? '—'}
+                      accent='#7c3aed'
+                    />
+                  </>
+                ) : (
+                  <FieldCard
+                    icon={<PersonIcon sx={iconSm} />}
+                    label='Created By'
+                    value='Self-registered'
+                    accent='#64748b'
+                  />
+                )}
                 <FieldCard
                   icon={<CalendarTodayIcon sx={iconSm} />}
                   label='Created At'
@@ -1459,7 +1744,7 @@ const UserDetail = () => {
                       accent='#0891b2'
                     />
                     <FieldCard
-                      icon={<EmailIcon sx={iconSm} />}
+                      icon={<SupervisorAccountIcon sx={iconSm} />}
                       label='Manager Email'
                       value={user.applicationLead || ''}
                       accent='#7c3aed'
@@ -1527,7 +1812,7 @@ const UserDetail = () => {
                             flexShrink: 0,
                           }}
                         >
-                          <VpnKeyIcon
+                          <PowerSettingsNewIcon
                             sx={{ fontSize: '1rem', color: ef.isActive ? '#16a34a' : '#94a3b8' }}
                           />
                         </Box>
@@ -1570,26 +1855,26 @@ const UserDetail = () => {
                     </Box>
                   ) : (
                     <FieldCard
-                      icon={<VpnKeyIcon sx={iconSm} />}
+                      icon={<PowerSettingsNewIcon sx={iconSm} />}
                       label='Status'
                       value={statusLabel}
                       accent={statusColor}
                     />
                   )}
                   <FieldCard
-                    icon={<SecurityIcon sx={iconSm} />}
+                    icon={<WarningAmberIcon sx={iconSm} />}
                     label='Failed Login Attempts'
                     value={String(user.failedLoginAttempts ?? 0)}
                     accent='#dc2626'
                   />
                   <FieldCard
-                    icon={<AccessTimeIcon sx={iconSm} />}
+                    icon={<LockIcon sx={iconSm} />}
                     label='Password Changed At'
                     value={fmtDateTime(user.passwordChangedAt)}
                     accent='#7c3aed'
                   />
                   <FieldCard
-                    icon={<AccessTimeIcon sx={iconSm} />}
+                    icon={<LockIcon sx={iconSm} />}
                     label='Locked Until'
                     value={fmtDateTime(user.lockedUntil)}
                     accent='#d97706'
@@ -1608,7 +1893,7 @@ const UserDetail = () => {
             <Box className={classes.descriptionCard}>
               <Box className={classes.descriptionCardHeader}>
                 <Typography className={classes.descriptionSectionTitle}>
-                  <AccessTimeIcon sx={{ fontSize: '0.85rem', mr: 0.5, verticalAlign: 'middle' }} />
+                  <KeyIcon sx={{ fontSize: '0.85rem', mr: 0.5, verticalAlign: 'middle' }} />
                   Access Information
                 </Typography>
               </Box>
@@ -1653,7 +1938,7 @@ const UserDetail = () => {
                       accent='#dc2626'
                     />
                     <FieldCard
-                      icon={<PeopleIcon sx={iconSm} />}
+                      icon={<HowToRegIcon sx={iconSm} />}
                       label='Reviewed By'
                       value={user.reviewedBy ? `#${user.reviewedBy}` : ''}
                       accent='#4338ca'
@@ -1679,7 +1964,7 @@ const UserDetail = () => {
             <Box className={classes.descriptionCard}>
               <Box className={classes.descriptionCardHeader}>
                 <Typography className={classes.descriptionSectionTitle}>
-                  <SecurityIcon sx={{ fontSize: '0.85rem', mr: 0.5, verticalAlign: 'middle' }} />
+                  <AssignmentIcon sx={{ fontSize: '0.85rem', mr: 0.5, verticalAlign: 'middle' }} />
                   Reason for Access
                 </Typography>
               </Box>
@@ -1713,7 +1998,7 @@ const UserDetail = () => {
             <Box className={classes.descriptionCard}>
               <Box className={classes.descriptionCardHeader}>
                 <Typography className={classes.descriptionSectionTitle}>
-                  <BadgeIcon sx={{ fontSize: '0.85rem', mr: 0.5, verticalAlign: 'middle' }} />
+                  <EditNoteIcon sx={{ fontSize: '0.85rem', mr: 0.5, verticalAlign: 'middle' }} />
                   Admin Notes
                 </Typography>
               </Box>
@@ -1751,44 +2036,80 @@ const UserDetail = () => {
                 </Typography>
               </Box>
               <Box className={classes.descriptionCardBody}>
-                <input
-                  ref={adminAttachmentRef}
-                  type='file'
-                  multiple
-                  hidden
-                  onChange={(e) => {
-                    const files = Array.from(e.target.files ?? []);
-                    if (files.length) setAdminAttachments((prev) => [...prev, ...files]);
-                    e.target.value = '';
-                  }}
-                />
-                {adminAttachments.length === 0 ? (
-                  <Box
-                    onClick={() => adminAttachmentRef.current?.click()}
-                    sx={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: 1,
-                      py: 3,
-                      borderRadius: '12px',
-                      border: '1.5px dashed rgba(99,102,241,0.3)',
-                      background: '#f8faff',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      '&:hover': { border: '1.5px dashed #6366f1', background: '#eef2ff' },
-                    }}
-                  >
-                    <AttachFileIcon sx={{ fontSize: '1.5rem', color: '#94a3b8' }} />
-                    <Typography sx={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 500 }}>
-                      Click to upload attachments
+                {/* ── VIEW MODE: stored attachment list ── */}
+                {!isEditing && (
+                  storedAttachments.length === 0 ? (
+                    <Typography sx={{ fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                      No attachments added.
                     </Typography>
-                  </Box>
-                ) : (
+                  ) : (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                      {storedAttachments.map((att, idx) => (
+                        <Box
+                          key={idx}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1.5,
+                            p: '8px 12px',
+                            borderRadius: '10px',
+                            background: '#f8faff',
+                            border: '1px solid rgba(226,232,255,0.9)',
+                          }}
+                        >
+                          <AttachFileIcon sx={{ fontSize: '1rem', color: '#6366f1', flexShrink: 0 }} />
+                          <Typography
+                            sx={{
+                              fontSize: '0.8rem',
+                              color: '#1e293b',
+                              fontWeight: 600,
+                              flex: 1,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {att.name}
+                          </Typography>
+                          <Typography sx={{ fontSize: '0.7rem', color: '#94a3b8', flexShrink: 0 }}>
+                            {(att.size / 1024).toFixed(1)} KB
+                          </Typography>
+                          <Tooltip title='Download'>
+                            <IconButton
+                              size='small'
+                              component='a'
+                              href={`http://localhost:3001${att.url}`}
+                              download={att.name}
+                              target='_blank'
+                              sx={{ p: 0.25 }}
+                            >
+                              <DownloadIcon sx={{ fontSize: '0.9rem', color: '#6366f1' }} />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      ))}
+                    </Box>
+                  )
+                )}
+
+                {/* ── EDIT MODE: stored list + delete + add new ── */}
+                {isEditing && (
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                    {adminAttachments.map((file, idx) => (
+                    <input
+                      ref={adminAttachmentRef}
+                      type='file'
+                      multiple
+                      hidden
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files ?? []);
+                        if (files.length) setNewAttachmentFiles((prev) => [...prev, ...files]);
+                        e.target.value = '';
+                      }}
+                    />
+                    {/* Existing stored attachments */}
+                    {storedAttachments.map((att, idx) => (
                       <Box
-                        key={idx}
+                        key={`stored-${idx}`}
                         sx={{
                           display: 'flex',
                           alignItems: 'center',
@@ -1800,9 +2121,7 @@ const UserDetail = () => {
                           '&:hover': { background: '#eef2ff' },
                         }}
                       >
-                        <AttachFileIcon
-                          sx={{ fontSize: '1rem', color: '#6366f1', flexShrink: 0 }}
-                        />
+                        <AttachFileIcon sx={{ fontSize: '1rem', color: '#6366f1', flexShrink: 0 }} />
                         <Typography
                           sx={{
                             fontSize: '0.8rem',
@@ -1814,31 +2133,18 @@ const UserDetail = () => {
                             whiteSpace: 'nowrap',
                           }}
                         >
-                          {file.name}
+                          {att.name}
                         </Typography>
                         <Typography sx={{ fontSize: '0.7rem', color: '#94a3b8', flexShrink: 0 }}>
-                          {(file.size / 1024).toFixed(1)} KB
+                          {(att.size / 1024).toFixed(1)} KB
                         </Typography>
-                        <Tooltip title='Download'>
-                          <IconButton
-                            size='small'
-                            onClick={() => {
-                              const a = document.createElement('a');
-                              a.href = URL.createObjectURL(file);
-                              a.download = file.name;
-                              a.click();
-                            }}
-                            sx={{ p: 0.25 }}
-                          >
-                            <DownloadIcon sx={{ fontSize: '0.9rem', color: '#6366f1' }} />
-                          </IconButton>
-                        </Tooltip>
                         <Tooltip title='Remove'>
                           <IconButton
                             size='small'
-                            onClick={() =>
-                              setAdminAttachments((prev) => prev.filter((_, i) => i !== idx))
-                            }
+                            onClick={async () => {
+                              await deleteAttachment({ userId: user.id, url: att.url }).unwrap().catch(() => {});
+                              fetchUser();
+                            }}
                             sx={{ p: 0.25 }}
                           >
                             <DeleteOutlineIcon sx={{ fontSize: '0.9rem', color: '#dc2626' }} />
@@ -1846,24 +2152,75 @@ const UserDetail = () => {
                         </Tooltip>
                       </Box>
                     ))}
+                    {/* New files staged (not yet uploaded) */}
+                    {newAttachmentFiles.map((file, idx) => (
+                      <Box
+                        key={`new-${idx}`}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1.5,
+                          p: '8px 12px',
+                          borderRadius: '10px',
+                          background: '#f0fdf4',
+                          border: '1px dashed #86efac',
+                          '&:hover': { background: '#dcfce7' },
+                        }}
+                      >
+                        <AttachFileIcon sx={{ fontSize: '1rem', color: '#16a34a', flexShrink: 0 }} />
+                        <Typography
+                          sx={{
+                            fontSize: '0.8rem',
+                            color: '#15803d',
+                            fontWeight: 600,
+                            flex: 1,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {file.name}
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.7rem', color: '#86efac', flexShrink: 0 }}>
+                          {(file.size / 1024).toFixed(1)} KB · new
+                        </Typography>
+                        <Tooltip title='Remove'>
+                          <IconButton
+                            size='small'
+                            onClick={() => setNewAttachmentFiles((prev) => prev.filter((_, i) => i !== idx))}
+                            sx={{ p: 0.25 }}
+                          >
+                            <DeleteOutlineIcon sx={{ fontSize: '0.9rem', color: '#dc2626' }} />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    ))}
+                    {/* Drag-and-drop / click-to-upload area */}
                     <Box
                       onClick={() => adminAttachmentRef.current?.click()}
                       sx={{
                         display: 'flex',
+                        flexDirection: 'column',
                         alignItems: 'center',
                         gap: 1,
-                        p: '7px 12px',
-                        borderRadius: '10px',
-                        border: '1.5px dashed rgba(99,102,241,0.3)',
-                        cursor: 'pointer',
+                        py: 2.5,
+                        borderRadius: '12px',
+                        border: '1.5px dashed rgba(99,102,241,0.35)',
                         background: '#f8faff',
+                        cursor: 'pointer',
                         transition: 'all 0.2s ease',
                         '&:hover': { border: '1.5px dashed #6366f1', background: '#eef2ff' },
                       }}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const files = Array.from(e.dataTransfer.files);
+                        if (files.length) setNewAttachmentFiles((prev) => [...prev, ...files]);
+                      }}
                     >
-                      <AttachFileIcon sx={{ fontSize: '0.9rem', color: '#6366f1' }} />
-                      <Typography sx={{ fontSize: '0.75rem', color: '#6366f1', fontWeight: 600 }}>
-                        Add more files
+                      <AttachFileIcon sx={{ fontSize: '1.4rem', color: '#94a3b8' }} />
+                      <Typography sx={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 500 }}>
+                        Drag & drop files or click to upload
                       </Typography>
                     </Box>
                   </Box>

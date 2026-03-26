@@ -236,30 +236,45 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
     },
   },
 
-  // Mobile draft expiry timer (below mobile header bar)
+  // Mobile draft expiry banner — visible only on mobile (below mobile header bar)
   mobileDraftTimer: {
-    display: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(1.25),
+    marginTop: theme.spacing(1),
+    marginBottom: theme.spacing(1),
+    padding: theme.spacing(1.25, 1.75),
+    background: 'linear-gradient(135deg, rgba(251,191,36,0.18) 0%, rgba(245,158,11,0.10) 100%)',
+    border: '1.5px solid rgba(245,158,11,0.55)',
+    borderRadius: '14px',
+    boxShadow: '0 4px 18px rgba(245,158,11,0.18), inset 0 1px 0 rgba(255,255,255,0.6)',
+    width: '100%',
+    position: 'relative' as const,
+    overflow: 'hidden',
 
-    [theme.breakpoints.down('sm')]: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: theme.spacing(0.75),
-      marginBottom: theme.spacing(1),
-      padding: theme.spacing(0.75, 1.5),
-      background: `linear-gradient(135deg, ${theme.palette.warning.light}40, ${theme.palette.warning.light}20)`,
-      border: `1px solid ${theme.palette.warning.main}`,
-      borderRadius: '12px',
-      boxShadow: `0 2px 12px ${theme.palette.warning.main}25`,
-      width: '100%',
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      bottom: 0,
+      width: '4px',
+      background: 'linear-gradient(180deg, #f59e0b 0%, #d97706 100%)',
+      borderRadius: '14px 0 0 14px',
+    },
+
+    [theme.breakpoints.up('sm')]: {
+      display: 'none',
     },
   },
 
   mobileDraftTimerExpired: {
-    [theme.breakpoints.down('sm')]: {
-      background: `linear-gradient(135deg, ${theme.palette.error.light}40, ${theme.palette.error.light}20)`,
-      border: `1px solid ${theme.palette.error.main}`,
-      boxShadow: `0 2px 12px ${theme.palette.error.main}25`,
+    background: 'linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(220,38,38,0.08) 100%)',
+    border: '1.5px solid rgba(239,68,68,0.5)',
+    boxShadow: '0 4px 18px rgba(239,68,68,0.15), inset 0 1px 0 rgba(255,255,255,0.5)',
+
+    '&::before': {
+      background: 'linear-gradient(180deg, #ef4444 0%, #dc2626 100%)',
     },
   },
 
@@ -268,78 +283,135 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
     display: 'flex',
     alignItems: 'stretch',
     marginBottom: theme.spacing(1.5),
-    background: '#ffffff',
-    borderRadius: '16px',
-    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0,0,0,0.04)',
+    background: 'linear-gradient(135deg, #ffffff 0%, #f5f7ff 50%, #eef2ff 100%)',
+    borderRadius: '22px',
+    boxShadow: '0 8px 40px rgba(99,102,241,0.14), 0 2px 12px rgba(0,0,0,0.06)',
     overflow: 'hidden',
-    border: '1px solid rgba(226, 232, 255, 0.8)',
+    border: '1px solid rgba(99,102,241,0.18)',
+    position: 'relative' as const,
 
-    [theme.breakpoints.down('md')]: {
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: '3px',
+      background:
+        'linear-gradient(90deg,#6366f1 0%,#8b5cf6 14%,#3b82f6 28%,#06b6d4 43%,#10b981 57%,#f59e0b 71%,#f43f5e 85%,#ec4899 100%)',
+      zIndex: 1,
+    },
+
+    [theme.breakpoints.down('lg')]: {
       flexWrap: 'wrap' as const,
     },
 
     [theme.breakpoints.down('sm')]: {
       flexDirection: 'column' as const,
       borderRadius: '12px',
+      background: '#ffffff',
+      boxShadow: '0 4px 20px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04)',
+      border: '1px solid rgba(226,232,255,0.8)',
+      '&::before': { display: 'none' },
+    },
+  },
+
+  infoIconWrap: {
+    width: 46,
+    height: 46,
+    borderRadius: '14px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    transition: 'transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease',
+
+    [theme.breakpoints.down('sm')]: {
+      display: 'none',
     },
   },
 
   infoItem: {
     display: 'flex',
     flexDirection: 'column' as const,
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'center',
-    gap: theme.spacing(0.5),
+    gap: theme.spacing(0.75),
     flex: 1,
-    padding: '12px 16px',
-    borderRight: '1px solid rgba(226, 232, 255, 0.9)',
+    padding: '20px 10px',
+    borderRight: '1px solid rgba(99,102,241,0.1)',
     minWidth: 0,
-    transition: 'background 0.2s ease',
+    transition: 'background 0.25s ease, box-shadow 0.25s ease',
+    position: 'relative' as const,
 
     '&:hover': {
-      background: 'rgba(99, 102, 241, 0.04)',
+      background: 'rgba(99,102,241,0.05)',
+      boxShadow: 'inset 0 -4px 0 rgba(99,102,241,0.55)',
+    },
+
+    '&:hover [data-info-icon]': {
+      transform: 'scale(1.14) rotate(-6deg)',
     },
 
     '&:last-child': {
       borderRight: 'none',
     },
 
-    [theme.breakpoints.down('md')]: {
-      flex: '1 1 calc(50% - 1px)',
-      borderBottom: '1px solid rgba(226, 232, 255, 0.9)',
+    [theme.breakpoints.down('lg')]: {
+      flex: '1 1 calc(33.33% - 1px)',
+      borderBottom: '1px solid rgba(99,102,241,0.1)',
+      padding: '16px 10px',
     },
 
     [theme.breakpoints.down('sm')]: {
       flex: '1 1 100%',
       borderRight: 'none',
-      borderBottom: '1px solid rgba(226, 232, 255, 0.9)',
+      borderBottom: '1px solid rgba(226,232,255,0.9)',
       padding: '10px 14px',
       flexDirection: 'row' as const,
       justifyContent: 'space-between',
-      alignItems: 'center',
-      '&:last-child': {
-        borderBottom: 'none',
-      },
+      alignItems: 'center' as const,
+      gap: theme.spacing(0.5),
+      '&:hover': { background: 'transparent', boxShadow: 'none' },
+      '&:hover [data-info-icon]': { transform: 'none' },
+      '&:last-child': { borderBottom: 'none' },
     },
   },
 
   infoLabel: {
-    fontSize: '0.68rem',
-    color: '#6366f1',
+    fontSize: '0.6rem',
+    color: '#64748b',
     fontWeight: 700,
     textTransform: 'uppercase' as const,
-    letterSpacing: '0.8px',
+    letterSpacing: '0.9px',
     whiteSpace: 'nowrap' as const,
+    textAlign: 'center' as const,
+
+    [theme.breakpoints.down('sm')]: {
+      textAlign: 'left' as const,
+      color: '#6366f1',
+      fontSize: '0.68rem',
+    },
   },
 
   infoValue: {
-    fontSize: '0.875rem',
-    color: '#1e293b',
-    fontWeight: 600,
+    fontSize: '0.9rem',
+    color: '#0f172a',
+    fontWeight: 700,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap' as const,
     maxWidth: '100%',
+    textAlign: 'center' as const,
+    letterSpacing: '-0.01em',
+
+    [theme.breakpoints.down('sm')]: {
+      textAlign: 'right' as const,
+      fontSize: '0.875rem',
+      letterSpacing: 0,
+      maxWidth: '60%',
+      fontWeight: 600,
+    },
   },
 
   // InfoRow: caller avatar box
@@ -538,29 +610,66 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
     padding: '3px',
   },
 
-  // Draft expiry timer badge (desktop only, below header row)
+  // Draft expiry banner — tablet & desktop (below headerRow)
   draftTimerBadge: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: theme.spacing(0.75),
-    padding: theme.spacing(1, 2),
-    marginBottom: theme.spacing(1.5),
-    background: `linear-gradient(135deg, ${theme.palette.warning.light}35, ${theme.palette.warning.light}15)`,
-    border: `1px solid ${theme.palette.warning.main}60`,
-    borderRadius: '12px',
-    boxShadow: `0 2px 12px ${theme.palette.warning.main}20`,
-    width: '100%',
+    display: 'none',
 
-    [theme.breakpoints.down('sm')]: {
-      display: 'none',
+    [theme.breakpoints.up('sm')]: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: theme.spacing(2),
+      padding: theme.spacing(1.5, 2.5),
+      marginBottom: theme.spacing(1.5),
+      background:
+        'linear-gradient(135deg, rgba(251,191,36,0.14) 0%, rgba(245,158,11,0.07) 60%, rgba(254,243,199,0.5) 100%)',
+      border: '1.5px solid rgba(245,158,11,0.45)',
+      borderRadius: '16px',
+      boxShadow:
+        '0 4px 24px rgba(245,158,11,0.14), 0 1px 4px rgba(245,158,11,0.10), inset 0 1px 0 rgba(255,255,255,0.7)',
+      width: '100%',
+      position: 'relative' as const,
+      overflow: 'hidden',
+
+      '&::before': {
+        content: '""',
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: '5px',
+        background: 'linear-gradient(180deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%)',
+        borderRadius: '16px 0 0 16px',
+      },
+
+      '&::after': {
+        content: '""',
+        position: 'absolute',
+        top: '-40%',
+        right: '-2%',
+        width: '180px',
+        height: '180px',
+        background: 'radial-gradient(circle, rgba(251,191,36,0.12) 0%, transparent 70%)',
+        pointerEvents: 'none',
+      },
     },
   },
 
   draftTimerExpired: {
-    background: `linear-gradient(135deg, ${theme.palette.error.light}35, ${theme.palette.error.light}15)`,
-    border: `1px solid ${theme.palette.error.main}60`,
-    boxShadow: `0 2px 12px ${theme.palette.error.main}20`,
+    [theme.breakpoints.up('sm')]: {
+      background:
+        'linear-gradient(135deg, rgba(239,68,68,0.12) 0%, rgba(220,38,38,0.06) 60%, rgba(254,226,226,0.4) 100%)',
+      border: '1.5px solid rgba(239,68,68,0.4)',
+      boxShadow:
+        '0 4px 24px rgba(239,68,68,0.12), 0 1px 4px rgba(239,68,68,0.08), inset 0 1px 0 rgba(255,255,255,0.6)',
+
+      '&::before': {
+        background: 'linear-gradient(180deg, #f87171 0%, #ef4444 50%, #dc2626 100%)',
+      },
+
+      '&::after': {
+        background: 'radial-gradient(circle, rgba(239,68,68,0.10) 0%, transparent 70%)',
+      },
+    },
   },
 
   // Header title (pipe separator + truncated title)
@@ -1068,7 +1177,7 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
     background: '#ffffff',
     width: 300,
     padding: '14px',
-    paddingTop: '52px',
+    paddingTop: '35px',
     borderRadius: '16px',
     boxShadow: '0 4px 24px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0,0,0,0.04)',
     border: '1px solid rgba(226, 232, 255, 0.8)',

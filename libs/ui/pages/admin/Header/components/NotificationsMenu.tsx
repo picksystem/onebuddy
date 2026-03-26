@@ -1,10 +1,11 @@
-import { Menu, MenuItem, Divider, Avatar, ListItemIcon, ListItemText } from '@mui/material';
+import { Menu, MenuItem, Divider, Avatar, ListItemIcon, ListItemText, Chip } from '@mui/material';
 import { IAuthUser } from '@bandi/interfaces';
 
 interface NotificationsMenuProps {
   anchorEl: HTMLElement | null;
   onClose: () => void;
   onViewAll: () => void;
+  onItemClick: (user: IAuthUser) => void;
   notifications: IAuthUser[];
 }
 
@@ -12,6 +13,7 @@ const NotificationsMenu = ({
   anchorEl,
   onClose,
   onViewAll,
+  onItemClick,
   notifications,
 }: NotificationsMenuProps) => (
   <Menu
@@ -31,9 +33,16 @@ const NotificationsMenu = ({
     <Divider />
     {notifications.length > 0 ? (
       notifications.map((u) => (
-        <MenuItem key={u.id} onClick={onViewAll}>
+        <MenuItem key={u.id} onClick={() => onItemClick(u)}>
           <ListItemIcon>
-            <Avatar sx={{ width: 32, height: 32, fontSize: '0.8rem' }}>
+            <Avatar
+              sx={{
+                width: 32,
+                height: 32,
+                fontSize: '0.8rem',
+                bgcolor: u.requestedRole === 'admin' ? '#6366f1' : '#0ea5e9',
+              }}
+            >
               {(u.name || `${u.firstName || ''} ${u.lastName || ''}`)
                 .split(' ')
                 .map((n) => n[0])
@@ -44,9 +53,21 @@ const NotificationsMenu = ({
           </ListItemIcon>
           <ListItemText
             primary={u.name || `${u.firstName} ${u.lastName}`}
-            secondary={`Requested: ${u.requestedRole || 'N/A'} • ${u.createdAt ? new Date(u.createdAt).toLocaleDateString() : ''}`}
+            secondary={`${u.createdAt ? new Date(u.createdAt).toLocaleDateString() : ''}`}
             primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: 500 }}
             secondaryTypographyProps={{ fontSize: '0.75rem' }}
+          />
+          <Chip
+            label={u.requestedRole === 'admin' ? 'Admin' : 'Consultant'}
+            size='small'
+            sx={{
+              ml: 1,
+              fontSize: '0.65rem',
+              height: 20,
+              bgcolor: u.requestedRole === 'admin' ? '#ede9fe' : '#e0f2fe',
+              color: u.requestedRole === 'admin' ? '#6366f1' : '#0284c7',
+              fontWeight: 600,
+            }}
           />
         </MenuItem>
       ))

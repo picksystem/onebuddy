@@ -195,7 +195,7 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
   // ─── Stat Cards Grid ────────────────────────────────────────────────────────
   statsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
+    gridTemplateColumns: 'repeat(4, 1fr)',
     gap: theme.spacing(2),
     marginBottom: theme.spacing(2.5),
     [theme.breakpoints.down('md')]: {

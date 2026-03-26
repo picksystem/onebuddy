@@ -48,6 +48,7 @@ const useAccessManagement = () => {
   const [allUsers, setAllUsers] = useState<IAuthUser[]>([]);
   const [admins, setAdmins] = useState<IAuthUser[]>([]);
   const [consultants, setConsultants] = useState<IAuthUser[]>([]);
+  const [dbDraftUsers, setDbDraftUsers] = useState<IAuthUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [tabValue, setTabValue] = useState(0);
   const [tableSearch, setTableSearch] = useState('');
@@ -142,8 +143,14 @@ const useAccessManagement = () => {
       // Normalize DB drafts into UserRow-compatible shape
       const dbDrafts: IAuthUser[] = (draftsData.data || []).map((d: any) => {
         const f = d.formData?.form ?? {};
+        const draftCustomId =
+          f.userId ||
+          (d.type === 'admin'
+            ? `ADMIN${String(d.id).padStart(4, '0')}`
+            : `CONSULT${String(d.id).padStart(4, '0')}`);
         return {
           id: `draft_${d.id}`,
+          customUserId: draftCustomId,
           firstName: f.firstName || '',
           lastName: f.lastName || '',
           name: `${f.firstName ?? ''} ${f.lastName ?? ''}`.trim() || '(Draft)',
@@ -171,15 +178,19 @@ const useAccessManagement = () => {
           lastActivityAt: null,
           reviewedBy: null,
           reviewedAt: null,
+          draftExpiresAt: d.expiresAt ? new Date(d.expiresAt).toISOString() : null,
         } as unknown as IAuthUser;
       });
 
       const adminDrafts = dbDrafts.filter((d) => (d as any).role === 'admin');
       const consultantDrafts = dbDrafts.filter((d) => (d as any).role === 'consultant');
+      const relevantDbDrafts = [...adminDrafts, ...consultantDrafts];
 
-      setAllUsers([...adminsOnly, ...consultantsOnly, ...dbDrafts]);
-      setAdmins([...adminsOnly, ...adminDrafts]);
-      setConsultants([...consultantsOnly, ...consultantDrafts]);
+      // Drafts first so "next" navigation works after clicking a draft
+      setAllUsers([...relevantDbDrafts, ...adminsOnly, ...consultantsOnly]);
+      setAdmins([...adminDrafts, ...adminsOnly]);
+      setConsultants([...consultantDrafts, ...consultantsOnly]);
+      setDbDraftUsers(relevantDbDrafts);
       setSelectedRow((prev) => {
         if (!prev) return null;
         const fresh = users.find(
@@ -206,8 +217,16 @@ const useAccessManagement = () => {
 
   // Name click — opens UserDetail (including drafts)
   const handleRowClick = (row: UserRow) => {
-    const rowIdStr = (row.id as unknown as number) === -1 ? 'draft_local' : String(row.id);
-    const isDraft = rowIdStr === 'draft_local' || rowIdStr.startsWith('draft_');
+    const rawId = row.id as unknown as number | string;
+    const isDraft = rawId === -1 || String(rawId).startsWith('draft_');
+    // Use customUserId as the URL identifier for all users
+    const urlId: string = row.customUserId
+      ? row.customUserId
+      : isDraft
+        ? rawId === -1
+          ? 'draft_local'
+          : String(rawId)
+        : String(rawId);
 
     // Build the same rows shown in the current tab (mirrors DataTable rendering exactly)
     const baseData = tabValue === 1 ? admins : tabValue === 2 ? consultants : allUsers;
@@ -222,32 +241,40 @@ const useAccessManagement = () => {
         )
       : allRows;
 
-    // Build ID list: drafts as string, real users as number
-    const visibleIds = filteredRows.map((u) =>
-      (u.id as unknown as number) === -1
-        ? 'draft_local'
-        : String(u.id).startsWith('draft_')
-          ? String(u.id)
-          : (u.id as unknown as number),
-    );
+    // Build nav ID list using customUserId where available
+    const visibleIds = filteredRows.map((u) => {
+      if (u.customUserId) return u.customUserId;
+      const uid = u.id as unknown as number | string;
+      if (uid === -1) return 'draft_local';
+      if (String(uid).startsWith('draft_')) return String(uid);
+      return uid as number;
+    });
 
-    // Build draft map so UserDetail can load draft data when navigating prev/next to a draft
+    // Build draft map — only actual draft rows so navigateToUser can load draft data
     const draftMap: Record<string, IAuthUser> = {};
     filteredRows.forEach((u) => {
-      const uid = (u.id as unknown as number) === -1 ? 'draft_local' : String(u.id);
-      if (uid === 'draft_local' || uid.startsWith('draft_')) draftMap[uid] = u;
+      if ((u as any).status !== 'draft') return;
+      const uid = u.id as unknown as number | string;
+      const key = u.customUserId
+        ? u.customUserId
+        : uid === -1
+          ? 'draft_local'
+          : String(uid).startsWith('draft_')
+            ? String(uid)
+            : null;
+      if (key) draftMap[key] = u;
     });
 
     localStorage.setItem('user_detail_nav_ids', JSON.stringify(visibleIds));
     localStorage.setItem('user_detail_nav_ids_ts', String(Date.now()));
     localStorage.setItem('user_detail_draft_map', JSON.stringify(draftMap));
 
-    if (isDraft) {
+    if (isDraft || (row.customUserId && row.status === 'draft')) {
       localStorage.setItem('user_detail_draft_data', JSON.stringify(row));
       localStorage.setItem('user_detail_draft_data_ts', String(Date.now()));
     }
 
-    const url = constants.AdminPath.USER_DETAIL.replace(':id', rowIdStr);
+    const url = constants.AdminPath.USER_DETAIL.replace(':id', urlId);
     window.open(url, '_blank');
   };
 
@@ -321,7 +348,14 @@ const useAccessManagement = () => {
     enableReinitialize: false,
     onSubmit: async (values, helpers) => {
       try {
-        await authAction({ action: 'create-user', ...values }).unwrap();
+        await authAction({
+          action: 'create-user',
+          ...values,
+          createdByName: currentUser?.name ?? null,
+          createdByEmail: currentUser?.email ?? null,
+          createdByPhone: currentUser?.phone ?? null,
+          createdByRef: currentUser ? buildRefId(currentUser.role, currentUser.id) : null,
+        }).unwrap();
         notify.success(
           'User created successfully. A welcome email with credentials has been sent.',
         );
@@ -819,6 +853,7 @@ const useAccessManagement = () => {
           mustResetPassword: false,
           source: 'draft',
           lastActivityAt: null,
+          draftExpiresAt: draftMeta.expiresAt,
         } as unknown as UserRow)
       : null;
 
@@ -827,6 +862,7 @@ const useAccessManagement = () => {
     allUsers,
     admins,
     consultants,
+    dbDraftUsers,
     isLoading,
     isMobile,
     tabValue,

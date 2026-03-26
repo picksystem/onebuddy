@@ -837,21 +837,56 @@ export class AuthController {
     switch (action) {
       // ── List users ──────────────────────────────────────────────────────────
       case 'get-all-users': {
-        const users = await db.user.findMany({ orderBy: { createdAt: 'desc' } });
+        const users = await db.user.findMany({
+          where: {
+            OR: [
+              { role: { in: ['admin', 'consultant'] } },
+              { requestedRole: { in: ['admin', 'consultant'] } },
+            ],
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+        // Backfill customUserId for users that don't have one yet
+        const usersWithIds = await Promise.all(
+          users.map(async (u) => {
+            if ((u as any).customUserId) return u;
+            const roleForPrefix =
+              u.role === 'admin' || (u as any).requestedRole === 'admin' ? 'admin' : 'consultant';
+            const prefix = roleForPrefix === 'admin' ? 'ADMIN' : 'CONSULT';
+            const customUserId = `${prefix}${String(u.id).padStart(5, '0')}`;
+            try {
+              return await db.user.update({ where: { id: u.id }, data: { customUserId } as any });
+            } catch {
+              return u;
+            }
+          }),
+        );
         res.json({
           message: 'Users retrieved successfully',
-          data: users.map((u) => sanitizeUser(u as unknown as Record<string, unknown>)),
+          data: usersWithIds.map((u) => sanitizeUser(u as unknown as Record<string, unknown>)),
         });
         break;
       }
 
       case 'get-user': {
-        const { userId } = req.body as { userId: number };
-        if (!userId) {
-          res.status(400).json({ message: 'userId is required' });
+        const { userId, customUserId } = req.body as { userId?: number; customUserId?: string };
+        if (!userId && !customUserId) {
+          res.status(400).json({ message: 'userId or customUserId is required' });
           return;
         }
-        const user = await db.user.findUnique({ where: { id: userId } });
+        let user: any = null;
+        if (customUserId) {
+          // Try customUserId lookup first; fall back to deriving numeric ID from the pattern
+          user = await db.user.findUnique({ where: { customUserId } as any });
+          if (!user) {
+            const match = customUserId.match(/^(?:ADMIN|CONSULT)0*(\d+)$/);
+            if (match) {
+              user = await db.user.findUnique({ where: { id: parseInt(match[1], 10) } });
+            }
+          }
+        } else {
+          user = await db.user.findUnique({ where: { id: userId } });
+        }
         if (!user) {
           res.status(404).json({ message: 'User not found' });
           return;
@@ -1609,6 +1644,12 @@ export class AuthController {
           dlExpiry,
           idProofType,
           idProofNumber,
+          idProofExpiry,
+          createdByName,
+          createdByEmail,
+          createdByPhone,
+          isSelfRegistered,
+          uploadedFiles,
           // bundle fields
           bundleTypes,
           bundleDiscount,
@@ -1657,7 +1698,13 @@ export class AuthController {
             dlExpiry: dlExpiry ?? null,
             idProofType: idProofType ?? null,
             idProofNumber: idProofNumber ?? null,
-            bundleTypes: bundleTypes ?? null,
+            idProofExpiry: idProofExpiry ?? null,
+            createdByName: createdByName ?? null,
+            createdByEmail: createdByEmail ?? null,
+            createdByPhone: createdByPhone ?? null,
+            isSelfRegistered: isSelfRegistered === true || isSelfRegistered === 'true',
+            uploadedFiles: Array.isArray(uploadedFiles) ? JSON.stringify(uploadedFiles) : (uploadedFiles ?? null),
+            bundleTypes: Array.isArray(bundleTypes) ? JSON.stringify(bundleTypes) : (bundleTypes ?? null),
             bundleDiscount:
               bundleDiscount !== null && bundleDiscount !== undefined
                 ? Number(bundleDiscount)
@@ -1665,20 +1712,14 @@ export class AuthController {
             rentalVehiclePref: rentalVehiclePref ?? null,
             rentalDuration: rentalDuration ?? null,
             rentalPickupZone: rentalPickupZone ?? null,
-            driverHireCount:
-              driverHireCount !== null && driverHireCount !== undefined
-                ? Number(driverHireCount)
-                : null,
+            driverHireCount: driverHireCount != null ? String(driverHireCount) : null,
             driverHireShift: driverHireShift ?? null,
             driverHireBudget: driverHireBudget ?? null,
-            additionalVehicles: additionalVehicles ?? null,
-            parcelComboTypes: parcelComboTypes ?? null,
+            additionalVehicles: Array.isArray(additionalVehicles) ? JSON.stringify(additionalVehicles) : (additionalVehicles ?? null),
+            parcelComboTypes: Array.isArray(parcelComboTypes) ? JSON.stringify(parcelComboTypes) : (parcelComboTypes ?? null),
             parcelMaxWeight: parcelMaxWeight ?? null,
             parcelRadiusPref: parcelRadiusPref ?? null,
-            cargoCoRideMax:
-              cargoCoRideMax !== null && cargoCoRideMax !== undefined
-                ? Number(cargoCoRideMax)
-                : null,
+            cargoCoRideMax: cargoCoRideMax != null ? String(cargoCoRideMax) : null,
             cargoCoRideHaulPref: cargoCoRideHaulPref ?? null,
             cargoCoRideRatePref: cargoCoRideRatePref ?? null,
             submittedAt: new Date(),
@@ -1697,9 +1738,16 @@ export class AuthController {
           res.status(400).json({ message: 'onboardingId is required' });
           return;
         }
+        const sanitizedData: Record<string, unknown> = { ...onboardingData };
+        if (Array.isArray(sanitizedData.bundleTypes)) sanitizedData.bundleTypes = JSON.stringify(sanitizedData.bundleTypes);
+        if (Array.isArray(sanitizedData.additionalVehicles)) sanitizedData.additionalVehicles = JSON.stringify(sanitizedData.additionalVehicles);
+        if (Array.isArray(sanitizedData.parcelComboTypes)) sanitizedData.parcelComboTypes = JSON.stringify(sanitizedData.parcelComboTypes);
+        if (sanitizedData.status === 'approved' || sanitizedData.status === 'rejected') {
+          sanitizedData.reviewedAt = new Date();
+        }
         const onboarding = await (db as any).customerOnboarding.update({
           where: { id: onboardingId },
-          data: onboardingData,
+          data: sanitizedData,
         });
         res.json({ message: 'Customer onboarding updated', data: onboarding });
         break;
@@ -1730,6 +1778,7 @@ export class AuthController {
           firstName, lastName, email, phone, role,
           businessUnit, employeeId, reasonForAccess,
           dateOfBirth, gender, city, adminNotes,
+          userId: providedCustomId,
           reportingManagerEmail, referredByEmail,
         } = body;
 
@@ -1764,7 +1813,7 @@ export class AuthController {
         const hashedPw = await bcrypt.hash(tempPw, 10);
         const fullName = `${firstName} ${lastName}`;
 
-        const user = await db.user.create({
+        const createdUser = await db.user.create({
           data: {
             firstName, lastName, email,
             password: hashedPw,
@@ -1783,6 +1832,14 @@ export class AuthController {
             source: SOURCE.ADMIN,
             isActive: false,
           } as any,
+        });
+
+        // Use the ID from the form if provided; otherwise generate from DB record ID
+        const prefix = role === 'admin' ? 'ADMIN' : 'CONSULT';
+        const customUserId = providedCustomId || `${prefix}${String(createdUser.id).padStart(5, '0')}`;
+        const user = await db.user.update({
+          where: { id: createdUser.id },
+          data: { customUserId } as any,
         });
 
         if (reportingManagerEmail || referredByEmail) {

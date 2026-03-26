@@ -40,6 +40,7 @@ export interface IAuthUser {
   email: string;
   name: string;
   phone: string | null;
+  customUserId: string | null;
   businessUnit: string | null;
   employeeId: string | null;
   dateOfBirth: string | null;
@@ -70,6 +71,12 @@ export interface IAuthUser {
   failedLoginAttempts?: number | null;
   lockedUntil?: string | null;
   passwordChangedAt?: string | null;
+  attachments?: string | null; // JSON array of { name, url, size }
+  // Creator info (populated when admin creates the user; null for self-signup)
+  createdByName?: string | null;
+  createdByEmail?: string | null;
+  createdByPhone?: string | null;
+  createdByRef?: string | null;
 }
 
 export interface IUserChangeLog {

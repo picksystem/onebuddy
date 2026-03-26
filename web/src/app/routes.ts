@@ -7,20 +7,19 @@ export const LazyMenuItems = {
   AdminSideNavPage: lazy(() => import('@bandi/pages/admin/SideNav')),
 
   // Team pages
-  AdminAdminsPage: lazy(() => import('@bandi/pages/admin/Admins')),
   AdminUserDetailPage: lazy(() => import('@bandi/pages/admin/UserDetail')),
+  AdminCustomerDetailPage: lazy(() => import('@bandi/pages/admin/CustomerDetail')),
+  AdminAccessRequestsPage: lazy(() => import('@bandi/pages/admin/AccessRequests')),
+  AdminCustomerApprovalsPage: lazy(() => import('@bandi/pages/admin/CustomerApprovals')),
 
   // Governance pages
   AdminDashboardPage: lazy(() => import('@bandi/pages/admin/Dashboard')),
-  AdminConsultantPage: lazy(() => import('@bandi/pages/admin/Consultant')),
   AdminAccessManagementPage: lazy(() => import('@bandi/pages/admin/AccessManagement')),
   AdminAuditTrailsPage: lazy(() => import('@bandi/pages/admin/AuditTrails')),
   AdminEventsPage: lazy(() => import('@bandi/pages/admin/Events')),
 
   // Administration pages
   AdminUsersPage: lazy(() => import('@bandi/pages/admin/Users')),
-  AdminCaptainsPage: lazy(() => import('@bandi/pages/admin/Captains')),
-  AdminOrganizationsPage: lazy(() => import('@bandi/pages/admin/Organizations')),
   AdminSubscriptionsPage: lazy(() => import('@bandi/pages/admin/Subscriptions')),
   AdminCollectionsPage: lazy(() => import('@bandi/pages/admin/Collections')),
   AdminCategoriesPage: lazy(() => import('@bandi/pages/admin/Categories')),
@@ -29,7 +28,7 @@ export const LazyMenuItems = {
   AdminSettingsPage: lazy(() => import('@bandi/pages/admin/Settings')),
 
   // Operations pages
-  AdminRidesPage: lazy(() => import('@bandi/pages/admin/Rides')),
+  AdminVehicleFleetPage: lazy(() => import('@bandi/pages/admin/VehicleFleet')),
 
   // Mobility Services pages
   AdminDriverHirePage: lazy(() => import('@bandi/pages/admin/DriverHire')),
@@ -51,6 +50,9 @@ export const LazyMenuItems = {
     import('@bandi/pages/admin/CreateTicket').then((m) => ({ default: m.CreateManagementForm })),
   ),
   AdminCreateCustomerPage: lazy(() => import('@bandi/pages/admin/CreateCustomer')),
+  AdminCreateCustomerFormPage: lazy(() =>
+    import('@bandi/pages/admin/CreateCustomer').then((m) => ({ default: m.CreateCustomerForm })),
+  ),
 
   // Reports pages
   AdminAnalyticsPage: lazy(() => import('@bandi/pages/admin/Analytics')),

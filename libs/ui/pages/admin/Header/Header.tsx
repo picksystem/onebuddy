@@ -52,6 +52,7 @@ const Header = () => {
     handleNotifOpen,
     handleNotifClose,
     handleNotifClick,
+    handleNotifItemClick,
     handleAddOpen,
     handleAddClose,
     handleAddManagement,
@@ -155,6 +156,7 @@ const Header = () => {
           anchorEl={notifAnchorEl}
           onClose={handleNotifClose}
           onViewAll={handleNotifClick}
+          onItemClick={handleNotifItemClick}
           notifications={notifications}
         />
 

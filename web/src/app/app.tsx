@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 
@@ -14,20 +14,19 @@ const {
   AdminSideNavPage,
 
   // Team
-  AdminAdminsPage,
   AdminUserDetailPage,
+  AdminCustomerDetailPage,
+  AdminAccessRequestsPage,
+  AdminCustomerApprovalsPage,
 
   // Governance
   AdminDashboardPage,
-  AdminConsultantPage,
   AdminAccessManagementPage,
   AdminAuditTrailsPage,
   AdminEventsPage,
 
   // Administration
   AdminUsersPage,
-  AdminCaptainsPage,
-  AdminOrganizationsPage,
   AdminSubscriptionsPage,
   AdminCollectionsPage,
   AdminCategoriesPage,
@@ -36,7 +35,7 @@ const {
   AdminSettingsPage,
 
   // Operations
-  AdminRidesPage,
+  AdminVehicleFleetPage,
 
   // Mobility Services
   AdminDriverHirePage,
@@ -54,6 +53,7 @@ const {
   AdminCreateManagementPage,
   AdminCreateManagementFormPage,
   AdminCreateCustomerPage,
+  AdminCreateCustomerFormPage,
 
   // Reports
   AdminAnalyticsPage,
@@ -75,6 +75,18 @@ const {
   ForgotPasswordPage,
   NotFoundPage,
 } = LazyMenuItems;
+
+// Forces CreateManagementForm to remount when :type changes (admin ↔ consultant)
+const KeyedManagementForm = () => {
+  const { type } = useParams<{ type: string }>();
+  return <AdminCreateManagementFormPage key={type} />;
+};
+
+// Forces CreateCustomerForm to remount when :type changes (mobility ↔ logistics)
+const KeyedCustomerForm = () => {
+  const { type } = useParams<{ type: string }>();
+  return <AdminCreateCustomerFormPage key={type} />;
+};
 
 const AppRoutes = () => {
   const { AdminPath, AuthPath, Path } = constants;
@@ -109,20 +121,19 @@ const AppRoutes = () => {
               />
 
               {/* Team */}
-              <Route path={AdminPath.ADMINS} element={<AdminAdminsPage />} />
               <Route path={AdminPath.USER_DETAIL} element={<AdminUserDetailPage />} />
+              <Route path={AdminPath.CUSTOMER_DETAIL} element={<AdminCustomerDetailPage />} />
+              <Route path={AdminPath.ROLE_REQUESTS} element={<AdminAccessRequestsPage />} />
+              <Route path={AdminPath.CUSTOMER_APPROVALS} element={<AdminCustomerApprovalsPage />} />
 
               {/* Governance */}
               <Route path={AdminPath.DASHBOARD} element={<AdminDashboardPage />} />
-              <Route path={AdminPath.CONSULTANT} element={<AdminConsultantPage />} />
               <Route path={AdminPath.ACCESS_MANAGEMENT} element={<AdminAccessManagementPage />} />
               <Route path={AdminPath.AUDIT_TRAILS} element={<AdminAuditTrailsPage />} />
               <Route path={AdminPath.EVENTS} element={<AdminEventsPage />} />
 
               {/* Administration */}
               <Route path={AdminPath.USERS} element={<AdminUsersPage />} />
-              <Route path={AdminPath.CAPTAINS} element={<AdminCaptainsPage />} />
-              <Route path={AdminPath.ORGANIZATIONS} element={<AdminOrganizationsPage />} />
               <Route path={AdminPath.SUBSCRIPTIONS} element={<AdminSubscriptionsPage />} />
               <Route path={AdminPath.COLLECTIONS} element={<AdminCollectionsPage />} />
               <Route path={AdminPath.CATEGORIES} element={<AdminCategoriesPage />} />
@@ -131,7 +142,7 @@ const AppRoutes = () => {
               <Route path={AdminPath.SETTINGS} element={<AdminSettingsPage />} />
 
               {/* Operations */}
-              <Route path={AdminPath.RIDES} element={<AdminRidesPage />} />
+              <Route path={AdminPath.FLEET} element={<AdminVehicleFleetPage />} />
 
               {/* Mobility Services */}
               <Route path={AdminPath.DRIVER_HIRE} element={<AdminDriverHirePage />} />
@@ -147,11 +158,9 @@ const AppRoutes = () => {
               {/* Requests */}
               <Route path={AdminPath.KYC} element={<AdminKycPage />} />
               <Route path={AdminPath.CREATE_MANAGEMENT} element={<AdminCreateManagementPage />} />
-              <Route
-                path={AdminPath.CREATE_MANAGEMENT_TYPE}
-                element={<AdminCreateManagementFormPage />}
-              />
+              <Route path={AdminPath.CREATE_MANAGEMENT_TYPE} element={<KeyedManagementForm />} />
               <Route path={AdminPath.CREATE_CUSTOMER} element={<AdminCreateCustomerPage />} />
+              <Route path={AdminPath.CREATE_CUSTOMER_TYPE} element={<KeyedCustomerForm />} />
 
               {/* Reports */}
               <Route path={AdminPath.ANALYTICS} element={<AdminAnalyticsPage />} />

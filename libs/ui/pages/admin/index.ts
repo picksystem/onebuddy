@@ -5,19 +5,17 @@ export { default as Profile } from './Profile';
 export { default as NotFound } from '../../components/NotFound';
 
 // Team
-export { default as Admins } from './Admins';
 export { default as UserDetail } from './UserDetail';
+export { default as AccessRequests } from './AccessRequests';
+export { default as CustomerApprovals } from './CustomerApprovals';
 
 // Governance
 export { default as AccessManagement } from './AccessManagement';
 export { default as AuditTrails } from './AuditTrails';
-export { default as Consultant } from './Consultant';
 export { default as Events } from './Events';
 
 // Administration
 export { default as Users } from './Users';
-export { default as Captains } from './Captains';
-export { default as Organizations } from './Organizations';
 export { default as Subscriptions } from './Subscriptions';
 export { default as Collections } from './Collections';
 export { default as Categories } from './Categories';
@@ -30,7 +28,7 @@ export { default as Parcel } from './Parcel';
 export { default as Logistics } from './Logistics';
 
 // Operations
-export { default as Rides } from './Rides';
+export { default as VehicleFleet } from './VehicleFleet';
 
 // Finance
 export { default as Transactions } from './Transactions';

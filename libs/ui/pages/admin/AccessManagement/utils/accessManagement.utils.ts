@@ -159,10 +159,13 @@ export const SOURCE_LABELS: Record<string, string> = {
 
 export const buildRefId = (role: string, id: number | string): string => {
   const prefix =
-    role === 'admin' ? 'ADMIN'
-    : role === 'consultant' ? 'CONSULT'
-    : role === 'captain' ? 'CAPTAIN'
-    : 'USER';
+    role === 'admin'
+      ? 'ADMIN'
+      : role === 'consultant'
+        ? 'CONSULT'
+        : role === 'captain'
+          ? 'CAPTAIN'
+          : 'USER';
   const isDraft = String(id).startsWith('draft_') || (id as number) === -1;
   const type = isDraft ? 'DRAFT' : 'ROLE';
   let num = 0;

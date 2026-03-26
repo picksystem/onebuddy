@@ -195,15 +195,15 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
   // ─── Stat Cards Grid ────────────────────────────────────────────────────────
   statsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
+    gridTemplateColumns: 'repeat(4, 1fr)',
     gap: theme.spacing(2),
     marginBottom: theme.spacing(2.5),
     [theme.breakpoints.down('md')]: {
       gridTemplateColumns: 'repeat(2, 1fr)',
     },
     [theme.breakpoints.down('sm')]: {
-      gridTemplateColumns: '1fr 1fr',
-      gap: theme.spacing(1.5),
+      gridTemplateColumns: '1fr',
+      gap: theme.spacing(1.25),
     },
   },
 
@@ -227,11 +227,11 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
       borderRadius: '20px 20px 0 0',
     },
     '&:hover': {
-      transform: 'translateY(-7px)',
+      transform: 'translateY(-4px)',
     },
     [theme.breakpoints.down('sm')]: {
-      padding: theme.spacing(2),
-      borderRadius: 16,
+      padding: theme.spacing(1.5, 2),
+      borderRadius: 14,
     },
   },
 
@@ -277,6 +277,11 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
     alignItems: 'flex-start',
     marginBottom: theme.spacing(1.75),
     marginTop: theme.spacing(0.5),
+    [theme.breakpoints.down('sm')]: {
+      marginBottom: theme.spacing(0.75),
+      marginTop: 0,
+      alignItems: 'center',
+    },
   },
 
   statIconWrap: {
@@ -288,13 +293,12 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
     justifyContent: 'center',
     flexShrink: 0,
     transition: 'transform 0.3s ease',
-    '$statCard:hover &': {
-      transform: 'scale(1.08) rotate(-4deg)',
-    },
+    [theme.breakpoints.down('sm')]: { width: 44, height: 44, borderRadius: 12 },
   },
 
   statIcon: {
     fontSize: '1.55rem !important',
+    [theme.breakpoints.down('sm')]: { fontSize: '1.25rem !important' },
   },
 
   statValue: {
@@ -303,9 +307,7 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
     lineHeight: 1,
     marginBottom: theme.spacing(0.4),
     animation: 'um-counter 0.65s cubic-bezier(0.34,1.56,0.64,1) both',
-    [theme.breakpoints.down('sm')]: {
-      fontSize: '2rem',
-    },
+    [theme.breakpoints.down('sm')]: { fontSize: '1.75rem', marginBottom: theme.spacing(0.2) },
   },
 
   statLabel: {
@@ -319,6 +321,7 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
   statDivider: {
     borderColor: 'rgba(0,0,0,0.06)',
     marginBottom: theme.spacing(1.5),
+    [theme.breakpoints.down('sm')]: { marginBottom: theme.spacing(0.75) },
   },
 
   statSubRow: {
@@ -338,6 +341,7 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
     fontSize: '0.75rem',
     color: 'rgba(0,0,0,0.48)',
     fontWeight: 500,
+    [theme.breakpoints.down('sm')]: { fontSize: '0.7rem' },
   },
 
   // ─── Glassmorphism Toolbar ────────────────────────────────────────────────

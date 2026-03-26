@@ -48,6 +48,26 @@ export const authApi = baseApi.injectEndpoints({
         body: { action: 'change-password', currentPassword, newPassword },
       }),
     }),
+    uploadUserAttachments: builder.mutation<any, { userId: number; files: File[] }>({
+      query: ({ userId, files }) => {
+        const formData = new FormData();
+        files.forEach((f) => formData.append('files', f));
+        return {
+          url: `/api/auth/upload-attachments?userId=${userId}`,
+          method: 'POST',
+          body: formData,
+        };
+      },
+      transformResponse: (response: any) => response.data,
+    }),
+    deleteUserAttachment: builder.mutation<any, { userId: number; url: string }>({
+      query: ({ userId, url }) => ({
+        url: '/api/auth/delete-attachment',
+        method: 'DELETE',
+        body: { userId, url },
+      }),
+      transformResponse: (response: any) => response.data,
+    }),
   }),
   overrideExisting: false,
 });
@@ -59,4 +79,6 @@ export const {
   useUpdateUserMutation,
   useDeleteUserMutation,
   useChangePasswordMutation,
+  useUploadUserAttachmentsMutation,
+  useDeleteUserAttachmentMutation,
 } = authApi;

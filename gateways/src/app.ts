@@ -5,6 +5,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
+import multer from 'multer';
 
 // Centralized error handling middleware
 import { errorHandler, notFoundHandler } from '@bandi/middleware';
@@ -47,6 +48,9 @@ setInterval(
 
 function makeRateLimiter(maxRequests: number, windowMs: number) {
   return (req: Request, res: Response, next: NextFunction) => {
+    // Skip rate limiting in development
+    if (process.env.NODE_ENV !== 'production') return next();
+
     const ip = req.ip || req.socket.remoteAddress || 'unknown';
     const key = `${ip}:${req.path}`;
     const now = Date.now();
@@ -137,6 +141,21 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 app.use('/uploads/attachments', express.static(uploadsDir));
 // Return plain 404 for missing static files (prevent API notFoundHandler JSON response)
 app.use('/uploads', (_req, res) => res.status(404).end());
+
+// ── Multer: user attachment uploads ──────────────────────────────────────────
+const attachmentStorage = multer.diskStorage({
+  destination: (req, _file, cb) => {
+    const userId = (req as any).userId ?? 'unknown';
+    const dest = path.join(uploadsDir, String(userId));
+    if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
+    cb(null, dest);
+  },
+  filename: (_req, file, cb) => {
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
+    cb(null, `${unique}-${file.originalname}`);
+  },
+});
+const uploadMiddleware = multer({ storage: attachmentStorage, limits: { fileSize: 20 * 1024 * 1024 } });
 
 /**
  * ─────────────────────────────────────────────────

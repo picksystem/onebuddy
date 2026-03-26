@@ -39,7 +39,7 @@ import dayjs from 'dayjs';
 import { Box, Button, TextField, Select } from '@bandi/component';
 import { constants } from '@bandi/utils';
 import { useFieldError, useAuth, useLocalStorage } from '@bandi/hooks';
-import { useAuthActionMutation } from '@bandi/services';
+import { useAuthActionMutation, useUploadUserAttachmentsMutation } from '@bandi/services';
 import { useStyles } from './styles';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -293,6 +293,10 @@ const CreateManagementForm = () => {
 
   const STORAGE_KEY = `mgmt_draft_${managementType}`;
   const [form, setForm, clearForm] = useLocalStorage<Record<string, string>>(STORAGE_KEY, {});
+  const [userId] = useState(() => {
+    const num = Math.floor(Math.random() * 90000) + 10000;
+    return managementType === 'admin' ? `ADMIN${num}` : `CONSULT${num}`;
+  });
   const [submitted, setSubmitted] = useState(false);
   const [genPassword, setGenPassword] = useState(() => generatePassword());
   const [showPwd, setShowPwd] = useState(false);
@@ -322,6 +326,7 @@ const CreateManagementForm = () => {
     severity: 'success',
   });
   const [authAction] = useAuthActionMutation();
+  const [uploadAttachments] = useUploadUserAttachmentsMutation();
 
   // Load employees + server-side draft on mount
   useEffect(() => {
@@ -333,21 +338,6 @@ const CreateManagementForm = () => {
           email: u.email,
         }));
         setEmployeeList(users);
-      })
-      .catch(() => {});
-
-    // Restore server draft only if localStorage is empty
-    authAction({ action: 'load-draft', type: managementType })
-      .unwrap()
-      .then((res) => {
-        if (!res.data) return;
-        const saved = res.data.formData as Record<string, any>;
-        // Only restore if local storage has no data
-        if (!Object.keys(form).length) {
-          setForm(saved.form ?? {});
-          if (saved.referredBy) setReferredBy(saved.referredBy);
-          if (saved.reportingManager) setReportingManager(saved.reportingManager);
-        }
       })
       .catch(() => {});
   }, []);
@@ -445,6 +435,13 @@ const CreateManagementForm = () => {
     setAttachments([]);
   };
 
+  // Clear localStorage on unmount so returning to the form always starts fresh
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined') window.localStorage.removeItem(STORAGE_KEY);
+    };
+  }, [STORAGE_KEY]);
+
   // ── Submit handler ─────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     setSubmitted(true);
@@ -452,7 +449,7 @@ const CreateManagementForm = () => {
 
     setIsSubmitting(true);
     try {
-      await authAction({
+      const createdUser = await authAction({
         action: 'create-management-request',
         firstName: form.firstName,
         lastName: form.lastName,
@@ -467,13 +464,20 @@ const CreateManagementForm = () => {
         gender: form.gender || undefined,
         city: form.city || undefined,
         adminNotes: form.adminNotes || undefined,
+        userId,
         reportingManagerEmail: reportingManager?.email || undefined,
         referredByEmail: referredBy?.email || undefined,
-      }).unwrap();
+      }).unwrap() as any;
+
+      // Upload attachments if any were added
+      const newUserId = createdUser?.data?.id ?? createdUser?.data?.userId;
+      if (attachments.length > 0 && newUserId) {
+        await uploadAttachments({ userId: newUserId, files: attachments }).unwrap().catch(() => {});
+      }
 
       // Clear all fields + server draft on success
       resetAllFields();
-      authAction({ action: 'delete-draft', type: managementType })
+      await authAction({ action: 'delete-draft', type: managementType })
         .unwrap()
         .catch(() => {});
 
@@ -498,7 +502,7 @@ const CreateManagementForm = () => {
       await authAction({
         action: 'save-draft',
         type: managementType,
-        formData: { form, referredBy, reportingManager },
+        formData: { form: { ...form, userId }, referredBy, reportingManager },
       }).unwrap();
       resetAllFields();
       setSnackbar({
@@ -506,6 +510,7 @@ const CreateManagementForm = () => {
         message: 'Draft saved! You have 7 days to submit before it expires.',
         severity: 'success',
       });
+      setTimeout(() => navigate(AdminPath.CREATE_MANAGEMENT), 1800);
     } catch {
       setSnackbar({
         open: true,
@@ -657,7 +662,8 @@ const CreateManagementForm = () => {
         classes,
         0,
         <Box className={classes.formGrid}>
-          {/* Row 1: firstName, lastName, email */}
+          {/* Row 1: userId (auto), firstName, lastName */}
+          <TextField name='userId' label='User ID' value={userId} disabled size='small' fullWidth />
           <TextField
             name='firstName'
             label='First Name'

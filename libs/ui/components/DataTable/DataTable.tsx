@@ -47,6 +47,7 @@ export interface DataTableProps<T> {
   initialRowsPerPage?: number;
   elevation?: number;
   activeRowKey?: T[keyof T];
+  pinnedRows?: T[];
 }
 
 type Order = 'asc' | 'desc';
@@ -63,6 +64,7 @@ export function DataTable<T extends object>({
   initialRowsPerPage = 10,
   elevation = 1,
   activeRowKey,
+  pinnedRows = [],
 }: DataTableProps<T>) {
   const { classes, cx } = useStyles();
   const [page, setPage] = useState(0);
@@ -250,6 +252,54 @@ export function DataTable<T extends object>({
             </TableRow>
           </TableHead>
           <TableBody>
+            {pinnedRows.map((row) => {
+              const isItemSelected = isSelected(row[rowKey]);
+              const isActive = activeRowKey !== undefined && row[rowKey] === activeRowKey;
+              return (
+                <TableRow
+                  hover
+                  onClick={() => handleClick(row)}
+                  role='checkbox'
+                  aria-checked={isItemSelected}
+                  tabIndex={-1}
+                  key={`pinned-${String(row[rowKey])}`}
+                  selected={isItemSelected}
+                  className={
+                    isActive
+                      ? classes.highlightedRow
+                      : onRowClick || selectable
+                        ? classes.clickableRow
+                        : classes.defaultRow
+                  }
+                  sx={
+                    isActive
+                      ? {
+                          '@keyframes rowFlash': {
+                            '0%': { backgroundColor: 'rgba(30,66,159,0.32)' },
+                            '60%': { backgroundColor: 'rgba(30,66,159,0.14)' },
+                            '100%': { backgroundColor: 'transparent' },
+                          },
+                          animation: 'rowFlash 0.55s ease-out',
+                        }
+                      : undefined
+                  }
+                >
+                  {selectable && (
+                    <TableCell padding='checkbox'>
+                      <Checkbox checked={isItemSelected} />
+                    </TableCell>
+                  )}
+                  {columns.map((column) => {
+                    const value = row[column.id as keyof T];
+                    return (
+                      <TableCell key={String(column.id)} align={column.align ?? 'left'}>
+                        {column.format ? column.format(value, row) : String(value ?? '')}
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              );
+            })}
             {paginatedData.map((row) => {
               const isItemSelected = isSelected(row[rowKey]);
               const isActive = activeRowKey !== undefined && row[rowKey] === activeRowKey;

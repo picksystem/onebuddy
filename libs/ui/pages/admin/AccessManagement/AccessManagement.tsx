@@ -2,8 +2,9 @@ import { Box, Loader, DataTable } from '@bandi/component';
 import { Typography, Grid, Tabs, Tab, Divider, TextField, InputAdornment } from '@mui/material';
 import GroupIcon from '@mui/icons-material/Group';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
-import QueryStatsIcon from '@mui/icons-material/QueryStats';
+import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
 import SearchIcon from '@mui/icons-material/Search';
+import EditNoteIcon from '@mui/icons-material/EditNote';
 import TabPanel from './components/TabPanel';
 import useAccessManagement from './hooks/useAccessManagement';
 import EditUserDialog from './dialogs/EditUserDialog/EditUserDialog';
@@ -24,6 +25,7 @@ const AccessManagement = () => {
     allUsers,
     admins,
     consultants,
+    dbDraftUsers,
     isLoading,
     isMobile,
     tabValue,
@@ -166,6 +168,8 @@ const AccessManagement = () => {
     );
   }
 
+  const draftCount = dbDraftUsers.length + (draftRow ? 1 : 0);
+
   const statCards = [
     {
       label: 'Total Users',
@@ -186,10 +190,18 @@ const AccessManagement = () => {
     {
       label: 'Consultants',
       value: consultants.length,
-      Icon: QueryStatsIcon,
+      Icon: BusinessCenterIcon,
       cls: classes.statCard2,
       sub: 'Platform Consultants',
       color: '#10b981',
+    },
+    {
+      label: 'Drafts',
+      value: draftCount,
+      Icon: EditNoteIcon,
+      cls: classes.statCard0,
+      sub: 'Saved / In-Progress',
+      color: '#64748b',
     },
   ];
 
@@ -264,9 +276,14 @@ const AccessManagement = () => {
               label={isMobile ? undefined : 'Admins'}
             />
             <Tab
-              icon={<QueryStatsIcon />}
+              icon={<BusinessCenterIcon />}
               iconPosition='start'
               label={isMobile ? undefined : 'Consultants'}
+            />
+            <Tab
+              icon={<EditNoteIcon />}
+              iconPosition='start'
+              label={isMobile ? undefined : `Drafts${draftCount > 0 ? ` (${draftCount})` : ''}`}
             />
           </Tabs>
           <TextField
@@ -287,11 +304,9 @@ const AccessManagement = () => {
         </Box>
 
         {/* ── Tab panels with DataTable ── */}
-        {[allUsers, admins, consultants].map((list, idx) => {
-          const tableData =
-            idx === 0 && draftRow
-              ? [{ ...draftRow, sno: 1 }, ...getTableData(list, 2)]
-              : getTableData(list);
+        {[allUsers, admins, consultants, dbDraftUsers].map((list, idx) => {
+          const showLocalDraft = (idx === 0 || idx === 3) && draftRow;
+          const tableData = getTableData(list, showLocalDraft ? 2 : 1);
           const filteredData = tableSearch
             ? tableData.filter((row) =>
                 Object.values(row).some(
@@ -302,6 +317,18 @@ const AccessManagement = () => {
                 ),
               )
             : tableData;
+          const pinnedData = showLocalDraft
+            ? tableSearch
+              ? Object.values(draftRow).some(
+                  (val) =>
+                    val !== null &&
+                    val !== undefined &&
+                    String(val).toLowerCase().includes(tableSearch.toLowerCase()),
+                )
+                ? [{ ...draftRow, sno: 1 }]
+                : []
+              : [{ ...draftRow, sno: 1 }]
+            : [];
           return (
             <TabPanel key={idx} value={tabValue} index={idx}>
               <Box className={classes.tableContainer}>
@@ -313,6 +340,7 @@ const AccessManagement = () => {
                   initialRowsPerPage={10}
                   onRowClick={handleRowSelect}
                   activeRowKey={selectedRow?.id as number}
+                  pinnedRows={pinnedData}
                 />
               </Box>
             </TabPanel>

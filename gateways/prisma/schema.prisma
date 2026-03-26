@@ -22,6 +22,7 @@ model User {
   password        String
   phone           String?
   reasonForAccess String?
+  customUserId    String?   @unique
   employeeId      String?
   businessUnit    String?
   dateOfBirth     String?
@@ -62,6 +63,7 @@ model User {
   captainProfileUpdated Boolean  @default(false)
   application              String?
   applicationLead          String?
+  attachments              String?   // JSON array of { name, url, size }
   // timestamps
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
@@ -189,6 +191,16 @@ model CustomerOnboarding {
   // Identity Proof
   idProofType     String    // aadhaar | pan
   idProofNumber   String?
+  idProofExpiry   String?
+
+  // Registration / Created By
+  createdByName      String?
+  createdByEmail     String?
+  createdByPhone     String?
+  isSelfRegistered   Boolean   @default(false)
+
+  // Uploaded document file keys (JSON array e.g. ["rcFront","rcBack","dlFront"])
+  uploadedFiles        String?
 
   // Bundle Options (optional — captain may apply one or more bundles)
   // bundleTypes: JSON array e.g. ["rental","driver_hire","parcel_combo"]
@@ -201,7 +213,7 @@ model CustomerOnboarding {
   rentalPickupZone     String?
 
   // Driver Hire Bundle
-  driverHireCount      Int?      // 1–5 drivers needed
+  driverHireCount      String?   // 1–5 drivers needed
   driverHireShift      String?   // day | night | both
   driverHireBudget     String?
 
@@ -216,7 +228,7 @@ model CustomerOnboarding {
 
   // Cargo Co-Ride Bundle (lorry / tata_ace / dcm only)
   // Captain accepts a co-passenger on an outstation cargo trip
-  cargoCoRideMax       Int?      // 1 or 2 co-passengers max
+  cargoCoRideMax       String?   // 1 or 2 co-passengers max
   cargoCoRideHaulPref  String?   // 'short' | 'medium' | 'long'
   cargoCoRideRatePref  String?   // 'platform_suggested' | 'negotiable'
 
@@ -227,6 +239,7 @@ model CustomerOnboarding {
   // Status
   status          String    @default("pending")
   adminNotes      String?
+  reviewedAt      DateTime?
   submittedAt     DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt

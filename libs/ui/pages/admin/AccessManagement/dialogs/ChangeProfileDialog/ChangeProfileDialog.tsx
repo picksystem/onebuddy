@@ -357,7 +357,14 @@ const ChangeProfileDialog = ({
               onChange={(e) => onAttachmentChange(e.target.files?.[0] ?? null)}
             />
             <Box className={classes.attachmentRow}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: { xs: '100%', sm: 'auto' } }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  width: { xs: '100%', sm: 'auto' },
+                }}
+              >
                 <Button
                   variant='outlined'
                   size='small'

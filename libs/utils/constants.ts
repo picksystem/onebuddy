@@ -53,15 +53,28 @@ const AdminPath = {
   ZONES: `${ADMIN_BASE}/zones`,
   INTEGRATIONS: `${ADMIN_BASE}/integrations`,
 
+  // Vehicle Fleet
+  FLEET: `${ADMIN_BASE}/fleet/:type`,
+  FLEET_BIKES: `${ADMIN_BASE}/fleet/bikes`,
+  FLEET_AUTOS: `${ADMIN_BASE}/fleet/autos`,
+  FLEET_CABS: `${ADMIN_BASE}/fleet/cabs`,
+  FLEET_SHUTTLES: `${ADMIN_BASE}/fleet/shuttles`,
+  FLEET_MINI_CARGO: `${ADMIN_BASE}/fleet/mini-cargo`,
+  FLEET_MEDIUM_GOODS: `${ADMIN_BASE}/fleet/medium-goods`,
+  FLEET_HEAVY_TRUCKS: `${ADMIN_BASE}/fleet/heavy-trucks`,
+
   // Team
   ADMINS: `${ADMIN_BASE}/admins`,
 
   // Supporting
   PROFILE: `${ADMIN_BASE}/profile`,
   CREATE_CUSTOMER: `${ADMIN_BASE}/create-customer`,
+  CREATE_CUSTOMER_TYPE: `${ADMIN_BASE}/create-customer/:type`,
+  CUSTOMER_APPROVALS: `${ADMIN_BASE}/customer-approvals`,
 
   // User Detail
   USER_DETAIL: `${ADMIN_BASE}/user/:id`,
+  CUSTOMER_DETAIL: `${ADMIN_BASE}/customer/:id`,
 
   // Ticket / Incident Management
   INCIDENT_DETAIL: `${ADMIN_BASE}/incident/:number`,

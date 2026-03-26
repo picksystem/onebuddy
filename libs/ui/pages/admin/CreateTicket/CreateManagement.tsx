@@ -1,5 +1,6 @@
-import { Typography, alpha, darken } from '@mui/material';
+import { Typography, alpha } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
 import GroupsIcon from '@mui/icons-material/Groups';
@@ -44,7 +45,7 @@ const MANAGEMENT_TYPES = [
 function getVisuals(color: string) {
   return {
     accent: color,
-    gradient: `linear-gradient(135deg, ${darken(color, 0.2)} 0%, ${color} 100%)`,
+    gradient: `linear-gradient(135deg, ${color}cc 0%, ${color} 100%)`,
     glow: alpha(color, 0.35),
     bgTint: alpha(color, 0.06),
   };
@@ -81,7 +82,13 @@ const CreateManagement = () => {
       </Box>
 
       {/* ── Type cards ────────────────────────────────────────────────────── */}
-      <Box className={classes.ticketTypeGrid}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+          gap: 3,
+        }}
+      >
         {MANAGEMENT_TYPES.map((t) => {
           const isSelected = selectedType === t.type;
           const { accent, gradient, glow, bgTint } = getVisuals(t.color);
@@ -90,17 +97,21 @@ const CreateManagement = () => {
           return (
             <Box
               key={t.type}
-              className={classes.ticketCard}
               onClick={() => setSelectedType(t.type)}
               sx={{
+                position: 'relative',
+                background: isSelected
+                  ? `linear-gradient(160deg, ${bgTint} 0%, transparent 60%)`
+                  : 'background.paper',
                 border: isSelected ? `1.5px solid ${accent}` : '1.5px solid transparent',
                 boxShadow: isSelected
                   ? `0 0 0 3px ${glow}, 0 8px 32px rgba(0,0,0,0.12)`
                   : '0 2px 8px rgba(0,0,0,0.06)',
-                background: isSelected
-                  ? `linear-gradient(160deg, ${bgTint} 0%, transparent 60%)`
-                  : undefined,
+                borderRadius: '16px',
+                p: 3,
                 cursor: 'pointer',
+                overflow: 'hidden',
+                transition: 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)',
                 '&:hover': {
                   boxShadow: isSelected
                     ? `0 0 0 3px ${glow}, 0 12px 40px rgba(0,0,0,0.16)`
@@ -109,8 +120,18 @@ const CreateManagement = () => {
                 },
               }}
             >
-              {/* Accent bar */}
-              <Box className={classes.ticketAccentBar} sx={{ background: gradient }} />
+              {/* Accent top bar */}
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '3px',
+                  background: gradient,
+                  borderRadius: '16px 16px 0 0',
+                }}
+              />
 
               {/* Selected check */}
               {isSelected && (
@@ -120,35 +141,38 @@ const CreateManagement = () => {
               )}
 
               {/* Icon + title */}
-              <Box className={classes.ticketCardHeader}>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mt: 0.5 }}>
                 <Box
-                  className={classes.ticketIconBadge}
-                  sx={{ background: gradient, boxShadow: `0 6px 18px ${glow}` }}
+                  sx={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: '14px',
+                    background: gradient,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: `0 6px 18px ${glow}`,
+                    flexShrink: 0,
+                  }}
                 >
-                  <Icon sx={{ fontSize: 24, color: '#fff' }} />
+                  <Icon sx={{ fontSize: 26, color: '#fff' }} />
                 </Box>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography className={classes.ticketCardTitle}>{t.displayName}</Typography>
-                  <Typography
-                    sx={{
-                      fontSize: '0.72rem',
-                      fontWeight: 700,
-                      color: accent,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                      mt: 0.25,
-                    }}
-                  >
-                    {t.tagline}
+                  <Typography sx={{ fontWeight: 800, fontSize: '1.1rem', lineHeight: 1.2 }}>
+                    {t.displayName}
                   </Typography>
                 </Box>
               </Box>
 
               {/* Description */}
-              <Typography className={classes.ticketCardDesc}>{t.description}</Typography>
+              <Typography
+                sx={{ fontSize: '0.82rem', color: 'text.secondary', lineHeight: 1.65, mt: 2 }}
+              >
+                {t.description}
+              </Typography>
 
-              {/* Perks list */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6, mt: 1 }}>
+              {/* Perks */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6, mt: 2 }}>
                 {t.perks.map(({ icon: PerkIcon, text }) => (
                   <Box key={text} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                     <PerkIcon sx={{ fontSize: '0.85rem', color: accent, flexShrink: 0 }} />
@@ -157,6 +181,26 @@ const CreateManagement = () => {
                     </Typography>
                   </Box>
                 ))}
+              </Box>
+
+              {/* CTA hint */}
+              <Box
+                sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', mt: 2.5 }}
+              >
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    opacity: isSelected ? 1 : 0.4,
+                    transition: 'opacity 0.2s',
+                  }}
+                >
+                  <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: accent }}>
+                    Select & Continue
+                  </Typography>
+                  <ArrowForwardIcon sx={{ fontSize: '0.9rem', color: accent }} />
+                </Box>
               </Box>
             </Box>
           );

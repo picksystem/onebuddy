@@ -1,25 +1,27 @@
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
 import ManageSearchIcon from '@mui/icons-material/ManageSearch';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import QueryStatsIcon from '@mui/icons-material/QueryStats';
-import SupportAgentIcon from '@mui/icons-material/SupportAgent';
-import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import PeopleIcon from '@mui/icons-material/People';
-import LocalTaxiIcon from '@mui/icons-material/LocalTaxi';
-import CorporateFareIcon from '@mui/icons-material/CorporateFare';
 import CategoryIcon from '@mui/icons-material/Category';
 import TollIcon from '@mui/icons-material/Toll';
 import CardMembershipIcon from '@mui/icons-material/CardMembership';
 import PersonSearchIcon from '@mui/icons-material/PersonSearch';
 import CarRentalIcon from '@mui/icons-material/CarRental';
-import Inventory2Icon from '@mui/icons-material/Inventory2';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import LocalTaxiIcon from '@mui/icons-material/LocalTaxi';
+import TwoWheelerIcon from '@mui/icons-material/TwoWheeler';
+import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
+import DirectionsBusIcon from '@mui/icons-material/DirectionsBus';
+import AirportShuttleIcon from '@mui/icons-material/AirportShuttle';
+import FireTruckIcon from '@mui/icons-material/FireTruck';
 import PaymentsIcon from '@mui/icons-material/Payments';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import PercentIcon from '@mui/icons-material/Percent';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import HowToRegIcon from '@mui/icons-material/HowToReg';
 import PriceChangeIcon from '@mui/icons-material/PriceChange';
 import MiscellaneousServicesIcon from '@mui/icons-material/MiscellaneousServices';
 import RuleIcon from '@mui/icons-material/Rule';
@@ -47,34 +49,50 @@ export const useMenuItems = (): MenuGroup[] => {
       items: [{ label: 'Dashboard', icon: <DashboardIcon />, path: AdminPath.DASHBOARD }],
     },
     {
-      group: 'Team',
+      group: 'Team Access',
       items: [
-        { label: 'Admins', icon: <AdminPanelSettingsIcon />, path: AdminPath.ADMINS },
-        { label: 'Consultants', icon: <SupportAgentIcon />, path: AdminPath.CONSULTANT },
+        { label: 'Access Requests', icon: <AssignmentIndIcon />, path: AdminPath.ROLE_REQUESTS },
         { label: 'Access Management', icon: <VpnKeyIcon />, path: AdminPath.ACCESS_MANAGEMENT },
       ],
     },
     {
-      group: 'Operations',
+      group: 'People Access',
       items: [
-        { label: 'Rides', icon: <LocalTaxiIcon />, path: AdminPath.RIDES },
-        { label: 'Driver Hire', icon: <PersonSearchIcon />, path: AdminPath.DRIVER_HIRE },
-        { label: 'Vehicle Rental', icon: <CarRentalIcon />, path: AdminPath.VEHICLE_RENTAL },
-        { label: 'Parcel / Delivery', icon: <Inventory2Icon />, path: AdminPath.PARCEL },
-        { label: 'Logistics', icon: <LocalShippingIcon />, path: AdminPath.LOGISTICS },
-      ],
-    },
-    {
-      group: 'People',
-      items: [
-        { label: 'Users', icon: <PeopleIcon />, path: AdminPath.USERS },
-        { label: 'Captains', icon: <ManageAccountsIcon />, path: AdminPath.CAPTAINS },
+        {
+          label: 'Customer Access',
+          icon: <HowToRegIcon />,
+          path: AdminPath.CUSTOMER_APPROVALS,
+        },
         {
           label: 'Customer Management',
           icon: <VerifiedUserIcon />,
           path: AdminPath.USER_MANAGEMENT,
         },
-        { label: 'Organizations', icon: <CorporateFareIcon />, path: AdminPath.ORGANIZATIONS },
+      ],
+    },
+    {
+      group: 'Operations',
+      items: [
+        { label: 'Users', icon: <PeopleIcon />, path: AdminPath.USERS },
+        { label: 'Driver Hire', icon: <PersonSearchIcon />, path: AdminPath.DRIVER_HIRE },
+        { label: 'Vehicle Rental', icon: <CarRentalIcon />, path: AdminPath.VEHICLE_RENTAL },
+      ],
+    },
+    {
+      group: 'Mobility Fleet',
+      items: [
+        { label: 'Bikes & Scooters', icon: <TwoWheelerIcon />, path: AdminPath.FLEET_BIKES },
+        { label: 'Auto Rickshaws', icon: <LocalTaxiIcon />, path: AdminPath.FLEET_AUTOS },
+        { label: 'Cabs', icon: <DirectionsCarIcon />, path: AdminPath.FLEET_CABS },
+        { label: 'Shuttles & Buses', icon: <DirectionsBusIcon />, path: AdminPath.FLEET_SHUTTLES },
+      ],
+    },
+    {
+      group: 'Logistics Fleet',
+      items: [
+        { label: 'Mini Cargo', icon: <AirportShuttleIcon />, path: AdminPath.FLEET_MINI_CARGO },
+        { label: 'Medium Goods', icon: <LocalShippingIcon />, path: AdminPath.FLEET_MEDIUM_GOODS },
+        { label: 'Heavy Trucks', icon: <FireTruckIcon />, path: AdminPath.FLEET_HEAVY_TRUCKS },
       ],
     },
     {
