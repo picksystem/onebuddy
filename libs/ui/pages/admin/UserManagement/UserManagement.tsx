@@ -3,9 +3,7 @@ import { Typography, Grid, Tabs, Tab, Divider, TextField, InputAdornment } from 
 import GroupIcon from '@mui/icons-material/Group';
 import DirectionsBusIcon from '@mui/icons-material/DirectionsBus';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
-import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
+import EditNoteIcon from '@mui/icons-material/EditNote';
 import SearchIcon from '@mui/icons-material/Search';
 import TabPanel from './components/TabPanel';
 import useUserManagement from './hooks/useUserManagement';
@@ -152,22 +150,16 @@ const UserManagement = () => {
   const managedOnboardings = customerOnboardings.filter(
     (r) => (r as any).status === 'approved' || (r as any).status === 'rejected',
   );
-  const approvedOnboardings = managedOnboardings.filter((r) => (r as any).status === 'approved');
-  const rejectedOnboardings = managedOnboardings.filter((r) => (r as any).status === 'rejected');
+  const mobilityOnboardings = managedOnboardings.filter((r) => r.serviceCategory === 'mobility');
+  const logisticsOnboardings = managedOnboardings.filter((r) => r.serviceCategory === 'logistics');
+  const draftOnboardings = customerOnboardings.filter((r) => (r as any).status === 'pending');
 
-  // Dynamic vehicle-type tabs from approved customers
-  const vehicleTypes = [
-    ...new Set(managedOnboardings.map((r) => (r.vehicleType || '').toLowerCase()).filter(Boolean)),
-  ].sort();
-
-  // All tab-lists: [All, Approved, Rejected, ...vehicle types]
+  // Tab lists: All Customers, Mobility, Logistics, Draft
   const tabLists = [
     managedOnboardings,
-    approvedOnboardings,
-    rejectedOnboardings,
-    ...vehicleTypes.map((vt) =>
-      managedOnboardings.filter((r) => (r.vehicleType || '').toLowerCase() === vt),
-    ),
+    mobilityOnboardings,
+    logisticsOnboardings,
+    draftOnboardings,
   ];
 
   if (isLoading) {
@@ -183,36 +175,36 @@ const UserManagement = () => {
 
   const statCards = [
     {
-      label: 'Total Customers',
+      label: 'All Customers',
       value: managedOnboardings.length,
       Icon: GroupIcon,
       cls: classes.statCard0,
-      sub: 'Approved & rejected customers',
+      sub: 'All registered customers',
       color: '#4f46e5',
     },
     {
-      label: 'Approved',
-      value: approvedOnboardings.length,
-      Icon: CheckCircleOutlineIcon,
+      label: 'Mobility',
+      value: mobilityOnboardings.length,
+      Icon: DirectionsBusIcon,
       cls: classes.statCard1,
-      sub: 'Active customers',
+      sub: 'Passenger transport',
       color: '#10b981',
     },
     {
-      label: 'Rejected',
-      value: rejectedOnboardings.length,
-      Icon: CancelOutlinedIcon,
+      label: 'Logistics',
+      value: logisticsOnboardings.length,
+      Icon: LocalShippingIcon,
       cls: classes.statCard2,
-      sub: 'Declined registrations',
-      color: '#ef4444',
+      sub: 'Goods & cargo transport',
+      color: '#0ea5e9',
     },
     {
-      label: 'Vehicle Types',
-      value: vehicleTypes.length,
-      Icon: DirectionsCarIcon,
+      label: 'Draft',
+      value: draftOnboardings.length,
+      Icon: EditNoteIcon,
       cls: classes.statCard3,
-      sub: 'Distinct vehicle categories',
-      color: '#0ea5e9',
+      sub: 'Pending review',
+      color: '#64748b',
     },
   ];
 
@@ -279,33 +271,26 @@ const UserManagement = () => {
             allowScrollButtonsMobile
             sx={{ flex: 1 }}
           >
-            <Tab icon={<GroupIcon />} iconPosition='start' label={isMobile ? undefined : 'All'} />
             <Tab
-              icon={<CheckCircleOutlineIcon />}
+              icon={<GroupIcon />}
               iconPosition='start'
-              label={isMobile ? undefined : 'Approved'}
+              label={isMobile ? undefined : 'All Customers'}
             />
             <Tab
-              icon={<CancelOutlinedIcon />}
+              icon={<DirectionsBusIcon />}
               iconPosition='start'
-              label={isMobile ? undefined : 'Rejected'}
+              label={isMobile ? undefined : 'Mobility'}
             />
-            {vehicleTypes.map((vt) => (
-              <Tab
-                key={vt}
-                icon={
-                  vt.includes('bus') || vt.includes('mobility') ? (
-                    <DirectionsBusIcon />
-                  ) : vt.includes('truck') || vt.includes('lorry') || vt.includes('cargo') ? (
-                    <LocalShippingIcon />
-                  ) : (
-                    <DirectionsCarIcon />
-                  )
-                }
-                iconPosition='start'
-                label={isMobile ? undefined : vt.charAt(0).toUpperCase() + vt.slice(1)}
-              />
-            ))}
+            <Tab
+              icon={<LocalShippingIcon />}
+              iconPosition='start'
+              label={isMobile ? undefined : 'Logistics'}
+            />
+            <Tab
+              icon={<EditNoteIcon />}
+              iconPosition='start'
+              label={isMobile ? undefined : 'Draft'}
+            />
           </Tabs>
           <TextField
             placeholder='Search...'

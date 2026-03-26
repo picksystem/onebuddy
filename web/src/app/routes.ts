@@ -53,6 +53,9 @@ export const LazyMenuItems = {
   AdminCreateCustomerFormPage: lazy(() =>
     import('@bandi/pages/admin/CreateCustomer').then((m) => ({ default: m.CreateCustomerForm })),
   ),
+  AdminCreateCustomerSimpleFormPage: lazy(() =>
+    import('@bandi/pages/admin/CreateCustomer').then((m) => ({ default: m.CreateSimpleForm })),
+  ),
 
   // Reports pages
   AdminAnalyticsPage: lazy(() => import('@bandi/pages/admin/Analytics')),

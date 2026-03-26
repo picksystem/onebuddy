@@ -1610,16 +1610,20 @@ export class AuthController {
 
       case 'create-customer-onboarding': {
         const { data: onboardingData } = req.body as { data: Record<string, unknown> };
-        if (!onboardingData?.firstName || !onboardingData?.phone || !onboardingData?.vehicleType) {
-          res.status(400).json({ message: 'firstName, phone, and vehicleType are required' });
+        const isSimpleUser = onboardingData?.serviceCategory === 'user';
+        if (!onboardingData?.firstName || !onboardingData?.phone || (!isSimpleUser && !onboardingData?.vehicleType)) {
+          res.status(400).json({ message: 'firstName and phone are required' });
           return;
         }
 
         // Strip out any unknown fields to prevent Prisma errors, then persist
         const {
+          customerId,
           firstName,
           lastName,
+          gender,
           phone,
+          emergencyContact,
           email,
           city,
           area,
@@ -1671,9 +1675,12 @@ export class AuthController {
 
         const onboarding = await (db as any).customerOnboarding.create({
           data: {
+            customerId: customerId ? String(customerId) : null,
             firstName,
             lastName,
+            gender: gender ?? null,
             phone,
+            emergencyContact: emergencyContact ?? null,
             email: email ?? null,
             city,
             area: area ?? null,

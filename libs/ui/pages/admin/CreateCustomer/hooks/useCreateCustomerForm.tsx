@@ -32,7 +32,7 @@ const useCreateCustomerForm = (customerType: CustomerType) => {
 
   // ── Auto-generated userId ─────────────────────────────────────────────────
   const [userId] = useState<string>(() => {
-    const prefix = customerType === 'mobility' ? 'MOBIL' : 'LOGIST';
+    const prefix = customerType === 'mobility' ? 'MOBIL' : 'LOGST';
     const num = String(Math.floor(10000 + Math.random() * 90000));
     const stored = window.localStorage.getItem(`customer_uid_${customerType}`);
     if (stored) return stored;
@@ -277,6 +277,7 @@ const useCreateCustomerForm = (customerType: CustomerType) => {
     const errs: Errors = {};
     if (!form.firstName.trim()) errs['firstName'] = 'Required';
     if (!form.lastName.trim()) errs['lastName'] = 'Required';
+    if (!form.gender) errs['gender'] = 'Required';
     if (!form.phone.trim()) errs['phone'] = 'Required';
     else if (!/^[6-9]\d{9}$/.test(form.phone.replace(/[\s\-+]/g, '')))
       errs['phone'] = 'Enter valid 10-digit mobile number';
@@ -331,7 +332,7 @@ const useCreateCustomerForm = (customerType: CustomerType) => {
     if (!files['idBack']) errs['file.idBack'] = 'ID back required';
     setErrors(errs);
     const allFields = [
-      'firstName', 'lastName', 'phone', 'email', 'city', 'area', 'pincode',
+      'firstName', 'lastName', 'gender', 'phone', 'email', 'city', 'area', 'pincode',
       'vehicleType', 'vehicleSubType', 'fuelType', 'tripPreference', 'vehicleNumber',
       'rc.number', 'insurance.number', 'insurance.expiry', 'fitness.number', 'permit.number',
       'dl.number', 'idProofType', 'idProof.number', 'rentalDuration', 'driverHireCount',
@@ -380,12 +381,13 @@ const useCreateCustomerForm = (customerType: CustomerType) => {
       const payload = {
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
+        gender: form.gender || null,
         phone: form.phone.trim(),
         email: form.email.trim(),
         city: form.city,
         area: form.area,
         pincode: form.pincode.trim(),
-        userId,
+        customerId: userId,
         ...createdBy,
         referredByEmail: referredBy?.email || undefined,
         serviceCategory,

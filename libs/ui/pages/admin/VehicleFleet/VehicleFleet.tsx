@@ -99,10 +99,7 @@ const DEFAULT_META: FleetMeta = {
   description: 'Manage vehicle fleet operators',
 };
 
-const genId = (row: CustomerOnboardingRow) => {
-  const prefix = row.serviceCategory === 'mobility' ? 'MOBIL' : 'LOGST';
-  return `${prefix}${String(Number(row.id) || 0).padStart(5, '0')}`;
-};
+const genId = (row: CustomerOnboardingRow) => row.customerId ?? String(row.id);
 
 const VehicleFleet = () => {
   const { type = '' } = useParams<{ type: string }>();

@@ -8,11 +8,20 @@ import GroupsIcon from '@mui/icons-material/Groups';
 import TwoWheelerIcon from '@mui/icons-material/TwoWheeler';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import BusinessIcon from '@mui/icons-material/Business';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import HailIcon from '@mui/icons-material/Hail';
+import CarRentalIcon from '@mui/icons-material/CarRental';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import PhoneAndroidIcon from '@mui/icons-material/PhoneAndroid';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
+import CurrencyRupeeIcon from '@mui/icons-material/CurrencyRupee';
 import { Box, Button } from '@bandi/component';
 import { useNavigate } from 'react-router-dom';
 import { constants } from '@bandi/utils';
 
-type CustomerType = 'mobility' | 'logistics';
+type CustomerType = 'mobility' | 'logistics' | 'user' | 'driver-hire' | 'vehicle-rental';
 
 const CUSTOMER_TYPES = [
   {
@@ -43,6 +52,48 @@ const CUSTOMER_TYPES = [
     icon: LocalShippingIcon,
     color: '#f59e0b',
   },
+  {
+    type: 'user' as CustomerType,
+    displayName: 'Platform User',
+    tagline: 'App User Registration',
+    description:
+      'Register a new platform user with basic profile details — name, contact, and location for app access without vehicle onboarding.',
+    perks: [
+      { icon: PersonAddIcon, text: 'Basic profile setup' },
+      { icon: LocationOnIcon, text: 'City & area onboarding' },
+      { icon: PhoneAndroidIcon, text: 'App account ready instantly' },
+    ],
+    icon: PersonAddIcon,
+    color: '#0891b2',
+  },
+  {
+    type: 'driver-hire' as CustomerType,
+    displayName: 'Driver Hire',
+    tagline: 'Dedicated Driver Services',
+    description:
+      'Register a customer who needs a dedicated driver — specify vehicle type, shift hours, number of drivers and daily budget.',
+    perks: [
+      { icon: HailIcon, text: 'Dedicated driver assignment' },
+      { icon: AccessTimeIcon, text: 'Flexible shift configuration' },
+      { icon: CurrencyRupeeIcon, text: 'Budget & pricing setup' },
+    ],
+    icon: HailIcon,
+    color: '#16a34a',
+  },
+  {
+    type: 'vehicle-rental' as CustomerType,
+    displayName: 'Vehicle Rental',
+    tagline: 'Self-Drive & Rentals',
+    description:
+      'Onboard a customer for vehicle rental — choose the vehicle preference and rental duration for self-drive bookings.',
+    perks: [
+      { icon: CarRentalIcon, text: 'Self-drive vehicle booking' },
+      { icon: CalendarTodayIcon, text: 'Daily, weekly & monthly plans' },
+      { icon: DirectionsCarIcon, text: 'Multiple vehicle options' },
+    ],
+    icon: CarRentalIcon,
+    color: '#7c3aed',
+  },
 ] as const;
 
 function getVisuals(color: string) {
@@ -53,6 +104,8 @@ function getVisuals(color: string) {
     bgTint: alpha(color, 0.06),
   };
 }
+
+const SIMPLE_TYPES: CustomerType[] = ['user', 'driver-hire', 'vehicle-rental'];
 
 const CreateCustomer = () => {
   const navigate = useNavigate();
@@ -116,129 +169,89 @@ const CreateCustomer = () => {
         </Box>
       </Box>
 
-      {/* ── Type cards ────────────────────────────────────────────────────── */}
+      {/* ── Section label ─────────────────────────────────────────────────── */}
+      <Typography
+        sx={{
+          fontSize: '0.72rem',
+          fontWeight: 700,
+          color: 'text.secondary',
+          textTransform: 'uppercase',
+          letterSpacing: '0.6px',
+          mb: 1.5,
+        }}
+      >
+        Full Onboarding
+      </Typography>
+
+      {/* ── Onboarding cards (Mobility + Logistics) ───────────────────────── */}
       <Box
         sx={{
           display: 'grid',
           gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-          gap: 3,
-          px: { xs: 0, sm: 0 },
+          gap: 2.5,
+          mb: 3,
         }}
       >
-        {CUSTOMER_TYPES.map((t) => {
+        {CUSTOMER_TYPES.filter((t) => !SIMPLE_TYPES.includes(t.type)).map((t) => {
           const isSelected = selectedType === t.type;
           const { accent, gradient, glow, bgTint } = getVisuals(t.color);
           const Icon = t.icon;
 
           return (
-            <Box
+            <CardItem
               key={t.type}
-              onClick={() => setSelectedType(t.type)}
-              sx={{
-                position: 'relative',
-                background: isSelected
-                  ? `linear-gradient(160deg, ${bgTint} 0%, transparent 60%)`
-                  : 'background.paper',
-                border: isSelected ? `1.5px solid ${accent}` : '1.5px solid transparent',
-                boxShadow: isSelected
-                  ? `0 0 0 3px ${glow}, 0 8px 32px rgba(0,0,0,0.12)`
-                  : '0 2px 8px rgba(0,0,0,0.06)',
-                borderRadius: '16px',
-                p: 3,
-                cursor: 'pointer',
-                overflow: 'hidden',
-                transition: 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)',
-                '&:hover': {
-                  boxShadow: isSelected
-                    ? `0 0 0 3px ${glow}, 0 12px 40px rgba(0,0,0,0.16)`
-                    : `0 8px 32px ${alpha(accent, 0.22)}`,
-                  transform: 'translateY(-4px)',
-                },
-              }}
-            >
-              {/* Accent top bar */}
-              <Box
-                sx={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: '3px',
-                  background: gradient,
-                  borderRadius: '16px 16px 0 0',
-                }}
-              />
+              t={t}
+              isSelected={isSelected}
+              accent={accent}
+              gradient={gradient}
+              glow={glow}
+              bgTint={bgTint}
+              Icon={Icon}
+              onSelect={() => setSelectedType(t.type)}
+            />
+          );
+        })}
+      </Box>
 
-              {/* Selected check */}
-              {isSelected && (
-                <CheckCircleIcon
-                  sx={{ position: 'absolute', top: 12, right: 12, color: accent, fontSize: 20 }}
-                />
-              )}
+      {/* ── Section label ─────────────────────────────────────────────────── */}
+      <Typography
+        sx={{
+          fontSize: '0.72rem',
+          fontWeight: 700,
+          color: 'text.secondary',
+          textTransform: 'uppercase',
+          letterSpacing: '0.6px',
+          mb: 1.5,
+        }}
+      >
+        Quick Registration
+      </Typography>
 
-              {/* Icon + title */}
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mt: 0.5 }}>
-                <Box
-                  sx={{
-                    width: 52,
-                    height: 52,
-                    borderRadius: '14px',
-                    background: gradient,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: `0 6px 18px ${glow}`,
-                    flexShrink: 0,
-                  }}
-                >
-                  <Icon sx={{ fontSize: 26, color: '#fff' }} />
-                </Box>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography sx={{ fontWeight: 800, fontSize: '1.1rem', lineHeight: 1.2 }}>
-                    {t.displayName}
-                  </Typography>
-                </Box>
-              </Box>
+      {/* ── Quick-reg cards (User, Driver Hire, Vehicle Rental) ───────────── */}
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' },
+          gap: 2.5,
+        }}
+      >
+        {CUSTOMER_TYPES.filter((t) => SIMPLE_TYPES.includes(t.type)).map((t) => {
+          const isSelected = selectedType === t.type;
+          const { accent, gradient, glow, bgTint } = getVisuals(t.color);
+          const Icon = t.icon;
 
-              {/* Description */}
-              <Typography
-                sx={{ fontSize: '0.82rem', color: 'text.secondary', lineHeight: 1.65, mt: 2 }}
-              >
-                {t.description}
-              </Typography>
-
-              {/* Perks */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6, mt: 2 }}>
-                {t.perks.map(({ icon: PerkIcon, text }) => (
-                  <Box key={text} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                    <PerkIcon sx={{ fontSize: '0.85rem', color: accent, flexShrink: 0 }} />
-                    <Typography sx={{ fontSize: '0.76rem', color: 'text.secondary' }}>
-                      {text}
-                    </Typography>
-                  </Box>
-                ))}
-              </Box>
-
-              {/* CTA hint */}
-              <Box
-                sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', mt: 2.5 }}
-              >
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 0.5,
-                    opacity: isSelected ? 1 : 0.4,
-                    transition: 'opacity 0.2s',
-                  }}
-                >
-                  <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: accent }}>
-                    Select & Continue
-                  </Typography>
-                  <ArrowForwardIcon sx={{ fontSize: '0.9rem', color: accent }} />
-                </Box>
-              </Box>
-            </Box>
+          return (
+            <CardItem
+              key={t.type}
+              t={t}
+              isSelected={isSelected}
+              accent={accent}
+              gradient={gradient}
+              glow={glow}
+              bgTint={bgTint}
+              Icon={Icon}
+              onSelect={() => setSelectedType(t.type)}
+            />
           );
         })}
       </Box>
@@ -316,5 +329,136 @@ const CreateCustomer = () => {
     </Box>
   );
 };
+
+// ── Reusable card ──────────────────────────────────────────────────────────────
+
+interface CardItemProps {
+  t: (typeof CUSTOMER_TYPES)[number];
+  isSelected: boolean;
+  accent: string;
+  gradient: string;
+  glow: string;
+  bgTint: string;
+  Icon: React.ElementType;
+  onSelect: () => void;
+}
+
+const CardItem = ({
+  t,
+  isSelected,
+  accent,
+  gradient,
+  glow,
+  bgTint,
+  Icon,
+  onSelect,
+}: CardItemProps) => (
+  <Box
+    onClick={onSelect}
+    sx={{
+      position: 'relative',
+      background: isSelected
+        ? `linear-gradient(160deg, ${bgTint} 0%, transparent 60%)`
+        : 'background.paper',
+      border: isSelected ? `1.5px solid ${accent}` : '1.5px solid transparent',
+      boxShadow: isSelected
+        ? `0 0 0 3px ${glow}, 0 8px 32px rgba(0,0,0,0.12)`
+        : '0 2px 8px rgba(0,0,0,0.06)',
+      borderRadius: '16px',
+      p: 3,
+      cursor: 'pointer',
+      overflow: 'hidden',
+      transition: 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)',
+      '&:hover': {
+        boxShadow: isSelected
+          ? `0 0 0 3px ${glow}, 0 12px 40px rgba(0,0,0,0.16)`
+          : `0 8px 32px ${alpha(accent, 0.22)}`,
+        transform: 'translateY(-4px)',
+      },
+    }}
+  >
+    {/* Accent top bar */}
+    <Box
+      sx={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '3px',
+        background: gradient,
+        borderRadius: '16px 16px 0 0',
+      }}
+    />
+
+    {/* Selected check */}
+    {isSelected && (
+      <CheckCircleIcon
+        sx={{ position: 'absolute', top: 12, right: 12, color: accent, fontSize: 20 }}
+      />
+    )}
+
+    {/* Icon + title */}
+    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mt: 0.5 }}>
+      <Box
+        sx={{
+          width: 52,
+          height: 52,
+          borderRadius: '14px',
+          background: gradient,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: `0 6px 18px ${glow}`,
+          flexShrink: 0,
+        }}
+      >
+        <Icon sx={{ fontSize: 26, color: '#fff' }} />
+      </Box>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography sx={{ fontWeight: 800, fontSize: '1.1rem', lineHeight: 1.2 }}>
+          {t.displayName}
+        </Typography>
+        <Typography
+          sx={{ fontSize: '0.72rem', color: 'text.secondary', fontWeight: 500, mt: 0.25 }}
+        >
+          {t.tagline}
+        </Typography>
+      </Box>
+    </Box>
+
+    {/* Description */}
+    <Typography sx={{ fontSize: '0.82rem', color: 'text.secondary', lineHeight: 1.65, mt: 2 }}>
+      {t.description}
+    </Typography>
+
+    {/* Perks */}
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6, mt: 2 }}>
+      {t.perks.map(({ icon: PerkIcon, text }) => (
+        <Box key={text} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          <PerkIcon sx={{ fontSize: '0.85rem', color: accent, flexShrink: 0 }} />
+          <Typography sx={{ fontSize: '0.76rem', color: 'text.secondary' }}>{text}</Typography>
+        </Box>
+      ))}
+    </Box>
+
+    {/* CTA hint */}
+    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', mt: 2.5 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0.5,
+          opacity: isSelected ? 1 : 0.4,
+          transition: 'opacity 0.2s',
+        }}
+      >
+        <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: accent }}>
+          Select & Continue
+        </Typography>
+        <ArrowForwardIcon sx={{ fontSize: '0.9rem', color: accent }} />
+      </Box>
+    </Box>
+  </Box>
+);
 
 export default CreateCustomer;

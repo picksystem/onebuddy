@@ -319,6 +319,7 @@ export const EMPTY_DOC: DocField = { number: '', expiry: '' };
 export const INITIAL: FormData = {
   firstName: '',
   lastName: '',
+  gender: '',
   phone: '',
   email: '',
   city: '',

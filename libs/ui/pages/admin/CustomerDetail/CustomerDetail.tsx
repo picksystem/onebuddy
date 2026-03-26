@@ -78,6 +78,7 @@ import Tesseract from 'tesseract.js';
 interface CustomerEditForm {
   firstName: string;
   lastName: string;
+  gender: string;
   phone: string;
   email: string;
   city: string;
@@ -267,7 +268,10 @@ const fmtDateTime = (v?: string | null) => {
 };
 
 const genCustomerId = (row: CustomerApprovalRow) => {
-  const prefix = row.serviceCategory === 'mobility' ? 'MOBIL' : 'LOGST';
+  if (row.customerId) return row.customerId;
+  let prefix = 'USER';
+  if (row.serviceCategory === 'mobility') prefix = 'MOBIL';
+  else if (row.serviceCategory === 'logistics') prefix = 'LOGST';
   return `${prefix}${String(Number(row.id) || 0).padStart(5, '0')}`;
 };
 
@@ -564,6 +568,7 @@ const CustomerDetail = () => {
   const [editForm, setEditForm] = useState<CustomerEditForm>({
     firstName: '',
     lastName: '',
+    gender: '',
     phone: '',
     email: '',
     city: '',
@@ -678,12 +683,9 @@ const CustomerDetail = () => {
         parcelComboTypes: parseJson(r.parcelComboTypes) as string[] | undefined,
         uploadedFiles: parseJson(r.uploadedFiles) as string[] | undefined,
       }));
-      // Support both numeric IDs (e.g. "5") and prefixed IDs (e.g. "MOBIL00005", "LOGST00003")
-      const prefixMatch = id?.match(/^(MOBIL|LOGST)(\d+)$/i);
-      const numericId = prefixMatch ? parseInt(prefixMatch[2], 10) : NaN;
-      const found = prefixMatch
-        ? all.find((r) => Number(r.id) === numericId)
-        : all.find((r) => String(r.id) === String(id));
+      // Look up by saved customerId first, then fall back to numeric id
+      const found =
+        all.find((r) => r.customerId === id) ?? all.find((r) => String(r.id) === String(id));
       setRow(found ?? null);
     } catch {
       setRow(null);
@@ -726,6 +728,7 @@ const CustomerDetail = () => {
     setEditForm({
       firstName: row.firstName ?? '',
       lastName: row.lastName ?? '',
+      gender: row.gender ?? '',
       phone: row.phone ?? '',
       email: row.email ?? '',
       city: row.city ?? '',
@@ -796,6 +799,7 @@ const CustomerDetail = () => {
         data: {
           firstName: ef.firstName || undefined,
           lastName: ef.lastName || undefined,
+          gender: ef.gender || undefined,
           phone: ef.phone || undefined,
           email: ef.email || undefined,
           city: ef.city || undefined,
@@ -1336,6 +1340,12 @@ const CustomerDetail = () => {
             color: '#3b82f6',
           },
           {
+            icon: <PersonIcon sx={{ fontSize: '1.4rem' }} />,
+            label: 'Gender',
+            value: row.gender || '—',
+            color: '#ec4899',
+          },
+          {
             icon: <PhoneIcon sx={{ fontSize: '1.4rem' }} />,
             label: 'Phone',
             value: row.phone || '—',
@@ -1712,6 +1722,51 @@ const CustomerDetail = () => {
                 >
                   {ef ? (
                     <>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                          p: '10px 12px',
+                          borderRadius: '10px',
+                          background: '#ec489908',
+                          border: '1px solid #ec489920',
+                        }}
+                      >
+                        <PersonIcon sx={{ fontSize: '1rem', color: '#ec4899', flexShrink: 0 }} />
+                        <Box sx={{ flex: 1 }}>
+                          <Box
+                            sx={{
+                              fontSize: '0.65rem',
+                              color: '#ec4899',
+                              fontWeight: 700,
+                              textTransform: 'uppercase',
+                              mb: 0.5,
+                            }}
+                          >
+                            Gender
+                          </Box>
+                          <select
+                            value={ef.gender}
+                            onChange={(e) => setField('gender')(e.target.value)}
+                            style={{
+                              width: '100%',
+                              background: 'transparent',
+                              border: 'none',
+                              outline: 'none',
+                              fontSize: '0.8rem',
+                              color: 'inherit',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <option value=''>— Select —</option>
+                            <option value='male'>Male</option>
+                            <option value='female'>Female</option>
+                            <option value='other'>Other</option>
+                            <option value='prefer_not_to_say'>Prefer not to say</option>
+                          </select>
+                        </Box>
+                      </Box>
                       <EditableField
                         icon={<PhoneIcon sx={iconSm} />}
                         label='Phone'

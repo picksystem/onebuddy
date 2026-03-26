@@ -135,9 +135,12 @@ export type EditOnboardingFormShape = {
 export type CustomerOnboardingRow = {
   id: number;
   sno: number;
+  customerId: string | null;
   firstName: string;
   lastName: string;
+  gender: string | null;
   phone: string;
+  emergencyContact: string | null;
   email: string | null;
   city: string;
   area: string | null;

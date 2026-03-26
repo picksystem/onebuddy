@@ -68,6 +68,7 @@ import { generateTempPassword } from '../UserManagement/utils/userManagement.uti
 interface EditForm {
   firstName: string;
   lastName: string;
+  gender: string;
   phone: string;
   businessUnit: string;
   employeeId: string;
@@ -81,6 +82,7 @@ interface EditForm {
 const buildEditForm = (u: IAuthUser): EditForm => ({
   firstName: u.firstName ?? '',
   lastName: u.lastName ?? '',
+  gender: u.gender ?? '',
   phone: u.phone ?? '',
   businessUnit: u.businessUnit ?? '',
   employeeId: u.employeeId ?? '',
@@ -1648,6 +1650,28 @@ const UserDetail = () => {
                           padding: '1px 0',
                         }}
                       />
+                      <select
+                        value={ef.gender}
+                        onChange={(e) => set('gender')(e.target.value)}
+                        style={{
+                          border: 'none',
+                          borderBottom: '1.5px solid #f59e0b',
+                          outline: 'none',
+                          background: 'transparent',
+                          width: '100%',
+                          fontSize: '0.8rem',
+                          color: '#92400e',
+                          fontFamily: 'inherit',
+                          padding: '1px 0',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <option value=''>Gender</option>
+                        <option value='male'>Male</option>
+                        <option value='female'>Female</option>
+                        <option value='other'>Other</option>
+                        <option value='prefer_not_to_say'>Prefer not to say</option>
+                      </select>
                     </Box>
                   ) : (
                     <Typography

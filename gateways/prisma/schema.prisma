@@ -144,15 +144,18 @@ model ManagementDraft {
 
 model CustomerOnboarding {
   id              Int       @id @default(autoincrement())
+  customerId      String?   @unique   // e.g. MOBIL00001 | LOGST00001 | USER00001
 
   // Personal Info
-  firstName       String
-  lastName        String
-  phone           String
-  email           String?
-  city            String
-  area            String?   // locality / area within the city
-  pincode         String?   // 6-digit postal code
+  firstName          String
+  lastName           String
+  gender             String?   // male | female | other | prefer_not_to_say
+  phone              String
+  emergencyContact   String?   // optional emergency contact number
+  email              String?
+  city               String
+  area               String?   // locality / area within the city
+  pincode            String?   // 6-digit postal code
 
   // Service & Vehicle
   serviceCategory String    // mobility | logistics

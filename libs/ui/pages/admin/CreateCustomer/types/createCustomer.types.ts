@@ -28,6 +28,7 @@ export type AdditionalVehicle = { vehicleType: string; vehicleNumber: string; fu
 export type FormData = {
   firstName: string;
   lastName: string;
+  gender: string;
   phone: string;
   email: string;
   city: string;

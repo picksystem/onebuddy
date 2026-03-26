@@ -214,7 +214,7 @@ const useUserManagement = () => {
           ),
         )
       : active;
-    visibleOnboardingIdsRef.current = visible.map((r) => r.id);
+    visibleOnboardingIdsRef.current = visible.map((r) => r.customerId ?? String(r.id));
   }, [customerOnboardings, tabValue, tableSearch]);
 
   const handleOnboardingRowClick = (row: CustomerOnboardingRow) => {
@@ -724,7 +724,9 @@ const useUserManagement = () => {
   );
 
   const genOnboardingId = (row: CustomerOnboardingRow) => {
-    const prefix = row.serviceCategory === 'mobility' ? 'MOBIL' : 'LOGST';
+    let prefix = 'USER';
+    if (row.serviceCategory === 'mobility') prefix = 'MOBIL';
+    else if (row.serviceCategory === 'logistics') prefix = 'LOGST';
     return `${prefix}${String(Number(row.id) || 0).padStart(5, '0')}`;
   };
 
@@ -759,7 +761,7 @@ const useUserManagement = () => {
                 );
                 localStorage.setItem('customer_detail_nav_ids_ts', String(Date.now()));
                 window.open(
-                  constants.AdminPath.CUSTOMER_DETAIL.replace(':id', String(row.id)),
+                  constants.AdminPath.CUSTOMER_DETAIL.replace(':id', row.customerId ?? String(row.id)),
                   '_blank',
                 );
               }}
@@ -792,7 +794,7 @@ const useUserManagement = () => {
                 letterSpacing: '0.3px',
               }}
             >
-              {genOnboardingId(row)}
+              {row.customerId ?? '—'}
             </Typography>
           </Stack>
         ),

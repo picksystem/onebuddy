@@ -15,11 +15,13 @@ export type ApprovalStatus = 'pending' | 'under_review' | 'approved' | 'rejected
 
 export interface CustomerApprovalRow {
   id: number | string;
+  customerId?: string | null;
   userId?: string;
   firstName: string;
   lastName: string;
   email?: string;
   phone: string;
+  gender?: string | null;
   serviceCategory: 'mobility' | 'logistics';
   vehicleType: string;
   vehicleSubType?: string;

@@ -384,6 +384,21 @@ const CreateCustomerForm = () => {
                 size='small'
                 fullWidth
               />
+              <InlineSelect
+                label='Gender'
+                value={form.gender}
+                onChange={(v) => set('gender', v)}
+                onBlur={() => touch('gender')}
+                options={[
+                  { id: 'male', label: 'Male' },
+                  { id: 'female', label: 'Female' },
+                  { id: 'other', label: 'Other' },
+                  { id: 'prefer_not_to_say', label: 'Prefer not to say' },
+                ]}
+                error={Boolean(touched['gender'] && errors['gender'])}
+                helperText={fe('gender')}
+                required
+              />
               <TextField
                 label='Phone Number'
                 value={form.phone}

@@ -54,6 +54,7 @@ const {
   AdminCreateManagementFormPage,
   AdminCreateCustomerPage,
   AdminCreateCustomerFormPage,
+  AdminCreateCustomerSimpleFormPage,
 
   // Reports
   AdminAnalyticsPage,
@@ -82,9 +83,14 @@ const KeyedManagementForm = () => {
   return <AdminCreateManagementFormPage key={type} />;
 };
 
-// Forces CreateCustomerForm to remount when :type changes (mobility ↔ logistics)
+const SIMPLE_CUSTOMER_TYPES = ['user', 'driver-hire', 'vehicle-rental'];
+
+// Routes to the correct form based on :type param
 const KeyedCustomerForm = () => {
   const { type } = useParams<{ type: string }>();
+  if (type && SIMPLE_CUSTOMER_TYPES.includes(type)) {
+    return <AdminCreateCustomerSimpleFormPage key={type} />;
+  }
   return <AdminCreateCustomerFormPage key={type} />;
 };
 
