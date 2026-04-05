@@ -1,10 +1,12 @@
 import { Box, Loader, DataTable } from '@bandi/component';
 import { Typography, Grid, Tabs, Tab, Divider, TextField, InputAdornment } from '@mui/material';
 import GroupIcon from '@mui/icons-material/Group';
-import DirectionsBusIcon from '@mui/icons-material/DirectionsBus';
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import SearchIcon from '@mui/icons-material/Search';
+import HailIcon from '@mui/icons-material/Hail';
+import CarRentalIcon from '@mui/icons-material/CarRental';
+import BuildIcon from '@mui/icons-material/Build';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import TabPanel from './components/TabPanel';
 import useUserManagement from './hooks/useUserManagement';
 import EditUserDialog from './dialogs/EditUserDialog/EditUserDialog';
@@ -36,6 +38,12 @@ const UserManagement = () => {
     isOnboardingDirty,
     handleOpenEditOnboarding,
     handleSaveEditOnboarding,
+    driverHireRequests,
+    vehicleRentalRequests,
+    mechanicHireRequests,
+    driverHireColumns,
+    vehicleRentalColumns,
+    mechanicHireColumns,
     isLoading,
     isMobile,
     tabValue,
@@ -150,17 +158,20 @@ const UserManagement = () => {
   const managedOnboardings = customerOnboardings.filter(
     (r) => (r as any).status === 'approved' || (r as any).status === 'rejected',
   );
-  const mobilityOnboardings = managedOnboardings.filter((r) => r.serviceCategory === 'mobility');
-  const logisticsOnboardings = managedOnboardings.filter((r) => r.serviceCategory === 'logistics');
+  const userOnboardings = managedOnboardings.filter((r) => r.serviceCategory === 'user');
   const draftOnboardings = customerOnboardings.filter((r) => (r as any).status === 'pending');
 
-  // Tab lists: All Customers, Mobility, Logistics, Draft
-  const tabLists = [
-    managedOnboardings,
-    mobilityOnboardings,
-    logisticsOnboardings,
-    draftOnboardings,
-  ];
+  const filterRows = <T extends object>(list: T[]) =>
+    tableSearch
+      ? list.filter((row) =>
+          Object.values(row as Record<string, unknown>).some(
+            (val) =>
+              val !== null &&
+              val !== undefined &&
+              String(val).toLowerCase().includes(tableSearch.toLowerCase()),
+          ),
+        )
+      : list;
 
   if (isLoading) {
     return (
@@ -173,38 +184,96 @@ const UserManagement = () => {
     );
   }
 
+  const approvedManaged = managedOnboardings.filter((r) => (r as any).status === 'approved').length;
+  const approvedUsers = userOnboardings.filter((r) => (r as any).status === 'approved').length;
+  const activeDriverHire = driverHireRequests.filter(
+    (r) => r.status !== 'pending' && r.status !== 'rejected',
+  ).length;
+  const activeVehicleRental = vehicleRentalRequests.filter(
+    (r) => r.status !== 'pending' && r.status !== 'rejected',
+  ).length;
+  const activeMechanicHire = mechanicHireRequests.filter(
+    (r) => r.status !== 'pending' && r.status !== 'rejected',
+  ).length;
+
   const statCards = [
     {
       label: 'All Customers',
       value: managedOnboardings.length,
       Icon: GroupIcon,
       cls: classes.statCard0,
-      sub: 'All registered customers',
       color: '#4f46e5',
+      sub1: approvedManaged,
+      sub1Label: 'approved',
+      sub1Color: '#10b981',
+      sub2: managedOnboardings.length - approvedManaged,
+      sub2Label: 'rejected',
+      sub2Color: '#ef4444',
     },
     {
-      label: 'Mobility',
-      value: mobilityOnboardings.length,
-      Icon: DirectionsBusIcon,
-      cls: classes.statCard1,
-      sub: 'Passenger transport',
-      color: '#10b981',
-    },
-    {
-      label: 'Logistics',
-      value: logisticsOnboardings.length,
-      Icon: LocalShippingIcon,
+      label: 'Driver Hire',
+      value: driverHireRequests.length,
+      Icon: HailIcon,
       cls: classes.statCard2,
-      sub: 'Goods & cargo transport',
-      color: '#0ea5e9',
+      color: '#10b981',
+      sub1: activeDriverHire,
+      sub1Label: 'active',
+      sub1Color: '#10b981',
+      sub2: driverHireRequests.filter((r) => r.status === 'pending').length,
+      sub2Label: 'pending',
+      sub2Color: '#d97706',
+    },
+    {
+      label: 'Vehicle Rental',
+      value: vehicleRentalRequests.length,
+      Icon: CarRentalIcon,
+      cls: classes.statCard4,
+      color: '#7c3aed',
+      sub1: activeVehicleRental,
+      sub1Label: 'active',
+      sub1Color: '#10b981',
+      sub2: vehicleRentalRequests.filter((r) => r.status === 'pending').length,
+      sub2Label: 'pending',
+      sub2Color: '#d97706',
+    },
+    {
+      label: 'Mechanic Hire',
+      value: mechanicHireRequests.length,
+      Icon: BuildIcon,
+      cls: classes.statCard7,
+      color: '#ea580c',
+      sub1: activeMechanicHire,
+      sub1Label: 'active',
+      sub1Color: '#10b981',
+      sub2: mechanicHireRequests.filter((r) => r.status === 'pending').length,
+      sub2Label: 'pending',
+      sub2Color: '#d97706',
+    },
+    {
+      label: 'Users',
+      value: userOnboardings.length,
+      Icon: PersonAddIcon,
+      cls: classes.statCard5,
+      color: '#0891b2',
+      sub1: approvedUsers,
+      sub1Label: 'approved',
+      sub1Color: '#10b981',
+      sub2: userOnboardings.length - approvedUsers,
+      sub2Label: 'rejected',
+      sub2Color: '#ef4444',
     },
     {
       label: 'Draft',
       value: draftOnboardings.length,
       Icon: EditNoteIcon,
       cls: classes.statCard3,
-      sub: 'Pending review',
-      color: '#64748b',
+      color: '#0ea5e9',
+      sub1: draftOnboardings.length,
+      sub1Label: 'pending',
+      sub1Color: '#d97706',
+      sub2: 0,
+      sub2Label: 'processed',
+      sub2Color: '#10b981',
     },
   ];
 
@@ -229,32 +298,129 @@ const UserManagement = () => {
 
         {/* ── Stat Cards ── */}
         <Box className={classes.statsGrid}>
-          {statCards.map(({ label, value, Icon, cls, sub, color }) => (
-            <Box key={label} className={`${classes.statCard} ${cls}`}>
-              <Box className={classes.statCardTop}>
-                <Box>
-                  <Typography className={classes.statValue} sx={{ color }}>
-                    {value}
-                  </Typography>
-                  <Typography className={classes.statLabel}>{label}</Typography>
-                </Box>
+          {statCards.map(
+            (
+              {
+                label,
+                value,
+                Icon,
+                cls,
+                color,
+                sub1,
+                sub1Label,
+                sub1Color,
+                sub2,
+                sub2Label,
+                sub2Color,
+              },
+              idx,
+            ) => {
+              const isActive = tabValue === idx;
+              return (
                 <Box
-                  className={classes.statIconWrap}
-                  sx={{ background: `${color}14`, border: `1.5px solid ${color}28` }}
+                  key={label}
+                  className={`${classes.statCard} ${cls}`}
+                  onClick={() => {
+                    setTabValue(idx);
+                    setTableSearch('');
+                    setSelectedOnboarding(null);
+                  }}
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    cursor: 'pointer',
+                    outline: isActive ? `2px solid ${color}` : 'none',
+                    outlineOffset: 2,
+                    transform: isActive ? 'translateY(-6px)' : undefined,
+                    boxShadow: isActive
+                      ? `0 16px 40px ${color}30, 0 4px 16px ${color}18`
+                      : undefined,
+                  }}
                 >
-                  <Icon className={classes.statIcon} sx={{ color }} />
+                  <Box className={classes.statCardTop} sx={{ flex: 1, alignItems: 'flex-start' }}>
+                    <Box>
+                      <Typography className={classes.statValue} sx={{ color }}>
+                        {value}
+                      </Typography>
+                      <Typography
+                        className={classes.statLabel}
+                        sx={{ minHeight: '2.2em', display: 'block' }}
+                      >
+                        {label}
+                      </Typography>
+                    </Box>
+                    <Box
+                      className={classes.statIconWrap}
+                      sx={{ background: `${color}14`, border: `1.5px solid ${color}28` }}
+                    >
+                      <Icon className={classes.statIcon} sx={{ color }} />
+                    </Box>
+                  </Box>
+                  <Divider className={classes.statDivider} />
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        flex: '1 1 0',
+                        minWidth: 0,
+                      }}
+                    >
+                      <Box
+                        className={classes.statSubDot}
+                        sx={{
+                          background: sub1Color,
+                          boxShadow: `0 0 6px ${sub1Color}`,
+                          flexShrink: 0,
+                        }}
+                      />
+                      <Typography
+                        className={classes.statSub}
+                        sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                      >
+                        <span style={{ color: sub1Color, fontWeight: 700 }}>{sub1}</span>
+                        {` ${sub1Label}`}
+                      </Typography>
+                    </Box>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        flex: '1 1 0',
+                        minWidth: 0,
+                        justifyContent: 'flex-end',
+                      }}
+                    >
+                      <Box
+                        className={classes.statSubDot}
+                        sx={{
+                          background: sub2Color,
+                          boxShadow: `0 0 6px ${sub2Color}`,
+                          flexShrink: 0,
+                        }}
+                      />
+                      <Typography
+                        className={classes.statSub}
+                        sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                      >
+                        <span style={{ color: sub2Color, fontWeight: 700 }}>{sub2}</span>
+                        {` ${sub2Label}`}
+                      </Typography>
+                    </Box>
+                  </Box>
                 </Box>
-              </Box>
-              <Divider className={classes.statDivider} />
-              <Box className={classes.statSubRow}>
-                <Box
-                  className={classes.statSubDot}
-                  sx={{ background: color, boxShadow: `0 0 6px ${color}` }}
-                />
-                <Typography className={classes.statSub}>{sub}</Typography>
-              </Box>
-            </Box>
-          ))}
+              );
+            },
+          )}
         </Box>
 
         {/* ── Tabs + Search ── */}
@@ -271,26 +437,12 @@ const UserManagement = () => {
             allowScrollButtonsMobile
             sx={{ flex: 1 }}
           >
-            <Tab
-              icon={<GroupIcon />}
-              iconPosition='start'
-              label={isMobile ? undefined : 'All Customers'}
-            />
-            <Tab
-              icon={<DirectionsBusIcon />}
-              iconPosition='start'
-              label={isMobile ? undefined : 'Mobility'}
-            />
-            <Tab
-              icon={<LocalShippingIcon />}
-              iconPosition='start'
-              label={isMobile ? undefined : 'Logistics'}
-            />
-            <Tab
-              icon={<EditNoteIcon />}
-              iconPosition='start'
-              label={isMobile ? undefined : 'Draft'}
-            />
+            <Tab icon={<GroupIcon />} iconPosition='start' label='All Customers' />
+            <Tab icon={<HailIcon />} iconPosition='start' label='Driver Hire' />
+            <Tab icon={<CarRentalIcon />} iconPosition='start' label='Vehicle Rental' />
+            <Tab icon={<BuildIcon />} iconPosition='start' label='Mechanic Hire' />
+            <Tab icon={<PersonAddIcon />} iconPosition='start' label='Users' />
+            <Tab icon={<EditNoteIcon />} iconPosition='start' label='Draft' />
           </Tabs>
           <TextField
             placeholder='Search...'
@@ -309,34 +461,90 @@ const UserManagement = () => {
           />
         </Box>
 
-        {/* ── Tab panels (All / Approved / Rejected / ...vehicle types) ── */}
-        {tabLists.map((list, idx) => {
-          const filteredData = tableSearch
-            ? list.filter((row) =>
-                Object.values(row).some(
-                  (val) =>
-                    val !== null &&
-                    val !== undefined &&
-                    String(val).toLowerCase().includes(tableSearch.toLowerCase()),
-                ),
-              )
-            : list;
-          return (
-            <TabPanel key={idx} value={tabValue} index={idx}>
-              <Box className={classes.tableContainer}>
-                <DataTable
-                  columns={columns}
-                  data={filteredData}
-                  rowKey='id'
-                  searchable={false}
-                  initialRowsPerPage={10}
-                  onRowClick={handleOnboardingRowClick}
-                  activeRowKey={selectedOnboarding?.id}
-                />
-              </Box>
-            </TabPanel>
-          );
-        })}
+        {/* ── Tab panels ── */}
+        {/* 0: All Customers */}
+        <TabPanel value={tabValue} index={0}>
+          <Box className={classes.tableContainer}>
+            <DataTable
+              columns={columns}
+              data={filterRows(managedOnboardings)}
+              rowKey='id'
+              searchable={false}
+              initialRowsPerPage={10}
+              onRowClick={handleOnboardingRowClick}
+              activeRowKey={selectedOnboarding?.id}
+            />
+          </Box>
+        </TabPanel>
+
+        {/* 1: Driver Hire */}
+        <TabPanel value={tabValue} index={1}>
+          <Box className={classes.tableContainer}>
+            <DataTable
+              columns={driverHireColumns}
+              data={filterRows(driverHireRequests)}
+              rowKey='id'
+              searchable={false}
+              initialRowsPerPage={10}
+            />
+          </Box>
+        </TabPanel>
+
+        {/* 2: Vehicle Rental */}
+        <TabPanel value={tabValue} index={2}>
+          <Box className={classes.tableContainer}>
+            <DataTable
+              columns={vehicleRentalColumns}
+              data={filterRows(vehicleRentalRequests)}
+              rowKey='id'
+              searchable={false}
+              initialRowsPerPage={10}
+            />
+          </Box>
+        </TabPanel>
+
+        {/* 3: Mechanic Hire */}
+        <TabPanel value={tabValue} index={3}>
+          <Box className={classes.tableContainer}>
+            <DataTable
+              columns={mechanicHireColumns}
+              data={filterRows(mechanicHireRequests)}
+              rowKey='id'
+              searchable={false}
+              initialRowsPerPage={10}
+            />
+          </Box>
+        </TabPanel>
+
+        {/* 4: Users */}
+        <TabPanel value={tabValue} index={4}>
+          <Box className={classes.tableContainer}>
+            <DataTable
+              columns={columns}
+              data={filterRows(userOnboardings)}
+              rowKey='id'
+              searchable={false}
+              initialRowsPerPage={10}
+              onRowClick={handleOnboardingRowClick}
+              activeRowKey={selectedOnboarding?.id}
+            />
+          </Box>
+        </TabPanel>
+
+        {/* 5: Draft */}
+        <TabPanel value={tabValue} index={5}>
+          <Box className={classes.tableContainer}>
+            <DataTable
+              columns={columns}
+              data={filterRows(draftOnboardings)}
+              rowKey='id'
+              searchable={false}
+              initialRowsPerPage={10}
+              onRowClick={handleOnboardingRowClick}
+              activeRowKey={selectedOnboarding?.id}
+            />
+          </Box>
+        </TabPanel>
 
         {/* ════════════════════════════════════════════════════════════════
           DIALOGS

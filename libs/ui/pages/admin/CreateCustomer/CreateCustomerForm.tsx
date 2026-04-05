@@ -173,7 +173,8 @@ function wrapSection(
 
 const CreateCustomerForm = () => {
   const { type } = useParams<{ type: string }>();
-  const customerType: CustomerType = type === 'logistics' ? 'logistics' : 'mobility';
+  const customerType: CustomerType =
+    type === 'logistics' ? 'logistics' : type === 'parcel' ? 'parcel' : 'mobility';
   const { classes } = useStyles();
 
   const {
@@ -363,6 +364,19 @@ const CreateCustomerForm = () => {
                 }}
               />
               <TextField
+                label='Aadhar Card Number'
+                value={form.aadharCard}
+                onChange={(e) => set('aadharCard', e.target.value.replace(/\D/g, ''))}
+                onBlur={() => touch('aadharCard')}
+                error={Boolean(touched['aadharCard'] && errors['aadharCard'])}
+                helperText={fe('aadharCard')}
+                required
+                size='small'
+                fullWidth
+                inputProps={{ maxLength: 12 }}
+                placeholder='12-digit Aadhar number'
+              />
+              <TextField
                 label='First Name'
                 value={form.firstName}
                 onChange={(e) => set('firstName', e.target.value)}
@@ -410,6 +424,15 @@ const CreateCustomerForm = () => {
                 size='small'
                 fullWidth
                 inputProps={{ maxLength: 10 }}
+              />
+              <TextField
+                label='Emergency Contact (optional)'
+                value={form.emergencyContact}
+                onChange={(e) => set('emergencyContact', e.target.value)}
+                size='small'
+                fullWidth
+                inputProps={{ maxLength: 10 }}
+                placeholder='Alternate phone number'
               />
               <TextField
                 label='Email Address'
@@ -1316,8 +1339,8 @@ const CreateCustomerForm = () => {
               )}
             </Paper>
 
-            {/* Parcel Combo — mobility only */}
-            {customerType === 'mobility' && (
+            {/* Parcel Combo — mobility & parcel */}
+            {(customerType === 'mobility' || customerType === 'parcel') && (
               <Paper variant='outlined' sx={{ borderRadius: 2, mb: 1.5, overflow: 'hidden' }}>
                 <Box className={classes.bundleItemRow}>
                   <Checkbox

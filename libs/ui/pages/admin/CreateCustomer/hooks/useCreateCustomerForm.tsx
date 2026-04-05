@@ -9,6 +9,7 @@ import {
   TRIP_OPTIONS,
   MOBILITY_VEHICLES,
   LOGISTICS_VEHICLES,
+  PARCEL_VEHICLES,
 } from '../constants/createCustomer.constants';
 import type { VehicleKey } from '../constants/createCustomer.constants';
 import {
@@ -17,7 +18,13 @@ import {
   calcBundleDiscount,
   mergeWithInitial,
 } from '../utils/createCustomer.utils';
-import type { FormData, Errors, DocField, CustomerType, AdditionalVehicle } from '../types/createCustomer.types';
+import type {
+  FormData,
+  Errors,
+  DocField,
+  CustomerType,
+  AdditionalVehicle,
+} from '../types/createCustomer.types';
 import { TYPE_CONFIG } from '../constants/createCustomer.constants';
 
 const useCreateCustomerForm = (customerType: CustomerType) => {
@@ -32,7 +39,8 @@ const useCreateCustomerForm = (customerType: CustomerType) => {
 
   // ── Auto-generated userId ─────────────────────────────────────────────────
   const [userId] = useState<string>(() => {
-    const prefix = customerType === 'mobility' ? 'MOBIL' : 'LOGST';
+    const prefix =
+      customerType === 'logistics' ? 'LOGST' : customerType === 'parcel' ? 'PARCEL' : 'MOBIL';
     const num = String(Math.floor(10000 + Math.random() * 90000));
     const stored = window.localStorage.getItem(`customer_uid_${customerType}`);
     if (stored) return stored;
@@ -194,7 +202,10 @@ const useCreateCustomerForm = (customerType: CustomerType) => {
 
   const setDoc = (doc: string, field: keyof DocField, value: string) => {
     setForm((p) => {
-      const existing = (p[doc as keyof FormData] as DocField | undefined) ?? { number: '', expiry: '' };
+      const existing = (p[doc as keyof FormData] as DocField | undefined) ?? {
+        number: '',
+        expiry: '',
+      };
       return { ...p, [doc]: { ...existing, [field]: value } };
     });
     setErrors((prev) => {
@@ -249,7 +260,12 @@ const useCreateCustomerForm = (customerType: CustomerType) => {
 
   const vConfig = form.vehicleType ? VEHICLE_CONFIG[form.vehicleType as VehicleKey] : null;
   const isCommercial = vConfig?.isCommercial ?? false;
-  const vehicleList = customerType === 'mobility' ? MOBILITY_VEHICLES : LOGISTICS_VEHICLES;
+  const vehicleList =
+    customerType === 'mobility'
+      ? MOBILITY_VEHICLES
+      : customerType === 'parcel'
+        ? PARCEL_VEHICLES
+        : LOGISTICS_VEHICLES;
   const tripOpts = TRIP_OPTIONS[customerType];
   const areaOptions = form.city ? (CITY_AREA_MAP[form.city] ?? []) : [];
   const bundleDiscount = calcBundleDiscount(form.bundleTypes);
@@ -275,6 +291,9 @@ const useCreateCustomerForm = (customerType: CustomerType) => {
 
   const validateAll = (): boolean => {
     const errs: Errors = {};
+    if (!form.aadharCard.trim()) errs['aadharCard'] = 'Required';
+    else if (!/^\d{12}$/.test(form.aadharCard.trim()))
+      errs['aadharCard'] = 'Enter valid 12-digit Aadhar number';
     if (!form.firstName.trim()) errs['firstName'] = 'Required';
     if (!form.lastName.trim()) errs['lastName'] = 'Required';
     if (!form.gender) errs['gender'] = 'Required';
@@ -295,7 +314,8 @@ const useCreateCustomerForm = (customerType: CustomerType) => {
     if (!form.vehicleNumber.trim()) errs['vehicleNumber'] = 'Vehicle number required';
     if (!form.rc.number.trim()) errs['rc.number'] = 'RC number required';
     if (!form.rc.expiry) errs['rc.expiry'] = 'RC expiry required';
-    if (!form.insurance.number.trim()) errs['insurance.number'] = 'Insurance policy number required';
+    if (!form.insurance.number.trim())
+      errs['insurance.number'] = 'Insurance policy number required';
     if (!form.insurance.expiry) errs['insurance.expiry'] = 'Insurance expiry required';
     if (!form.puc.expiry) errs['puc.expiry'] = 'PUC expiry required';
     if (isCommercial) {
@@ -332,13 +352,44 @@ const useCreateCustomerForm = (customerType: CustomerType) => {
     if (!files['idBack']) errs['file.idBack'] = 'ID back required';
     setErrors(errs);
     const allFields = [
-      'firstName', 'lastName', 'gender', 'phone', 'email', 'city', 'area', 'pincode',
-      'vehicleType', 'vehicleSubType', 'fuelType', 'tripPreference', 'vehicleNumber',
-      'rc.number', 'insurance.number', 'insurance.expiry', 'fitness.number', 'permit.number',
-      'dl.number', 'idProofType', 'idProof.number', 'rentalDuration', 'driverHireCount',
-      'driverHireShift', 'additionalVehicles', 'file.regFront', 'file.rcFront', 'file.rcBack',
-      'file.insuranceFront', 'file.fitnessFront', 'file.permitFront', 'file.photoFront',
-      'file.dlFront', 'file.dlBack', 'file.idFront', 'file.idBack',
+      'aadharCard',
+      'firstName',
+      'lastName',
+      'gender',
+      'phone',
+      'emergencyContact',
+      'email',
+      'city',
+      'area',
+      'pincode',
+      'vehicleType',
+      'vehicleSubType',
+      'fuelType',
+      'tripPreference',
+      'vehicleNumber',
+      'rc.number',
+      'insurance.number',
+      'insurance.expiry',
+      'fitness.number',
+      'permit.number',
+      'dl.number',
+      'idProofType',
+      'idProof.number',
+      'rentalDuration',
+      'driverHireCount',
+      'driverHireShift',
+      'additionalVehicles',
+      'file.regFront',
+      'file.rcFront',
+      'file.rcBack',
+      'file.insuranceFront',
+      'file.fitnessFront',
+      'file.permitFront',
+      'file.photoFront',
+      'file.dlFront',
+      'file.dlBack',
+      'file.idFront',
+      'file.idBack',
     ];
     setTouched(Object.fromEntries(allFields.map((f) => [f, true])));
     return Object.keys(errs).length === 0;
@@ -379,10 +430,12 @@ const useCreateCustomerForm = (customerType: CustomerType) => {
           };
 
       const payload = {
+        aadharCard: form.aadharCard.trim() || null,
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         gender: form.gender || null,
         phone: form.phone.trim(),
+        emergencyContact: form.emergencyContact.trim() || null,
         email: form.email.trim(),
         city: form.city,
         area: form.area,

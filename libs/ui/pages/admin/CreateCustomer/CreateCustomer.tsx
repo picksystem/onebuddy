@@ -17,11 +17,22 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import CurrencyRupeeIcon from '@mui/icons-material/CurrencyRupee';
+import BuildIcon from '@mui/icons-material/Build';
+import MyLocationIcon from '@mui/icons-material/MyLocation';
+import Inventory2Icon from '@mui/icons-material/Inventory2';
+import FlashOnIcon from '@mui/icons-material/FlashOn';
 import { Box, Button } from '@bandi/component';
 import { useNavigate } from 'react-router-dom';
 import { constants } from '@bandi/utils';
 
-type CustomerType = 'mobility' | 'logistics' | 'user' | 'driver-hire' | 'vehicle-rental';
+type CustomerType =
+  | 'mobility'
+  | 'logistics'
+  | 'parcel'
+  | 'user'
+  | 'driver-hire'
+  | 'vehicle-rental'
+  | 'mechanic-hire';
 
 const CUSTOMER_TYPES = [
   {
@@ -51,6 +62,20 @@ const CUSTOMER_TYPES = [
     ],
     icon: LocalShippingIcon,
     color: '#f59e0b',
+  },
+  {
+    type: 'parcel' as CustomerType,
+    displayName: 'Parcel Delivery',
+    tagline: 'Last-Mile Delivery',
+    description:
+      'Register a captain for parcel and last-mile delivery services — Bike, Auto, and Tata Ace for fast document, food, and goods delivery across the city.',
+    perks: [
+      { icon: Inventory2Icon, text: 'Documents, food & general goods' },
+      { icon: LocationOnIcon, text: 'Local & outstation delivery' },
+      { icon: FlashOnIcon, text: 'Same-trip parcel + ride earning' },
+    ],
+    icon: Inventory2Icon,
+    color: '#ea580c',
   },
   {
     type: 'user' as CustomerType,
@@ -94,6 +119,20 @@ const CUSTOMER_TYPES = [
     icon: CarRentalIcon,
     color: '#7c3aed',
   },
+  {
+    type: 'mechanic-hire' as CustomerType,
+    displayName: 'Mechanic Hire',
+    tagline: 'On-Demand Roadside Repair',
+    description:
+      'Register a customer who needs an emergency mechanic — whenever a vehicle breaks down, a nearby mechanic is dispatched to resolve the issue on the spot.',
+    perks: [
+      { icon: MyLocationIcon, text: 'Nearest mechanic dispatched' },
+      { icon: FlashOnIcon, text: 'Emergency breakdown support' },
+      { icon: DirectionsCarIcon, text: 'All vehicle types covered' },
+    ],
+    icon: BuildIcon,
+    color: '#ea580c',
+  },
 ] as const;
 
 function getVisuals(color: string) {
@@ -105,7 +144,8 @@ function getVisuals(color: string) {
   };
 }
 
-const SIMPLE_TYPES: CustomerType[] = ['user', 'driver-hire', 'vehicle-rental'];
+const SERVICE_TYPES: CustomerType[] = ['driver-hire', 'vehicle-rental', 'mechanic-hire'];
+const SIMPLE_TYPES: CustomerType[] = ['user', ...SERVICE_TYPES];
 
 const CreateCustomer = () => {
   const navigate = useNavigate();
@@ -183,11 +223,11 @@ const CreateCustomer = () => {
         Full Onboarding
       </Typography>
 
-      {/* ── Onboarding cards (Mobility + Logistics) ───────────────────────── */}
+      {/* ── Onboarding cards (Mobility, Logistics, Parcel) ───────────────── */}
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+          gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' },
           gap: 2.5,
           mb: 3,
         }}
@@ -224,18 +264,56 @@ const CreateCustomer = () => {
           mb: 1.5,
         }}
       >
-        Quick Registration
+        On-Demand Services
       </Typography>
 
-      {/* ── Quick-reg cards (User, Driver Hire, Vehicle Rental) ───────────── */}
+      {/* ── Service cards (Driver Hire, Vehicle Rental, Mechanic Hire) ───── */}
       <Box
         sx={{
           display: 'grid',
           gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' },
           gap: 2.5,
+          mb: 3,
         }}
       >
-        {CUSTOMER_TYPES.filter((t) => SIMPLE_TYPES.includes(t.type)).map((t) => {
+        {CUSTOMER_TYPES.filter((t) => SERVICE_TYPES.includes(t.type)).map((t) => {
+          const isSelected = selectedType === t.type;
+          const { accent, gradient, glow, bgTint } = getVisuals(t.color);
+          const Icon = t.icon;
+
+          return (
+            <CardItem
+              key={t.type}
+              t={t}
+              isSelected={isSelected}
+              accent={accent}
+              gradient={gradient}
+              glow={glow}
+              bgTint={bgTint}
+              Icon={Icon}
+              onSelect={() => setSelectedType(t.type)}
+            />
+          );
+        })}
+      </Box>
+
+      {/* ── Section label ─────────────────────────────────────────────────── */}
+      <Typography
+        sx={{
+          fontSize: '0.72rem',
+          fontWeight: 700,
+          color: 'text.secondary',
+          textTransform: 'uppercase',
+          letterSpacing: '0.6px',
+          mb: 1.5,
+        }}
+      >
+        Platform User
+      </Typography>
+
+      {/* ── Platform User card ────────────────────────────────────────────── */}
+      <Box>
+        {CUSTOMER_TYPES.filter((t) => t.type === 'user').map((t) => {
           const isSelected = selectedType === t.type;
           const { accent, gradient, glow, bgTint } = getVisuals(t.color);
           const Icon = t.icon;

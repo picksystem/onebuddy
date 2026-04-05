@@ -76,6 +76,7 @@ const AccessRequests = () => {
       cls: classes.statCard0,
       sub: 'All access requests',
       color: '#4f46e5',
+      tabIndex: 0,
     },
     {
       label: 'Admin Requests',
@@ -84,6 +85,7 @@ const AccessRequests = () => {
       cls: classes.statCard1,
       sub: 'Full platform access',
       color: '#f59e0b',
+      tabIndex: 1,
     },
     {
       label: 'Consultant Requests',
@@ -92,6 +94,7 @@ const AccessRequests = () => {
       cls: classes.statCard2,
       sub: 'Read-only access',
       color: '#10b981',
+      tabIndex: 2,
     },
     {
       label: 'Pending',
@@ -100,6 +103,7 @@ const AccessRequests = () => {
       cls: classes.statCard3,
       sub: 'Awaiting admin approval',
       color: '#ef4444',
+      tabIndex: 3,
     },
   ];
 
@@ -179,32 +183,50 @@ const AccessRequests = () => {
 
         {/* Stat Cards */}
         <Box className={classes.statsGrid}>
-          {statCards.map(({ label, value, Icon, cls, sub, color }) => (
-            <Box key={label} className={`${classes.statCard} ${cls}`}>
-              <Box className={classes.statCardTop}>
-                <Box>
-                  <Typography className={classes.statValue} sx={{ color }}>
-                    {value}
-                  </Typography>
-                  <Typography className={classes.statLabel}>{label}</Typography>
+          {statCards.map(({ label, value, Icon, cls, sub, color, tabIndex }) => {
+            const isActive = tabValue === tabIndex;
+            return (
+              <Box
+                key={label}
+                className={`${classes.statCard} ${cls}`}
+                onClick={() => {
+                  setTabValue(tabIndex);
+                  setTableSearch('');
+                }}
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  outline: isActive ? `2px solid ${color}` : 'none',
+                  outlineOffset: 2,
+                  transform: isActive ? 'translateY(-6px)' : undefined,
+                  boxShadow: isActive ? `0 16px 40px ${color}30, 0 4px 16px ${color}18` : undefined,
+                }}
+              >
+                <Box className={classes.statCardTop} sx={{ flex: 1, alignItems: 'flex-start' }}>
+                  <Box>
+                    <Typography className={classes.statValue} sx={{ color }}>
+                      {value}
+                    </Typography>
+                    <Typography className={classes.statLabel}>{label}</Typography>
+                  </Box>
+                  <Box
+                    className={classes.statIconWrap}
+                    sx={{ background: `${color}14`, border: `1.5px solid ${color}28` }}
+                  >
+                    <Icon className={classes.statIcon} sx={{ color }} />
+                  </Box>
                 </Box>
-                <Box
-                  className={classes.statIconWrap}
-                  sx={{ background: `${color}14`, border: `1.5px solid ${color}28` }}
-                >
-                  <Icon className={classes.statIcon} sx={{ color }} />
+                <Divider className={classes.statDivider} />
+                <Box className={classes.statSubRow}>
+                  <Box
+                    className={classes.statSubDot}
+                    sx={{ background: color, boxShadow: `0 0 6px ${color}` }}
+                  />
+                  <Typography className={classes.statSub}>{sub}</Typography>
                 </Box>
               </Box>
-              <Divider className={classes.statDivider} />
-              <Box className={classes.statSubRow}>
-                <Box
-                  className={classes.statSubDot}
-                  sx={{ background: color, boxShadow: `0 0 6px ${color}` }}
-                />
-                <Typography className={classes.statSub}>{sub}</Typography>
-              </Box>
-            </Box>
-          ))}
+            );
+          })}
         </Box>
 
         {/* Tabs + Search */}

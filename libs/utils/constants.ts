@@ -28,6 +28,7 @@ const AdminPath = {
   // Mobility Services
   DRIVER_HIRE: `${ADMIN_BASE}/driver-hire`,
   VEHICLE_RENTAL: `${ADMIN_BASE}/vehicle-rental`,
+  MECHANIC_HIRE: `${ADMIN_BASE}/mechanic-hire`,
   PARCEL: `${ADMIN_BASE}/parcel`,
   LOGISTICS: `${ADMIN_BASE}/logistics`,
 
@@ -53,15 +54,17 @@ const AdminPath = {
   ZONES: `${ADMIN_BASE}/zones`,
   INTEGRATIONS: `${ADMIN_BASE}/integrations`,
 
-  // Vehicle Fleet
-  FLEET: `${ADMIN_BASE}/fleet/:type`,
-  FLEET_BIKES: `${ADMIN_BASE}/fleet/bikes`,
-  FLEET_AUTOS: `${ADMIN_BASE}/fleet/autos`,
-  FLEET_CABS: `${ADMIN_BASE}/fleet/cabs`,
-  FLEET_SHUTTLES: `${ADMIN_BASE}/fleet/shuttles`,
-  FLEET_MINI_CARGO: `${ADMIN_BASE}/fleet/mini-cargo`,
-  FLEET_MEDIUM_GOODS: `${ADMIN_BASE}/fleet/medium-goods`,
-  FLEET_HEAVY_TRUCKS: `${ADMIN_BASE}/fleet/heavy-trucks`,
+  // Fleet — split by category
+  FLEET_MANAGEMENT: `${ADMIN_BASE}/fleet-management`,
+  FLEET_ACCESS: `${ADMIN_BASE}/fleet-access`,
+  MOBILITY_MANAGEMENT: `${ADMIN_BASE}/mobility-management`,
+  MOBILITY_ACCESS: `${ADMIN_BASE}/mobility-access`,
+  LOGISTICS_MANAGEMENT: `${ADMIN_BASE}/logistics-management`,
+  LOGISTICS_ACCESS: `${ADMIN_BASE}/logistics-access`,
+
+  // User Management
+  USER_ACCESS: `${ADMIN_BASE}/user-access`,
+  USER_MGMT: `${ADMIN_BASE}/user-mgmt`,
 
   // Team
   ADMINS: `${ADMIN_BASE}/admins`,

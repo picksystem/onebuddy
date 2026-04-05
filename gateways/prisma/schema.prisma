@@ -158,17 +158,17 @@ model CustomerOnboarding {
   pincode            String?   // 6-digit postal code
 
   // Service & Vehicle
-  serviceCategory String    // mobility | logistics
-  vehicleType     String    // bike | auto | cab | shuttle | tata_ace | dcm | lorry
+  serviceCategory String    // mobility | logistics | user
+  vehicleType     String?   // bike | auto | cab | shuttle | tata_ace | dcm | lorry (null for platform users)
   vehicleSubType  String?
-  fuelType        String
-  tripPreference  String    // local | outstation | both | local_delivery | outstation_delivery
+  fuelType        String?
+  tripPreference  String?   // local | outstation | both | local_delivery | outstation_delivery
 
   // Vehicle
-  vehicleNumber   String
+  vehicleNumber   String?
 
   // RC
-  rcNumber        String
+  rcNumber        String?
   rcExpiry        String?
 
   // Insurance (required)
@@ -188,11 +188,11 @@ model CustomerOnboarding {
   permitExpiry    String?
 
   // Driving License
-  dlNumber        String
+  dlNumber        String?
   dlExpiry        String?
 
   // Identity Proof
-  idProofType     String    // aadhaar | pan
+  idProofType     String?   // aadhaar | pan
   idProofNumber   String?
   idProofExpiry   String?
 

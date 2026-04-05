@@ -8,6 +8,9 @@ export { default as NotFound } from '../../components/NotFound';
 export { default as UserDetail } from './UserDetail';
 export { default as AccessRequests } from './AccessRequests';
 export { default as CustomerApprovals } from './CustomerApprovals';
+export { default as FleetAccess } from './FleetAccess';
+export { default as UserAccess } from './UserAccess';
+export { default as UserMgmt } from './UserMgmt';
 
 // Governance
 export { default as AccessManagement } from './AccessManagement';
@@ -24,11 +27,12 @@ export { default as UserManagement } from './UserManagement';
 export { default as Settings } from './Settings';
 
 // Mobility Services
+export { default as MechanicHire } from './MechanicHire';
 export { default as Parcel } from './Parcel';
 export { default as Logistics } from './Logistics';
 
 // Operations
-export { default as VehicleFleet } from './VehicleFleet';
+export { default as FleetManagement } from './FleetManagement';
 
 // Finance
 export { default as Transactions } from './Transactions';

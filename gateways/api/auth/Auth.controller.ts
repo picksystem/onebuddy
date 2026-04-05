@@ -1611,7 +1611,11 @@ export class AuthController {
       case 'create-customer-onboarding': {
         const { data: onboardingData } = req.body as { data: Record<string, unknown> };
         const isSimpleUser = onboardingData?.serviceCategory === 'user';
-        if (!onboardingData?.firstName || !onboardingData?.phone || (!isSimpleUser && !onboardingData?.vehicleType)) {
+        if (
+          !onboardingData?.firstName ||
+          !onboardingData?.phone ||
+          (!isSimpleUser && !onboardingData?.vehicleType)
+        ) {
           res.status(400).json({ message: 'firstName and phone are required' });
           return;
         }
@@ -1686,11 +1690,11 @@ export class AuthController {
             area: area ?? null,
             pincode: pincode ?? null,
             serviceCategory,
-            vehicleType,
+            vehicleType: vehicleType ?? null,
             vehicleSubType: vehicleSubType ?? null,
-            fuelType,
-            tripPreference,
-            vehicleNumber,
+            fuelType: fuelType ?? null,
+            tripPreference: tripPreference ?? null,
+            vehicleNumber: vehicleNumber ?? null,
             rcNumber: rcNumber ?? null,
             rcExpiry: rcExpiry ?? null,
             insuranceNumber: insuranceNumber ?? null,
@@ -1710,8 +1714,12 @@ export class AuthController {
             createdByEmail: createdByEmail ?? null,
             createdByPhone: createdByPhone ?? null,
             isSelfRegistered: isSelfRegistered === true || isSelfRegistered === 'true',
-            uploadedFiles: Array.isArray(uploadedFiles) ? JSON.stringify(uploadedFiles) : (uploadedFiles ?? null),
-            bundleTypes: Array.isArray(bundleTypes) ? JSON.stringify(bundleTypes) : (bundleTypes ?? null),
+            uploadedFiles: Array.isArray(uploadedFiles)
+              ? JSON.stringify(uploadedFiles)
+              : (uploadedFiles ?? null),
+            bundleTypes: Array.isArray(bundleTypes)
+              ? JSON.stringify(bundleTypes)
+              : (bundleTypes ?? null),
             bundleDiscount:
               bundleDiscount !== null && bundleDiscount !== undefined
                 ? Number(bundleDiscount)
@@ -1719,14 +1727,18 @@ export class AuthController {
             rentalVehiclePref: rentalVehiclePref ?? null,
             rentalDuration: rentalDuration ?? null,
             rentalPickupZone: rentalPickupZone ?? null,
-            driverHireCount: driverHireCount != null ? String(driverHireCount) : null,
+            driverHireCount: driverHireCount !== null ? String(driverHireCount) : null,
             driverHireShift: driverHireShift ?? null,
             driverHireBudget: driverHireBudget ?? null,
-            additionalVehicles: Array.isArray(additionalVehicles) ? JSON.stringify(additionalVehicles) : (additionalVehicles ?? null),
-            parcelComboTypes: Array.isArray(parcelComboTypes) ? JSON.stringify(parcelComboTypes) : (parcelComboTypes ?? null),
+            additionalVehicles: Array.isArray(additionalVehicles)
+              ? JSON.stringify(additionalVehicles)
+              : (additionalVehicles ?? null),
+            parcelComboTypes: Array.isArray(parcelComboTypes)
+              ? JSON.stringify(parcelComboTypes)
+              : (parcelComboTypes ?? null),
             parcelMaxWeight: parcelMaxWeight ?? null,
             parcelRadiusPref: parcelRadiusPref ?? null,
-            cargoCoRideMax: cargoCoRideMax != null ? String(cargoCoRideMax) : null,
+            cargoCoRideMax: cargoCoRideMax !== null ? String(cargoCoRideMax) : null,
             cargoCoRideHaulPref: cargoCoRideHaulPref ?? null,
             cargoCoRideRatePref: cargoCoRideRatePref ?? null,
             submittedAt: new Date(),
@@ -1746,9 +1758,12 @@ export class AuthController {
           return;
         }
         const sanitizedData: Record<string, unknown> = { ...onboardingData };
-        if (Array.isArray(sanitizedData.bundleTypes)) sanitizedData.bundleTypes = JSON.stringify(sanitizedData.bundleTypes);
-        if (Array.isArray(sanitizedData.additionalVehicles)) sanitizedData.additionalVehicles = JSON.stringify(sanitizedData.additionalVehicles);
-        if (Array.isArray(sanitizedData.parcelComboTypes)) sanitizedData.parcelComboTypes = JSON.stringify(sanitizedData.parcelComboTypes);
+        if (Array.isArray(sanitizedData.bundleTypes))
+          sanitizedData.bundleTypes = JSON.stringify(sanitizedData.bundleTypes);
+        if (Array.isArray(sanitizedData.additionalVehicles))
+          sanitizedData.additionalVehicles = JSON.stringify(sanitizedData.additionalVehicles);
+        if (Array.isArray(sanitizedData.parcelComboTypes))
+          sanitizedData.parcelComboTypes = JSON.stringify(sanitizedData.parcelComboTypes);
         if (sanitizedData.status === 'approved' || sanitizedData.status === 'rejected') {
           sanitizedData.reviewedAt = new Date();
         }
@@ -1782,11 +1797,21 @@ export class AuthController {
       case 'create-management-request': {
         const body = req.body as Record<string, any>;
         const {
-          firstName, lastName, email, phone, role,
-          businessUnit, employeeId, reasonForAccess,
-          dateOfBirth, gender, city, adminNotes,
+          firstName,
+          lastName,
+          email,
+          phone,
+          role,
+          businessUnit,
+          employeeId,
+          reasonForAccess,
+          dateOfBirth,
+          gender,
+          city,
+          adminNotes,
           userId: providedCustomId,
-          reportingManagerEmail, referredByEmail,
+          reportingManagerEmail,
+          referredByEmail,
         } = body;
 
         if (!firstName || !lastName || !email) {
@@ -1822,11 +1847,13 @@ export class AuthController {
 
         const createdUser = await db.user.create({
           data: {
-            firstName, lastName, email,
+            firstName,
+            lastName,
+            email,
             password: hashedPw,
             name: fullName,
-            role: 'user',              // actual role assigned on approval
-            requestedRole: role,       // 'admin' | 'consultant'
+            role: 'user', // actual role assigned on approval
+            requestedRole: role, // 'admin' | 'consultant'
             phone: phone || null,
             businessUnit: businessUnit || null,
             employeeId: employeeId || null,
@@ -1843,7 +1870,8 @@ export class AuthController {
 
         // Use the ID from the form if provided; otherwise generate from DB record ID
         const prefix = role === 'admin' ? 'ADMIN' : 'CONSULT';
-        const customUserId = providedCustomId || `${prefix}${String(createdUser.id).padStart(5, '0')}`;
+        const customUserId =
+          providedCustomId || `${prefix}${String(createdUser.id).padStart(5, '0')}`;
         const user = await db.user.update({
           where: { id: createdUser.id },
           data: { customUserId } as any,
@@ -1872,7 +1900,13 @@ export class AuthController {
         });
         const parsed = drafts.map((d: any) => ({
           ...d,
-          formData: (() => { try { return JSON.parse(d.formData); } catch { return {}; } })(),
+          formData: (() => {
+            try {
+              return JSON.parse(d.formData);
+            } catch {
+              return {};
+            }
+          })(),
         }));
         res.json({ message: 'Management drafts retrieved', data: parsed });
         break;
@@ -1880,7 +1914,10 @@ export class AuthController {
 
       // ── Draft: save (upsert) ─────────────────────────────────────────────────
       case 'save-draft': {
-        const { type: draftType, formData } = req.body as { type: string; formData: Record<string, unknown> };
+        const { type: draftType, formData } = req.body as {
+          type: string;
+          formData: Record<string, unknown>;
+        };
         if (!draftType || !formData) {
           res.status(400).json({ message: 'type and formData are required' });
           return;
@@ -1889,7 +1926,12 @@ export class AuthController {
         const draft = await (db as any).managementDraft.upsert({
           where: { createdBy_type: { createdBy: decoded.id, type: draftType } },
           update: { formData: JSON.stringify(formData), expiresAt, updatedAt: new Date() },
-          create: { createdBy: decoded.id, type: draftType, formData: JSON.stringify(formData), expiresAt },
+          create: {
+            createdBy: decoded.id,
+            type: draftType,
+            formData: JSON.stringify(formData),
+            expiresAt,
+          },
         });
         res.json({ message: 'Draft saved. It will expire in 7 days.', data: draft });
         break;
@@ -1916,7 +1958,10 @@ export class AuthController {
           res.json({ message: 'Draft expired', data: null });
           return;
         }
-        res.json({ message: 'Draft loaded', data: { ...draft, formData: JSON.parse(draft.formData) } });
+        res.json({
+          message: 'Draft loaded',
+          data: { ...draft, formData: JSON.parse(draft.formData) },
+        });
         break;
       }
 

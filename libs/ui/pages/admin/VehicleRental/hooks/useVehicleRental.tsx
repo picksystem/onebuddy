@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Chip, Typography, Button, Stack, Tab, Link } from '@mui/material';
+import { Chip, Typography, Button, Stack, Tab, Link, Avatar, Box as MuiBox } from '@mui/material';
 import { Column } from '@bandi/component';
 import CarRentalIcon from '@mui/icons-material/CarRental';
 import PendingActionsIcon from '@mui/icons-material/PendingActions';
@@ -115,10 +115,45 @@ export const useVehicleRental = () => {
     },
     { id: 'email', label: 'Email', minWidth: 210, format: (v: unknown) => String(v || '-') },
     {
+      id: 'vehicleImage',
+      label: 'Photo',
+      minWidth: 80,
+      align: 'center' as const,
+      sortable: false,
+      format: (_v: unknown, row: VehicleRentalRow): React.ReactNode => (
+        <MuiBox sx={{ display: 'flex', justifyContent: 'center' }}>
+          <Avatar
+            src={row.vehicleImage || ''}
+            variant='rounded'
+            sx={{ width: 52, height: 40, borderRadius: '8px', bgcolor: 'rgba(15,118,110,0.1)' }}
+          >
+            {!row.vehicleImage && (
+              <DirectionsCarIcon sx={{ color: '#0f766e', fontSize: '1.4rem' }} />
+            )}
+          </Avatar>
+        </MuiBox>
+      ),
+    },
+    {
       id: 'vehicleType',
       label: 'Vehicle Type',
       minWidth: 140,
       format: (v: unknown) => String(v || '-'),
+    },
+    {
+      id: 'costPerDay',
+      label: 'Cost / Day',
+      minWidth: 120,
+      align: 'center' as const,
+      format: (v: unknown): React.ReactNode => {
+        const num = Number(v);
+        if (!v || isNaN(num)) return <Typography variant='body2'>—</Typography>;
+        return (
+          <Typography variant='body2' sx={{ fontWeight: 600, color: '#0f766e' }}>
+            ₹{num.toLocaleString('en-IN')}
+          </Typography>
+        );
+      },
     },
     { id: 'duration', label: 'Duration', minWidth: 120, format: (v: unknown) => String(v || '-') },
     { id: 'location', label: 'Location', minWidth: 140, format: (v: unknown) => String(v || '-') },

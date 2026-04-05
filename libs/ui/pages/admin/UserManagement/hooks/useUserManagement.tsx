@@ -16,6 +16,7 @@ import {
 import { DriverHireRow } from '../../DriverHire/types/driverHire.types';
 import { VehicleRentalRow } from '../../VehicleRental/types/vehicleRental.types';
 import { ParcelRow } from '../../Parcel/types/parcel.types';
+import { MechanicHireRow } from '../../MechanicHire/types/mechanicHire.types';
 import {
   buildEditForm,
   generateTempPassword,
@@ -37,6 +38,7 @@ const useUserManagement = () => {
   const [driverHireRequests, setDriverHireRequests] = useState<DriverHireRow[]>([]);
   const [vehicleRentalRequests, setVehicleRentalRequests] = useState<VehicleRentalRow[]>([]);
   const [parcelRequests, setParcelRequests] = useState<ParcelRow[]>([]);
+  const [mechanicHireRequests, setMechanicHireRequests] = useState<MechanicHireRow[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [tabValue, setTabValue] = useState(0);
@@ -161,21 +163,29 @@ const useUserManagement = () => {
   const fetchUsers = useCallback(async () => {
     try {
       setIsLoading(true);
-      const [onboardingsResult, driverHireResult, vehicleRentalResult, parcelResult] =
-        await Promise.all([
-          authAction({ action: 'get-customer-onboardings' })
-            .unwrap()
-            .catch(() => ({ data: [] })),
-          authAction({ action: 'get-driver-hire-requests' })
-            .unwrap()
-            .catch(() => ({ data: [] })),
-          authAction({ action: 'get-vehicle-rental-requests' })
-            .unwrap()
-            .catch(() => ({ data: [] })),
-          authAction({ action: 'get-parcel-requests' })
-            .unwrap()
-            .catch(() => ({ data: [] })),
-        ]);
+      const [
+        onboardingsResult,
+        driverHireResult,
+        vehicleRentalResult,
+        parcelResult,
+        mechanicHireResult,
+      ] = await Promise.all([
+        authAction({ action: 'get-customer-onboardings' })
+          .unwrap()
+          .catch(() => ({ data: [] })),
+        authAction({ action: 'get-driver-hire-requests' })
+          .unwrap()
+          .catch(() => ({ data: [] })),
+        authAction({ action: 'get-vehicle-rental-requests' })
+          .unwrap()
+          .catch(() => ({ data: [] })),
+        authAction({ action: 'get-parcel-requests' })
+          .unwrap()
+          .catch(() => ({ data: [] })),
+        authAction({ action: 'get-mechanic-hire-requests' })
+          .unwrap()
+          .catch(() => ({ data: [] })),
+      ]);
       setCustomerOnboardings(
         ((onboardingsResult.data || []) as CustomerOnboardingRow[]).map((r, i) => ({
           ...r,
@@ -185,6 +195,7 @@ const useUserManagement = () => {
       setDriverHireRequests(driverHireResult.data || []);
       setVehicleRentalRequests(vehicleRentalResult.data || []);
       setParcelRequests(parcelResult.data || []);
+      setMechanicHireRequests(mechanicHireResult.data || []);
     } catch {
       notify.error('Failed to load data');
     } finally {
@@ -199,10 +210,16 @@ const useUserManagement = () => {
 
   // Keep visibleOnboardingIdsRef in sync for new-tab navigation
   useEffect(() => {
+    const managedOnbs = customerOnboardings.filter(
+      (r) => r.status === 'approved' || r.status === 'rejected',
+    );
     const lists = [
-      customerOnboardings,
-      customerOnboardings.filter((r) => r.serviceCategory === 'mobility'),
-      customerOnboardings.filter((r) => r.serviceCategory === 'logistics'),
+      managedOnbs,
+      // tabs 1-3 are driver hire, vehicle rental, mechanic hire — not onboardings
+      [],
+      [],
+      [],
+      managedOnbs.filter((r) => r.serviceCategory === 'user'),
       customerOnboardings.filter((r) => r.status === 'pending'),
     ];
     const active = lists[tabValue] ?? lists[0];
@@ -761,7 +778,10 @@ const useUserManagement = () => {
                 );
                 localStorage.setItem('customer_detail_nav_ids_ts', String(Date.now()));
                 window.open(
-                  constants.AdminPath.CUSTOMER_DETAIL.replace(':id', row.customerId ?? String(row.id)),
+                  constants.AdminPath.CUSTOMER_DETAIL.replace(
+                    ':id',
+                    row.customerId ?? String(row.id),
+                  ),
                   '_blank',
                 );
               }}
@@ -1194,6 +1214,48 @@ const useUserManagement = () => {
     },
   ];
 
+  const mechanicHireColumns: Column<MechanicHireRow>[] = [
+    { id: 'sno', label: 'S.No', minWidth: 60, align: 'center', sortable: false },
+    { id: 'name', label: 'Name', minWidth: 150, format: (v: unknown) => String(v || '-') },
+    { id: 'email', label: 'Email', minWidth: 210, format: (v: unknown) => String(v || '-') },
+    {
+      id: 'serviceType',
+      label: 'Service Type',
+      minWidth: 140,
+      format: (v: unknown) => String(v || '-'),
+    },
+    { id: 'location', label: 'Location', minWidth: 140, format: (v: unknown) => String(v || '-') },
+    { id: 'duration', label: 'Duration', minWidth: 120, format: (v: unknown) => String(v || '-') },
+    {
+      id: 'scheduledDate',
+      label: 'Scheduled',
+      minWidth: 130,
+      format: (v: unknown) => String(v || '-'),
+    },
+    {
+      id: 'status',
+      label: 'Status',
+      minWidth: 120,
+      align: 'center',
+      format: (v: unknown): React.ReactNode => {
+        const s = String(v || '');
+        const colorMap: Record<string, 'warning' | 'info' | 'success' | 'error' | 'default'> = {
+          pending: 'warning',
+          assigned: 'info',
+          completed: 'success',
+          rejected: 'error',
+        };
+        return (
+          <Chip
+            label={s.charAt(0).toUpperCase() + s.slice(1)}
+            color={colorMap[s] ?? 'default'}
+            size='small'
+          />
+        );
+      },
+    },
+  ];
+
   return {
     // table
     customerOnboardings,
@@ -1212,6 +1274,7 @@ const useUserManagement = () => {
     driverHireRequests,
     vehicleRentalRequests,
     parcelRequests,
+    mechanicHireRequests,
     isLoading,
     isMobile,
     tabValue,
@@ -1224,6 +1287,7 @@ const useUserManagement = () => {
     driverHireColumns,
     vehicleRentalColumns,
     parcelColumns,
+    mechanicHireColumns,
     currentUser,
     // edit
     editOpen,

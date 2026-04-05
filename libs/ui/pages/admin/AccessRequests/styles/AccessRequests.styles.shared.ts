@@ -176,21 +176,24 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
   statsGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: theme.spacing(2),
+    gap: theme.spacing(1.5),
     marginBottom: theme.spacing(2.5),
     [theme.breakpoints.down('md')]: { gridTemplateColumns: 'repeat(2, 1fr)' },
-    [theme.breakpoints.down('sm')]: { gridTemplateColumns: '1fr', gap: theme.spacing(1.25) },
+    [theme.breakpoints.down('sm')]: {
+      gridTemplateColumns: 'repeat(2, 1fr)',
+      gap: theme.spacing(1),
+    },
   },
 
   statCard: {
-    borderRadius: 20,
-    padding: theme.spacing(2.5),
+    borderRadius: 16,
+    padding: theme.spacing(1.5),
     background: '#ffffff',
     border: '1px solid rgba(0,0,0,0.06)',
     boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
     position: 'relative',
     overflow: 'hidden',
-    cursor: 'default',
+    cursor: 'pointer',
     transition: 'transform 0.32s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.32s ease',
     '&::before': {
       content: '""',
@@ -199,12 +202,16 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
       left: 0,
       right: 0,
       height: 4,
-      borderRadius: '20px 20px 0 0',
+      borderRadius: '16px 16px 0 0',
     },
     '&:hover': { transform: 'translateY(-4px)' },
-    [theme.breakpoints.down('sm')]: {
-      padding: theme.spacing(1.5, 2),
+    [theme.breakpoints.down('md')]: {
+      padding: theme.spacing(1.25),
       borderRadius: 14,
+    },
+    [theme.breakpoints.down('sm')]: {
+      padding: theme.spacing(1),
+      borderRadius: 12,
     },
   },
 
@@ -233,64 +240,78 @@ export const getBaseStyles = (theme: Theme): Record<string, CSSObject> => ({
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: theme.spacing(1.75),
-    marginTop: theme.spacing(0.5),
-    [theme.breakpoints.down('sm')]: {
-      marginBottom: theme.spacing(0.75),
-      marginTop: 0,
-      alignItems: 'center',
-    },
+    marginBottom: theme.spacing(1),
+    marginTop: theme.spacing(0.25),
+    [theme.breakpoints.down('md')]: { marginBottom: theme.spacing(0.75) },
+    [theme.breakpoints.down('sm')]: { marginBottom: theme.spacing(0.5), marginTop: 0 },
   },
 
   statIconWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
+    width: 38,
+    height: 38,
+    borderRadius: 10,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
     transition: 'transform 0.3s ease',
-    [theme.breakpoints.down('sm')]: { width: 44, height: 44, borderRadius: 12 },
+    [theme.breakpoints.down('md')]: { width: 34, height: 34, borderRadius: 8 },
+    [theme.breakpoints.down('sm')]: { width: 30, height: 30, borderRadius: 8 },
   },
 
   statIcon: {
-    fontSize: '1.55rem !important',
-    [theme.breakpoints.down('sm')]: { fontSize: '1.25rem !important' },
+    fontSize: '1.2rem !important',
+    [theme.breakpoints.down('md')]: { fontSize: '1.05rem !important' },
+    [theme.breakpoints.down('sm')]: { fontSize: '0.95rem !important' },
   },
 
   statValue: {
-    fontSize: '2.6rem',
+    fontSize: '1.8rem',
     fontWeight: 800,
     lineHeight: 1,
-    marginBottom: theme.spacing(0.4),
+    marginBottom: theme.spacing(0.3),
     animation: 'adm-counter 0.65s cubic-bezier(0.34,1.56,0.64,1) both',
-    [theme.breakpoints.down('sm')]: { fontSize: '1.75rem', marginBottom: theme.spacing(0.2) },
+    [theme.breakpoints.down('lg')]: { fontSize: '1.6rem' },
+    [theme.breakpoints.down('md')]: { fontSize: '1.5rem' },
+    [theme.breakpoints.down('sm')]: { fontSize: '1.35rem', marginBottom: theme.spacing(0.2) },
   },
 
   statLabel: {
-    fontSize: '0.68rem',
+    fontSize: '0.62rem',
     fontWeight: 700,
     color: 'rgba(0,0,0,0.38)',
-    letterSpacing: '0.09em',
+    letterSpacing: '0.07em',
     textTransform: 'uppercase' as const,
+    [theme.breakpoints.down('sm')]: { fontSize: '0.58rem', letterSpacing: '0.05em' },
   },
 
   statDivider: {
     borderColor: 'rgba(0,0,0,0.06)',
-    marginBottom: theme.spacing(1.5),
-    [theme.breakpoints.down('sm')]: { marginBottom: theme.spacing(0.75) },
+    marginBottom: theme.spacing(1),
+    [theme.breakpoints.down('sm')]: { marginBottom: theme.spacing(0.5) },
   },
 
-  statSubRow: { display: 'flex', alignItems: 'center', gap: 7 },
+  statSubRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 7,
+    [theme.breakpoints.down('sm')]: { gap: 4 },
+  },
 
-  statSubDot: { width: 7, height: 7, borderRadius: '50%', flexShrink: 0 },
+  statSubDot: {
+    width: 7,
+    height: 7,
+    borderRadius: '50%',
+    flexShrink: 0,
+    [theme.breakpoints.down('sm')]: { width: 5, height: 5 },
+  },
 
   statSub: {
     fontSize: '0.75rem',
     color: 'rgba(0,0,0,0.48)',
     fontWeight: 500,
-    [theme.breakpoints.down('sm')]: { fontSize: '0.7rem' },
+    [theme.breakpoints.down('md')]: { fontSize: '0.68rem' },
+    [theme.breakpoints.down('sm')]: { fontSize: '0.6rem' },
   },
 
   toolbar: {

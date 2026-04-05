@@ -7,9 +7,16 @@ import HowToRegIcon from '@mui/icons-material/HowToReg';
 import DirectionsBusIcon from '@mui/icons-material/DirectionsBus';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import PendingActionsIcon from '@mui/icons-material/PendingActions';
+import HailIcon from '@mui/icons-material/Hail';
+import CarRentalIcon from '@mui/icons-material/CarRental';
+import BuildIcon from '@mui/icons-material/Build';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import { useAuthActionMutation } from '@bandi/services';
 import { useNotification } from '@bandi/hooks';
 import { genCustomerId } from '../dialogs/DetailDialog/DetailDialog';
+import { DriverHireRow } from '../../DriverHire/types/driverHire.types';
+import { VehicleRentalRow } from '../../VehicleRental/types/vehicleRental.types';
+import { MechanicHireRow } from '../../MechanicHire/types/mechanicHire.types';
 
 export type ApprovalStatus = 'pending' | 'under_review' | 'approved' | 'rejected';
 
@@ -100,6 +107,10 @@ export const useCustomerApprovals = () => {
   const notify = useNotification();
 
   const [allRows, setAllRows] = useState<CustomerApprovalRow[]>([]);
+  const [driverHireRows, setDriverHireRows] = useState<DriverHireRow[]>([]);
+  const [vehicleRentalRows, setVehicleRentalRows] = useState<VehicleRentalRow[]>([]);
+  const [mechanicHireRows, setMechanicHireRows] = useState<MechanicHireRow[]>([]);
+  const [userRows, setUserRows] = useState<CustomerApprovalRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [tabValue, setTabValue] = useState(0);
   const [tableSearch, setTableSearch] = useState('');
@@ -114,7 +125,20 @@ export const useCustomerApprovals = () => {
   const fetchApprovals = useCallback(async () => {
     try {
       setIsLoading(true);
-      const res = await authAction({ action: 'get-customer-onboardings' }).unwrap();
+      const [res, driverHireRes, vehicleRentalRes, mechanicHireRes] = await Promise.all([
+        authAction({ action: 'get-customer-onboardings' })
+          .unwrap()
+          .catch(() => ({ data: [] })),
+        authAction({ action: 'get-driver-hire-requests' })
+          .unwrap()
+          .catch(() => ({ data: [] })),
+        authAction({ action: 'get-vehicle-rental-requests' })
+          .unwrap()
+          .catch(() => ({ data: [] })),
+        authAction({ action: 'get-mechanic-hire-requests' })
+          .unwrap()
+          .catch(() => ({ data: [] })),
+      ]);
       const parseJsonField = (v: unknown): unknown => {
         if (typeof v === 'string') {
           try {
@@ -135,6 +159,13 @@ export const useCustomerApprovals = () => {
         uploadedFiles: parseJsonField(r.uploadedFiles) as string[] | undefined,
       }));
       setAllRows(rows);
+      setDriverHireRows(driverHireRes.data || []);
+      setVehicleRentalRows(vehicleRentalRes.data || []);
+      setMechanicHireRows(mechanicHireRes.data || []);
+      // Platform users: serviceCategory === 'user'
+      setUserRows(
+        rows.filter((r: CustomerApprovalRow) => (r.serviceCategory as string) === 'user'),
+      );
     } catch {
       setAllRows([]);
     } finally {
@@ -152,10 +183,14 @@ export const useCustomerApprovals = () => {
   // Customer Requests only shows pending / under_review — approved/rejected move to Customer Management
   const activeRows = allRows.filter((r) => r.status === 'pending' || r.status === 'under_review');
   const pendingRows = activeRows.filter((r) => r.status === 'pending');
-  const mobilityRows = activeRows.filter((r) => r.serviceCategory === 'mobility');
-  const logisticsRows = activeRows.filter((r) => r.serviceCategory === 'logistics');
   const underReviewRows = activeRows.filter((r) => r.status === 'under_review');
-  const tabLists = [activeRows, mobilityRows, logisticsRows, pendingRows];
+  const pendingDriverHireRows = driverHireRows.filter((r) => r.status === 'pending');
+  const pendingVehicleRentalRows = vehicleRentalRows.filter((r) => r.status === 'pending');
+  const pendingMechanicHireRows = mechanicHireRows.filter((r) => r.status === 'pending');
+  const pendingUserRows = userRows.filter(
+    (r) => r.status === 'pending' || r.status === 'under_review',
+  );
+  const tabLists = [activeRows];
 
   // ── Search ─────────────────────────────────────────────────────────────────
 
@@ -183,8 +218,6 @@ export const useCustomerApprovals = () => {
   // ── Stats ──────────────────────────────────────────────────────────────────
 
   const needsActionCount = pendingRows.length;
-  const mobilityActiveCount = mobilityRows.length;
-  const logisticsActiveCount = logisticsRows.length;
 
   // ── Action handlers ────────────────────────────────────────────────────────
 
@@ -231,13 +264,136 @@ export const useCustomerApprovals = () => {
     }
   };
 
+  // ── Extra columns ──────────────────────────────────────────────────────────
+
+  const driverHireColumns: Column<DriverHireRow>[] = [
+    { id: 'sno', label: 'S.No', minWidth: 60, align: 'center', sortable: false },
+    { id: 'name', label: 'Name', minWidth: 150, format: (v: unknown) => String(v || '-') },
+    { id: 'email', label: 'Email', minWidth: 200, format: (v: unknown) => String(v || '-') },
+    {
+      id: 'vehicleType',
+      label: 'Vehicle',
+      minWidth: 130,
+      format: (v: unknown) => String(v || '-'),
+    },
+    { id: 'location', label: 'Location', minWidth: 140, format: (v: unknown) => String(v || '-') },
+    { id: 'duration', label: 'Duration', minWidth: 110, format: (v: unknown) => String(v || '-') },
+    {
+      id: 'status',
+      label: 'Status',
+      minWidth: 120,
+      align: 'center',
+      format: (v: unknown): React.ReactNode => {
+        const s = String(v || '');
+        const colorMap: Record<string, 'warning' | 'info' | 'success' | 'error' | 'default'> = {
+          pending: 'warning',
+          matched: 'info',
+          completed: 'success',
+          rejected: 'error',
+        };
+        return (
+          <Chip
+            label={s.charAt(0).toUpperCase() + s.slice(1)}
+            color={colorMap[s] ?? 'default'}
+            size='small'
+          />
+        );
+      },
+    },
+  ];
+
+  const vehicleRentalColumns: Column<VehicleRentalRow>[] = [
+    { id: 'sno', label: 'S.No', minWidth: 60, align: 'center', sortable: false },
+    { id: 'name', label: 'Name', minWidth: 150, format: (v: unknown) => String(v || '-') },
+    { id: 'email', label: 'Email', minWidth: 200, format: (v: unknown) => String(v || '-') },
+    {
+      id: 'vehicleType',
+      label: 'Vehicle',
+      minWidth: 130,
+      format: (v: unknown) => String(v || '-'),
+    },
+    { id: 'location', label: 'Location', minWidth: 140, format: (v: unknown) => String(v || '-') },
+    { id: 'duration', label: 'Duration', minWidth: 110, format: (v: unknown) => String(v || '-') },
+    {
+      id: 'startDate',
+      label: 'Start Date',
+      minWidth: 120,
+      format: (v: unknown) => String(v || '-'),
+    },
+    {
+      id: 'status',
+      label: 'Status',
+      minWidth: 120,
+      align: 'center',
+      format: (v: unknown): React.ReactNode => {
+        const s = String(v || '');
+        const colorMap: Record<string, 'warning' | 'info' | 'success' | 'error' | 'default'> = {
+          pending: 'warning',
+          active: 'info',
+          completed: 'success',
+          rejected: 'error',
+        };
+        return (
+          <Chip
+            label={s.charAt(0).toUpperCase() + s.slice(1)}
+            color={colorMap[s] ?? 'default'}
+            size='small'
+          />
+        );
+      },
+    },
+  ];
+
+  const mechanicHireColumns: Column<MechanicHireRow>[] = [
+    { id: 'sno', label: 'S.No', minWidth: 60, align: 'center', sortable: false },
+    { id: 'name', label: 'Name', minWidth: 150, format: (v: unknown) => String(v || '-') },
+    { id: 'email', label: 'Email', minWidth: 200, format: (v: unknown) => String(v || '-') },
+    {
+      id: 'serviceType',
+      label: 'Service',
+      minWidth: 130,
+      format: (v: unknown) => String(v || '-'),
+    },
+    { id: 'location', label: 'Location', minWidth: 140, format: (v: unknown) => String(v || '-') },
+    {
+      id: 'scheduledDate',
+      label: 'Scheduled',
+      minWidth: 120,
+      format: (v: unknown) => String(v || '-'),
+    },
+    {
+      id: 'status',
+      label: 'Status',
+      minWidth: 120,
+      align: 'center',
+      format: (v: unknown): React.ReactNode => {
+        const s = String(v || '');
+        const colorMap: Record<string, 'warning' | 'info' | 'success' | 'error' | 'default'> = {
+          pending: 'warning',
+          assigned: 'info',
+          completed: 'success',
+          rejected: 'error',
+        };
+        return (
+          <Chip
+            label={s.charAt(0).toUpperCase() + s.slice(1)}
+            color={colorMap[s] ?? 'default'}
+            size='small'
+          />
+        );
+      },
+    },
+  ];
+
   // ── Tabs ───────────────────────────────────────────────────────────────────
 
   const tabs = [
     <Tab key={0} icon={<HowToRegIcon />} iconPosition='start' label='All Customers' />,
-    <Tab key={1} icon={<DirectionsBusIcon />} iconPosition='start' label='Mobility' />,
-    <Tab key={2} icon={<LocalShippingIcon />} iconPosition='start' label='Logistics' />,
-    <Tab key={3} icon={<PendingActionsIcon />} iconPosition='start' label='Pending' />,
+    <Tab key={1} icon={<PersonAddIcon />} iconPosition='start' label='Users' />,
+    <Tab key={2} icon={<HailIcon />} iconPosition='start' label='Driver Hire' />,
+    <Tab key={3} icon={<CarRentalIcon />} iconPosition='start' label='Vehicle Rental' />,
+    <Tab key={4} icon={<BuildIcon />} iconPosition='start' label='Mechanic Hire' />,
+    <Tab key={5} icon={<PendingActionsIcon />} iconPosition='start' label='Pending' />,
   ];
 
   // ── Columns ────────────────────────────────────────────────────────────────
@@ -530,9 +686,16 @@ export const useCustomerApprovals = () => {
     isLoading,
     allRows,
     activeRows,
+    pendingRows,
     needsActionCount,
-    mobilityActiveCount,
-    logisticsActiveCount,
+    driverHireRows,
+    vehicleRentalRows,
+    mechanicHireRows,
+    userRows,
+    pendingDriverHireRows,
+    pendingVehicleRentalRows,
+    pendingMechanicHireRows,
+    pendingUserRows,
     tabValue,
     setTabValue,
     tableSearch,
@@ -540,6 +703,9 @@ export const useCustomerApprovals = () => {
     tabLists,
     tabs,
     columns,
+    driverHireColumns,
+    vehicleRentalColumns,
+    mechanicHireColumns,
     detailRow,
     setDetailRow,
     actionTarget,

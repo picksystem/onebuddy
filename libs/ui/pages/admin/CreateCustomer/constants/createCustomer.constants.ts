@@ -5,6 +5,7 @@ import ContactPageIcon from '@mui/icons-material/ContactPage';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import DirectionsBusIcon from '@mui/icons-material/DirectionsBus';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import Inventory2Icon from '@mui/icons-material/Inventory2';
 import type { CustomerType, TypeConfig, DocField, FormData } from '../types/createCustomer.types';
 
 // ─── Section Meta ─────────────────────────────────────────────────────────────
@@ -65,6 +66,14 @@ export const TYPE_CONFIG: Record<CustomerType, TypeConfig> = {
     shadow: '0 8px 32px rgba(245,158,11,0.35)',
     color: '#f59e0b',
     Icon: LocalShippingIcon,
+  },
+  parcel: {
+    label: 'Parcel Delivery',
+    tagline: 'Last-Mile Delivery',
+    gradient: 'linear-gradient(135deg, #c2410c 0%, #ea580c 50%, #f97316 100%)',
+    shadow: '0 8px 32px rgba(234,88,12,0.35)',
+    color: '#ea580c',
+    Icon: Inventory2Icon,
   },
 };
 
@@ -214,6 +223,7 @@ export type VehicleKey = keyof typeof VEHICLE_CONFIG;
 
 export const MOBILITY_VEHICLES: VehicleKey[] = ['bike', 'auto', 'cab', 'shuttle'];
 export const LOGISTICS_VEHICLES: VehicleKey[] = ['tata_ace', 'dcm', 'lorry'];
+export const PARCEL_VEHICLES: VehicleKey[] = ['bike', 'auto', 'tata_ace'];
 
 // ─── Bundle ───────────────────────────────────────────────────────────────────
 
@@ -251,6 +261,11 @@ export const TRIP_OPTIONS = {
     { id: 'both', label: 'Both (Local + Outstation)' },
   ],
   logistics: [
+    { id: 'local_delivery', label: 'Local Delivery (City)' },
+    { id: 'outstation_delivery', label: 'Outstation Delivery' },
+    { id: 'both', label: 'Both (City + Outstation)' },
+  ],
+  parcel: [
     { id: 'local_delivery', label: 'Local Delivery (City)' },
     { id: 'outstation_delivery', label: 'Outstation Delivery' },
     { id: 'both', label: 'Both (City + Outstation)' },
@@ -317,10 +332,12 @@ export const CORIDE_HAUL_OPTIONS = [
 export const EMPTY_DOC: DocField = { number: '', expiry: '' };
 
 export const INITIAL: FormData = {
+  aadharCard: '',
   firstName: '',
   lastName: '',
   gender: '',
   phone: '',
+  emergencyContact: '',
   email: '',
   city: '',
   area: '',

@@ -35,11 +35,15 @@ const {
   AdminSettingsPage,
 
   // Operations
-  AdminVehicleFleetPage,
+  AdminFleetManagementPage,
+  AdminFleetAccessPage,
+  AdminUserAccessPage,
+  AdminUserMgmtPage,
 
   // Mobility Services
   AdminDriverHirePage,
   AdminVehicleRentalPage,
+  AdminMechanicHirePage,
   AdminParcelPage,
   AdminLogisticsPage,
 
@@ -83,7 +87,7 @@ const KeyedManagementForm = () => {
   return <AdminCreateManagementFormPage key={type} />;
 };
 
-const SIMPLE_CUSTOMER_TYPES = ['user', 'driver-hire', 'vehicle-rental'];
+const SIMPLE_CUSTOMER_TYPES = ['user', 'driver-hire', 'vehicle-rental', 'mechanic-hire'];
 
 // Routes to the correct form based on :type param
 const KeyedCustomerForm = () => {
@@ -147,12 +151,18 @@ const AppRoutes = () => {
               <Route path={AdminPath.USER_MANAGEMENT} element={<AdminUserManagementPage />} />
               <Route path={AdminPath.SETTINGS} element={<AdminSettingsPage />} />
 
-              {/* Operations */}
-              <Route path={AdminPath.FLEET} element={<AdminVehicleFleetPage />} />
+              {/* Operations — split by category */}
+              <Route path={AdminPath.MOBILITY_MANAGEMENT} element={<AdminFleetManagementPage />} />
+              <Route path={AdminPath.LOGISTICS_MANAGEMENT} element={<AdminFleetManagementPage />} />
+              <Route path={AdminPath.MOBILITY_ACCESS} element={<AdminFleetAccessPage />} />
+              <Route path={AdminPath.LOGISTICS_ACCESS} element={<AdminFleetAccessPage />} />
+              <Route path={AdminPath.USER_ACCESS} element={<AdminUserAccessPage />} />
+              <Route path={AdminPath.USER_MGMT} element={<AdminUserMgmtPage />} />
 
               {/* Mobility Services */}
               <Route path={AdminPath.DRIVER_HIRE} element={<AdminDriverHirePage />} />
               <Route path={AdminPath.VEHICLE_RENTAL} element={<AdminVehicleRentalPage />} />
+              <Route path={AdminPath.MECHANIC_HIRE} element={<AdminMechanicHirePage />} />
               <Route path={AdminPath.PARCEL} element={<AdminParcelPage />} />
               <Route path={AdminPath.LOGISTICS} element={<AdminLogisticsPage />} />
 

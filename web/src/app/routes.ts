@@ -28,11 +28,15 @@ export const LazyMenuItems = {
   AdminSettingsPage: lazy(() => import('@bandi/pages/admin/Settings')),
 
   // Operations pages
-  AdminVehicleFleetPage: lazy(() => import('@bandi/pages/admin/VehicleFleet')),
+  AdminFleetManagementPage: lazy(() => import('@bandi/pages/admin/FleetManagement')),
+  AdminFleetAccessPage: lazy(() => import('@bandi/pages/admin/FleetAccess')),
+  AdminUserAccessPage: lazy(() => import('@bandi/pages/admin/UserAccess')),
+  AdminUserMgmtPage: lazy(() => import('@bandi/pages/admin/UserMgmt')),
 
   // Mobility Services pages
   AdminDriverHirePage: lazy(() => import('@bandi/pages/admin/DriverHire')),
   AdminVehicleRentalPage: lazy(() => import('@bandi/pages/admin/VehicleRental')),
+  AdminMechanicHirePage: lazy(() => import('@bandi/pages/admin/MechanicHire')),
   AdminParcelPage: lazy(() => import('@bandi/pages/admin/Parcel')),
   AdminLogisticsPage: lazy(() => import('@bandi/pages/admin/Logistics')),
 

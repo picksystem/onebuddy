@@ -556,7 +556,11 @@ const UserDetail = () => {
   // Parse stored attachments from user object
   type StoredAttachment = { name: string; url: string; size: number };
   const storedAttachments: StoredAttachment[] = (() => {
-    try { return user?.attachments ? JSON.parse(user.attachments) : []; } catch { return []; }
+    try {
+      return user?.attachments ? JSON.parse(user.attachments) : [];
+    } catch {
+      return [];
+    }
   })();
 
   // ── Changes Log dialog state ─────────────────────────────────────────────
@@ -626,9 +630,12 @@ const UserDetail = () => {
         draftsResult.status === 'fulfilled' ? (draftsResult.value as any)?.data || [] : [];
       const draftIds: (number | string)[] = drafts.map((d: any) => {
         const f = d.formData?.form ?? {};
-        return f.userId || (d.type === 'admin'
-          ? `ADMIN${String(d.id).padStart(4, '0')}`
-          : `CONSULT${String(d.id).padStart(4, '0')}`);
+        return (
+          f.userId ||
+          (d.type === 'admin'
+            ? `ADMIN${String(d.id).padStart(4, '0')}`
+            : `CONSULT${String(d.id).padStart(4, '0')}`)
+        );
       });
       const userNavIds: (number | string)[] = users.map((u: any) =>
         u.customUserId ? u.customUserId : u.id,
@@ -683,7 +690,9 @@ const UserDetail = () => {
       try {
         const m = localStorage.getItem('user_detail_draft_map');
         return m ? !!JSON.parse(m)[uidStr] : false;
-      } catch { return false; }
+      } catch {
+        return false;
+      }
     })();
     if (isDraftKey || hasDraftMapEntry) {
       try {
@@ -1012,7 +1021,9 @@ const UserDetail = () => {
       }).unwrap();
       // Upload any new attachment files
       if (newAttachmentFiles.length > 0) {
-        await uploadAttachments({ userId: user.id, files: newAttachmentFiles }).unwrap().catch(() => {});
+        await uploadAttachments({ userId: user.id, files: newAttachmentFiles })
+          .unwrap()
+          .catch(() => {});
         setNewAttachmentFiles([]);
       }
       notify.success('User updated successfully');
@@ -1322,10 +1333,19 @@ const UserDetail = () => {
               <BadgeIcon sx={{ fontSize: '1.4rem' }} />
             </Box>
             <Typography className={classes.infoLabel}>
-              <BadgeIcon sx={{ fontSize: '0.75rem', mr: 0.4, verticalAlign: 'middle', display: { sm: 'none' } }} />
+              <BadgeIcon
+                sx={{
+                  fontSize: '0.75rem',
+                  mr: 0.4,
+                  verticalAlign: 'middle',
+                  display: { sm: 'none' },
+                }}
+              />
               ID
             </Typography>
-            <Typography className={classes.infoValue}>{(user as any).customUserId || genUserId(user.role, user.id)}</Typography>
+            <Typography className={classes.infoValue}>
+              {(user as any).customUserId || genUserId(user.role, user.id)}
+            </Typography>
           </Box>
 
           {/* Email */}
@@ -1338,7 +1358,14 @@ const UserDetail = () => {
               <EmailIcon sx={{ fontSize: '1.4rem' }} />
             </Box>
             <Typography className={classes.infoLabel}>
-              <EmailIcon sx={{ fontSize: '0.75rem', mr: 0.4, verticalAlign: 'middle', display: { sm: 'none' } }} />
+              <EmailIcon
+                sx={{
+                  fontSize: '0.75rem',
+                  mr: 0.4,
+                  verticalAlign: 'middle',
+                  display: { sm: 'none' },
+                }}
+              />
               Email
             </Typography>
             <Tooltip title={user.email}>
@@ -1356,7 +1383,14 @@ const UserDetail = () => {
               <PhoneIcon sx={{ fontSize: '1.4rem' }} />
             </Box>
             <Typography className={classes.infoLabel}>
-              <PhoneIcon sx={{ fontSize: '0.75rem', mr: 0.4, verticalAlign: 'middle', display: { sm: 'none' } }} />
+              <PhoneIcon
+                sx={{
+                  fontSize: '0.75rem',
+                  mr: 0.4,
+                  verticalAlign: 'middle',
+                  display: { sm: 'none' },
+                }}
+              />
               Phone
             </Typography>
             <Typography className={classes.infoValue}>{user.phone || '—'}</Typography>
@@ -1372,7 +1406,14 @@ const UserDetail = () => {
               <ManageAccountsIcon sx={{ fontSize: '1.4rem' }} />
             </Box>
             <Typography className={classes.infoLabel}>
-              <ManageAccountsIcon sx={{ fontSize: '0.75rem', mr: 0.4, verticalAlign: 'middle', display: { sm: 'none' } }} />
+              <ManageAccountsIcon
+                sx={{
+                  fontSize: '0.75rem',
+                  mr: 0.4,
+                  verticalAlign: 'middle',
+                  display: { sm: 'none' },
+                }}
+              />
               Role
             </Typography>
             <Typography className={classes.infoValue}>{roleLabel(user.role)}</Typography>
@@ -1388,7 +1429,14 @@ const UserDetail = () => {
               <MapPinIcon sx={{ fontSize: '1.4rem' }} />
             </Box>
             <Typography className={classes.infoLabel}>
-              <MapPinIcon sx={{ fontSize: '0.75rem', mr: 0.4, verticalAlign: 'middle', display: { sm: 'none' } }} />
+              <MapPinIcon
+                sx={{
+                  fontSize: '0.75rem',
+                  mr: 0.4,
+                  verticalAlign: 'middle',
+                  display: { sm: 'none' },
+                }}
+              />
               City / Zone
             </Typography>
             <Typography className={classes.infoValue}>{user.city || '—'}</Typography>
@@ -1404,7 +1452,14 @@ const UserDetail = () => {
               <CakeIcon sx={{ fontSize: '1.4rem' }} />
             </Box>
             <Typography className={classes.infoLabel}>
-              <CakeIcon sx={{ fontSize: '0.75rem', mr: 0.4, verticalAlign: 'middle', display: { sm: 'none' } }} />
+              <CakeIcon
+                sx={{
+                  fontSize: '0.75rem',
+                  mr: 0.4,
+                  verticalAlign: 'middle',
+                  display: { sm: 'none' },
+                }}
+              />
               Date of Birth
             </Typography>
             <Typography className={classes.infoValue}>{fmtDate(user.dateOfBirth)}</Typography>
@@ -1420,7 +1475,14 @@ const UserDetail = () => {
               <PersonIcon sx={{ fontSize: '1.4rem' }} />
             </Box>
             <Typography className={classes.infoLabel}>
-              <PersonIcon sx={{ fontSize: '0.75rem', mr: 0.4, verticalAlign: 'middle', display: { sm: 'none' } }} />
+              <PersonIcon
+                sx={{
+                  fontSize: '0.75rem',
+                  mr: 0.4,
+                  verticalAlign: 'middle',
+                  display: { sm: 'none' },
+                }}
+              />
               Gender
             </Typography>
             <Typography className={classes.infoValue}>{user.gender || '—'}</Typography>
@@ -1436,7 +1498,14 @@ const UserDetail = () => {
               <CalendarTodayIcon sx={{ fontSize: '1.4rem' }} />
             </Box>
             <Typography className={classes.infoLabel}>
-              <CalendarTodayIcon sx={{ fontSize: '0.75rem', mr: 0.4, verticalAlign: 'middle', display: { sm: 'none' } }} />
+              <CalendarTodayIcon
+                sx={{
+                  fontSize: '0.75rem',
+                  mr: 0.4,
+                  verticalAlign: 'middle',
+                  display: { sm: 'none' },
+                }}
+              />
               Joined
             </Typography>
             <Typography className={classes.infoValue}>{fmtDate(user.createdAt)}</Typography>
@@ -1452,7 +1521,14 @@ const UserDetail = () => {
               <AccessTimeIcon sx={{ fontSize: '1.4rem' }} />
             </Box>
             <Typography className={classes.infoLabel}>
-              <AccessTimeIcon sx={{ fontSize: '0.75rem', mr: 0.4, verticalAlign: 'middle', display: { sm: 'none' } }} />
+              <AccessTimeIcon
+                sx={{
+                  fontSize: '0.75rem',
+                  mr: 0.4,
+                  verticalAlign: 'middle',
+                  display: { sm: 'none' },
+                }}
+              />
               Last Login
             </Typography>
             <Typography className={classes.infoValue}>{fmtDateTime(user.lastLoginAt)}</Typography>
@@ -2061,8 +2137,8 @@ const UserDetail = () => {
               </Box>
               <Box className={classes.descriptionCardBody}>
                 {/* ── VIEW MODE: stored attachment list ── */}
-                {!isEditing && (
-                  storedAttachments.length === 0 ? (
+                {!isEditing &&
+                  (storedAttachments.length === 0 ? (
                     <Typography sx={{ fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>
                       No attachments added.
                     </Typography>
@@ -2081,7 +2157,9 @@ const UserDetail = () => {
                             border: '1px solid rgba(226,232,255,0.9)',
                           }}
                         >
-                          <AttachFileIcon sx={{ fontSize: '1rem', color: '#6366f1', flexShrink: 0 }} />
+                          <AttachFileIcon
+                            sx={{ fontSize: '1rem', color: '#6366f1', flexShrink: 0 }}
+                          />
                           <Typography
                             sx={{
                               fontSize: '0.8rem',
@@ -2113,8 +2191,7 @@ const UserDetail = () => {
                         </Box>
                       ))}
                     </Box>
-                  )
-                )}
+                  ))}
 
                 {/* ── EDIT MODE: stored list + delete + add new ── */}
                 {isEditing && (
@@ -2145,7 +2222,9 @@ const UserDetail = () => {
                           '&:hover': { background: '#eef2ff' },
                         }}
                       >
-                        <AttachFileIcon sx={{ fontSize: '1rem', color: '#6366f1', flexShrink: 0 }} />
+                        <AttachFileIcon
+                          sx={{ fontSize: '1rem', color: '#6366f1', flexShrink: 0 }}
+                        />
                         <Typography
                           sx={{
                             fontSize: '0.8rem',
@@ -2166,7 +2245,9 @@ const UserDetail = () => {
                           <IconButton
                             size='small'
                             onClick={async () => {
-                              await deleteAttachment({ userId: user.id, url: att.url }).unwrap().catch(() => {});
+                              await deleteAttachment({ userId: user.id, url: att.url })
+                                .unwrap()
+                                .catch(() => {});
                               fetchUser();
                             }}
                             sx={{ p: 0.25 }}
@@ -2191,7 +2272,9 @@ const UserDetail = () => {
                           '&:hover': { background: '#dcfce7' },
                         }}
                       >
-                        <AttachFileIcon sx={{ fontSize: '1rem', color: '#16a34a', flexShrink: 0 }} />
+                        <AttachFileIcon
+                          sx={{ fontSize: '1rem', color: '#16a34a', flexShrink: 0 }}
+                        />
                         <Typography
                           sx={{
                             fontSize: '0.8rem',
@@ -2211,7 +2294,9 @@ const UserDetail = () => {
                         <Tooltip title='Remove'>
                           <IconButton
                             size='small'
-                            onClick={() => setNewAttachmentFiles((prev) => prev.filter((_, i) => i !== idx))}
+                            onClick={() =>
+                              setNewAttachmentFiles((prev) => prev.filter((_, i) => i !== idx))
+                            }
                             sx={{ p: 0.25 }}
                           >
                             <DeleteOutlineIcon sx={{ fontSize: '0.9rem', color: '#dc2626' }} />

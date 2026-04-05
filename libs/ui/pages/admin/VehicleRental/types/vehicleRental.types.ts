@@ -8,6 +8,8 @@ export interface VehicleRentalRow {
   email: string;
   phone?: string;
   vehicleType: string;
+  vehicleImage?: string;
+  costPerDay?: number;
   duration?: string;
   location: string;
   startDate?: string;

@@ -2,7 +2,7 @@ import type { ElementType } from 'react';
 
 // ─── Customer Type ─────────────────────────────────────────────────────────────
 
-export type CustomerType = 'mobility' | 'logistics';
+export type CustomerType = 'mobility' | 'logistics' | 'parcel';
 
 // ─── Type Config ──────────────────────────────────────────────────────────────
 
@@ -26,10 +26,12 @@ export type AdditionalVehicle = { vehicleType: string; vehicleNumber: string; fu
 // ─── Form Data ────────────────────────────────────────────────────────────────
 
 export type FormData = {
+  aadharCard: string;
   firstName: string;
   lastName: string;
   gender: string;
   phone: string;
+  emergencyContact: string;
   email: string;
   city: string;
   area: string;

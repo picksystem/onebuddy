@@ -1,7 +1,9 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import {
   Typography,
+  Tabs,
+  Tab,
   TextField,
   InputAdornment,
   Stack,
@@ -10,111 +12,185 @@ import {
   Divider,
 } from '@mui/material';
 import { Box, Loader, DataTable, Column } from '@bandi/component';
+import TwoWheelerIcon from '@mui/icons-material/TwoWheeler';
+import ElectricRickshawIcon from '@mui/icons-material/ElectricRickshaw';
+import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
+import DirectionsBusIcon from '@mui/icons-material/DirectionsBus';
+import AirportShuttleIcon from '@mui/icons-material/AirportShuttle';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import FireTruckIcon from '@mui/icons-material/FireTruck';
+import Inventory2Icon from '@mui/icons-material/Inventory2';
 import SearchIcon from '@mui/icons-material/Search';
-import GroupIcon from '@mui/icons-material/Group';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import PendingActionsIcon from '@mui/icons-material/PendingActions';
-import CancelIcon from '@mui/icons-material/Cancel';
 import { useAuthActionMutation } from '@bandi/services';
 import { useNotification, useAdminKeyframes } from '@bandi/hooks';
-import { CustomerOnboardingRow } from '../UserManagement/types/userManagement.types';
 import { useStyles } from '../UserManagement/styles';
+import { CustomerOnboardingRow } from '../UserManagement/types/userManagement.types';
 import { constants } from '@bandi/utils';
 import { fmtDateUser } from '../UserManagement/utils/userManagement.utils';
 
-interface FleetMeta {
+interface FleetType {
+  key: string;
   label: string;
+  IconComponent: React.ElementType;
   vehicleTypes: string[];
+  serviceCategory?: string;
   color: string;
   gradientFrom: string;
   gradientTo: string;
+  cardClass: string;
   description: string;
 }
 
-const FLEET_CONFIG: Record<string, FleetMeta> = {
-  bikes: {
+const FLEET_TYPES: FleetType[] = [
+  {
+    key: 'bikes',
     label: 'Bikes & Scooters',
-    vehicleTypes: ['bike'],
+    IconComponent: TwoWheelerIcon,
+    vehicleTypes: ['bike', 'scooter'],
     color: '#7c3aed',
     gradientFrom: '#4f46e5',
     gradientTo: '#7c3aed',
-    description: 'Manage two-wheeler operators — bikes and scooters registered on the platform',
+    cardClass: 'statCard4',
+    description: 'Two-wheeler operators — bikes and scooters',
   },
-  autos: {
-    label: 'Auto Rickshaws',
-    vehicleTypes: ['auto'],
+  {
+    key: 'autos',
+    label: 'Auto',
+    IconComponent: ElectricRickshawIcon,
+    vehicleTypes: ['auto', 'auto_rickshaw'],
     color: '#f59e0b',
     gradientFrom: '#92400e',
     gradientTo: '#f59e0b',
-    description: 'Manage auto rickshaw operators for affordable short-distance city mobility',
+    cardClass: 'statCard1',
+    description: 'Auto rickshaw operators for short-distance city mobility',
   },
-  cabs: {
+  {
+    key: 'cabs',
     label: 'Cabs',
-    vehicleTypes: ['cab'],
+    IconComponent: DirectionsCarIcon,
+    vehicleTypes: ['cab', 'hatchback', 'sedan', 'suv'],
     color: '#1d4ed8',
     gradientFrom: '#1e3a8a',
     gradientTo: '#1d4ed8',
-    description: 'Manage cab operators — hatchbacks, sedans, SUVs and luxury vehicles',
+    cardClass: 'statCard0',
+    description: 'Cab operators — hatchbacks, sedans, SUVs and luxury vehicles',
   },
-  shuttles: {
+  {
+    key: 'shuttles',
     label: 'Shuttles & Buses',
-    vehicleTypes: ['shuttle'],
+    IconComponent: DirectionsBusIcon,
+    vehicleTypes: ['shuttle', 'bus', 'minibus'],
     color: '#059669',
     gradientFrom: '#064e3b',
     gradientTo: '#059669',
-    description: 'Manage shuttle and bus operators for group transport and outstation trips',
+    cardClass: 'statCard2',
+    description: 'Shuttle and bus operators for group transport and outstation trips',
   },
-  'mini-cargo': {
+  {
+    key: 'mini-cargo',
     label: 'Mini Cargo',
-    vehicleTypes: ['tata_ace'],
+    IconComponent: AirportShuttleIcon,
+    vehicleTypes: ['tata_ace', 'mini_truck', 'mini_cargo'],
     color: '#0ea5e9',
     gradientFrom: '#0369a1',
     gradientTo: '#0ea5e9',
-    description: 'Manage Tata Ace and mini truck operators for light goods transport',
+    cardClass: 'statCard3',
+    description: 'Tata Ace and mini truck operators for light goods transport',
   },
-  'medium-goods': {
+  {
+    key: 'medium-goods',
     label: 'Medium Goods',
-    vehicleTypes: ['dcm'],
-    color: '#64748b',
-    gradientFrom: '#1e293b',
-    gradientTo: '#64748b',
-    description: 'Manage DCM and medium goods vehicle operators for mid-range cargo hauls',
+    IconComponent: LocalShippingIcon,
+    vehicleTypes: ['dcm', 'medium_goods', 'pickup'],
+    color: '#0f766e',
+    gradientFrom: '#134e4a',
+    gradientTo: '#0f766e',
+    cardClass: 'statCard5',
+    description: 'DCM and medium goods vehicle operators for mid-range cargo hauls',
   },
-  'heavy-trucks': {
-    label: 'Lorry / Heavy Trucks',
-    vehicleTypes: ['lorry'],
+  {
+    key: 'heavy-trucks',
+    label: 'Heavy Trucks',
+    IconComponent: FireTruckIcon,
+    vehicleTypes: ['lorry', 'heavy_truck', 'trailer'],
     color: '#dc2626',
     gradientFrom: '#7f1d1d',
     gradientTo: '#dc2626',
-    description: 'Manage lorry and heavy truck operators for large-scale freight and logistics',
+    cardClass: 'statCard7',
+    description: 'Lorry and heavy truck operators for large-scale freight and logistics',
   },
-};
+  {
+    key: 'parcel',
+    label: 'Parcel Delivery',
+    IconComponent: Inventory2Icon,
+    vehicleTypes: [],
+    serviceCategory: 'parcel',
+    color: '#ea580c',
+    gradientFrom: '#c2410c',
+    gradientTo: '#ea580c',
+    cardClass: 'statCard7',
+    description: 'Parcel delivery operators for last-mile document, food, and goods delivery',
+  },
+];
 
-const DEFAULT_META: FleetMeta = {
-  label: 'Fleet Management',
-  vehicleTypes: [],
-  color: '#4f46e5',
-  gradientFrom: '#1e3a8a',
-  gradientTo: '#4f46e5',
-  description: 'Manage vehicle fleet operators',
-};
+const MOBILITY_KEYS = new Set(['bikes', 'autos', 'cabs', 'shuttles', 'parcel']);
+const LOGISTICS_KEYS = new Set(['mini-cargo', 'medium-goods', 'heavy-trucks']);
 
 const genId = (row: CustomerOnboardingRow) => row.customerId ?? String(row.id);
 
-const VehicleFleet = () => {
-  const { type = '' } = useParams<{ type: string }>();
+const TabPanel = ({
+  children,
+  value,
+  index,
+}: {
+  children: React.ReactNode;
+  value: number;
+  index: number;
+}) => (value === index ? <Box>{children}</Box> : null);
+
+const FleetManagement = () => {
   const { classes } = useStyles();
   const keyframes = useAdminKeyframes();
   const [authAction] = useAuthActionMutation();
   const notify = useNotification();
   const visibleIdsRef = useRef<(string | number)[]>([]);
+  const { pathname } = useLocation();
+
+  const category: 'mobility' | 'logistics' | null = pathname.includes('mobility')
+    ? 'mobility'
+    : pathname.includes('logistics')
+      ? 'logistics'
+      : null;
+
+  const visibleFleetTypes = useMemo(
+    () =>
+      category === 'mobility'
+        ? FLEET_TYPES.filter((ft) => MOBILITY_KEYS.has(ft.key))
+        : category === 'logistics'
+          ? FLEET_TYPES.filter((ft) => LOGISTICS_KEYS.has(ft.key))
+          : FLEET_TYPES,
+    [category],
+  );
+
+  const pageTitle =
+    category === 'mobility'
+      ? 'Mobility Management'
+      : category === 'logistics'
+        ? 'Logistics Management'
+        : 'Fleet Management';
+
+  const pageDescription =
+    category === 'mobility'
+      ? 'Manage all mobility fleet operators — bikes, autos, cabs, shuttles, and parcel delivery from a single view.'
+      : category === 'logistics'
+        ? 'Manage all logistics fleet operators — mini cargo, medium goods, and heavy trucks.'
+        : 'Manage all mobility and logistics fleet operators from a single view.';
 
   const [allOnboardings, setAllOnboardings] = useState<CustomerOnboardingRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [tabValue, setTabValue] = useState(0);
   const [tableSearch, setTableSearch] = useState('');
   const [selectedRow, setSelectedRow] = useState<CustomerOnboardingRow | null>(null);
-
-  const meta = FLEET_CONFIG[type] ?? DEFAULT_META;
 
   const fetchData = useCallback(async () => {
     try {
@@ -136,33 +212,39 @@ const VehicleFleet = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Reset UI state when fleet type changes (same component reused across fleet routes)
-  useEffect(() => {
-    setTableSearch('');
-    setSelectedRow(null);
-    // Re-fetch if data is already loaded (navigating between fleet pages)
-    if (!isLoading) fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [type]);
+  const activeFleet = visibleFleetTypes[tabValue] ?? visibleFleetTypes[0];
 
-  const fleetData = useMemo(() => {
-    const vTypes = meta.vehicleTypes;
-    if (!vTypes.length) return allOnboardings;
-    return allOnboardings.filter((r) => vTypes.includes(r.vehicleType?.toLowerCase() || ''));
-  }, [allOnboardings, meta.vehicleTypes]);
+  const fleetDataForType = useCallback(
+    (ft: FleetType) => {
+      if (ft.serviceCategory) {
+        return allOnboardings.filter(
+          (r) => (r as Record<string, unknown>).serviceCategory === ft.serviceCategory,
+        );
+      }
+      if (!ft.vehicleTypes.length) return allOnboardings;
+      return allOnboardings.filter((r) =>
+        ft.vehicleTypes.includes(r.vehicleType?.toLowerCase() || ''),
+      );
+    },
+    [allOnboardings],
+  );
 
-  // Keep visible ids in sync for customer detail navigation
+  const currentFleetData = useMemo(
+    () => fleetDataForType(activeFleet),
+    [fleetDataForType, activeFleet],
+  );
+
   useEffect(() => {
     const q = tableSearch.toLowerCase();
     const visible = q
-      ? fleetData.filter((r) =>
+      ? currentFleetData.filter((r) =>
           Object.values(r).some(
             (v) => v !== null && v !== undefined && String(v).toLowerCase().includes(q),
           ),
         )
-      : fleetData;
-    visibleIdsRef.current = visible.map((r) => genId(r));
-  }, [fleetData, tableSearch]);
+      : currentFleetData;
+    visibleIdsRef.current = visible.map(genId);
+  }, [currentFleetData, tableSearch]);
 
   const handleStatusToggle = useCallback(
     async (row: CustomerOnboardingRow) => {
@@ -312,18 +394,6 @@ const VehicleFleet = () => {
                 {row.fuelType}
               </Typography>
             )}
-            {row.tripPreference && (
-              <Typography
-                sx={{
-                  fontSize: '0.67rem',
-                  color: '#94a3b8',
-                  textTransform: 'capitalize',
-                  ml: '5px',
-                }}
-              >
-                {row.tripPreference.replace(/_/g, ' ')}
-              </Typography>
-            )}
           </Stack>
         ),
       },
@@ -421,63 +491,12 @@ const VehicleFleet = () => {
               <Typography sx={{ fontSize: '0.71rem', color: '#64748b' }}>{row.area}</Typography>
             )}
             {row.pincode && (
-              <Typography
-                sx={{
-                  fontSize: '0.69rem',
-                  fontFamily: 'monospace',
-                  color: '#94a3b8',
-                  letterSpacing: '0.5px',
-                }}
-              >
+              <Typography sx={{ fontSize: '0.69rem', fontFamily: 'monospace', color: '#94a3b8' }}>
                 {row.pincode}
               </Typography>
             )}
           </Stack>
         ),
-      },
-      {
-        id: 'bundleTypes',
-        label: 'Bundle',
-        minWidth: 110,
-        format: (_v: unknown, row: CustomerOnboardingRow): React.ReactNode => {
-          if (!row.bundleTypes)
-            return <Typography sx={{ fontSize: '0.72rem', color: '#cbd5e1' }}>—</Typography>;
-          let types: string[] = [];
-          try {
-            const parsed = JSON.parse(row.bundleTypes);
-            types = Array.isArray(parsed) ? parsed : [String(parsed)];
-          } catch {
-            types = [row.bundleTypes];
-          }
-          return (
-            <Stack spacing={0.3}>
-              {types.map((t) => (
-                <Typography
-                  key={t}
-                  sx={{
-                    fontSize: '0.71rem',
-                    fontWeight: 600,
-                    color: '#3730a3',
-                    background: '#eef2ff',
-                    borderRadius: '4px',
-                    px: '5px',
-                    py: '1px',
-                    display: 'inline-block',
-                    width: 'fit-content',
-                    textTransform: 'capitalize',
-                  }}
-                >
-                  {t.replace(/_/g, ' ')}
-                </Typography>
-              ))}
-              {row.bundleDiscount !== null && row.bundleDiscount > 0 && (
-                <Typography sx={{ fontSize: '0.68rem', color: '#16a34a', fontWeight: 700 }}>
-                  {row.bundleDiscount}% off
-                </Typography>
-              )}
-            </Stack>
-          );
-        },
       },
       {
         id: 'status',
@@ -523,20 +542,14 @@ const VehicleFleet = () => {
   );
 
   const filteredData = useMemo(() => {
-    if (!tableSearch) return fleetData;
+    if (!tableSearch) return currentFleetData;
     const q = tableSearch.toLowerCase();
-    return fleetData.filter((row) =>
+    return currentFleetData.filter((row) =>
       Object.values(row).some(
         (v) => v !== null && v !== undefined && String(v).toLowerCase().includes(q),
       ),
     );
-  }, [fleetData, tableSearch]);
-
-  const approved = fleetData.filter((r) => r.status === 'approved').length;
-  const pending = fleetData.filter((r) => r.status === 'pending').length;
-  const inactive = fleetData.filter(
-    (r) => r.status !== 'approved' && r.status !== 'pending',
-  ).length;
+  }, [currentFleetData, tableSearch]);
 
   if (isLoading) {
     return (
@@ -549,98 +562,162 @@ const VehicleFleet = () => {
     );
   }
 
-  const statCards = [
-    {
-      label: 'Total',
-      value: fleetData.length,
-      Icon: GroupIcon,
-      cls: classes.statCard0,
-      sub: `All ${meta.label.toLowerCase()} operators`,
-      color: meta.color,
-    },
-    {
-      label: 'Active',
-      value: approved,
-      Icon: CheckCircleIcon,
-      cls: classes.statCard2,
-      sub: 'Approved & on platform',
-      color: '#16a34a',
-    },
-    {
-      label: 'Pending',
-      value: pending,
-      Icon: PendingActionsIcon,
-      cls: classes.statCard3,
-      sub: 'Awaiting approval',
-      color: '#f59e0b',
-    },
-    {
-      label: 'Inactive',
-      value: inactive,
-      Icon: CancelIcon,
-      cls: classes.statCard1,
-      sub: 'Rejected or deactivated',
-      color: '#94a3b8',
-    },
-  ];
-
   return (
     <>
       {keyframes}
       <Box className={classes.container}>
         {/* Page header */}
-        <Box
-          className={classes.pageHeader}
-          sx={{
-            background: `linear-gradient(135deg, #0f172a 0%, ${meta.gradientFrom} 35%, ${meta.gradientTo} 100%) !important`,
-          }}
-        >
+        <Box className={classes.pageHeader}>
           <Box className={classes.headerOrb3} />
           <Box className={classes.pageHeaderRow}>
             <Typography variant='h5' className={classes.title}>
-              {meta.label}
+              {pageTitle}
             </Typography>
           </Box>
           <Typography variant='body2' className={classes.description}>
-            {meta.description}
+            {pageDescription}
           </Typography>
         </Box>
 
-        {/* Stat cards */}
-        <Box className={classes.statsGrid}>
-          {statCards.map(({ label, value, Icon, cls, sub, color }) => (
-            <Box key={label} className={`${classes.statCard} ${cls}`}>
-              <Box className={classes.statCardTop}>
-                <Box>
-                  <Typography className={classes.statValue} sx={{ color }}>
-                    {value}
-                  </Typography>
-                  <Typography className={classes.statLabel}>{label}</Typography>
+        {/* Fleet type stat cards — clickable to switch tab */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: `repeat(${visibleFleetTypes.length}, 1fr)`,
+            gap: 1.5,
+            mb: 2.5,
+            '@media (max-width:900px)': { gridTemplateColumns: 'repeat(4, 1fr)' },
+            '@media (max-width:600px)': { gridTemplateColumns: 'repeat(2, 1fr)', gap: 1 },
+          }}
+        >
+          {visibleFleetTypes.map((ft, idx) => {
+            const ftData = fleetDataForType(ft);
+            const count = ftData.length;
+            const isActive = tabValue === idx;
+            const approved = ftData.filter((r) => r.status === 'approved').length;
+            const inactive = ftData.filter((r) => r.status !== 'approved').length;
+            const cardCls = (classes as Record<string, string>)[ft.cardClass] ?? '';
+            return (
+              <Box
+                key={ft.key}
+                onClick={() => {
+                  setTabValue(idx);
+                  setTableSearch('');
+                  setSelectedRow(null);
+                }}
+                className={`${classes.statCard} ${cardCls}`}
+                sx={{
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  outline: isActive ? `2px solid ${ft.color}` : 'none',
+                  outlineOffset: 2,
+                  transform: isActive ? 'translateY(-6px)' : undefined,
+                  boxShadow: isActive
+                    ? `0 16px 40px ${ft.color}30, 0 4px 16px ${ft.color}18`
+                    : undefined,
+                }}
+              >
+                <Box className={classes.statCardTop} sx={{ flex: 1, alignItems: 'flex-start' }}>
+                  <Box>
+                    <Typography className={classes.statValue} sx={{ color: ft.color }}>
+                      {count}
+                    </Typography>
+                    <Typography
+                      className={classes.statLabel}
+                      sx={{ minHeight: '2.2em', display: 'block' }}
+                    >
+                      {ft.label}
+                    </Typography>
+                  </Box>
+                  <Box
+                    className={classes.statIconWrap}
+                    sx={{ background: `${ft.color}14`, border: `1.5px solid ${ft.color}28` }}
+                  >
+                    <ft.IconComponent className={classes.statIcon} sx={{ color: ft.color }} />
+                  </Box>
                 </Box>
+                <Divider className={classes.statDivider} />
                 <Box
-                  className={classes.statIconWrap}
-                  sx={{ background: `${color}14`, border: `1.5px solid ${color}28` }}
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
                 >
-                  <Icon className={classes.statIcon} sx={{ color }} />
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      flex: '1 1 0',
+                      minWidth: 0,
+                    }}
+                  >
+                    <Box
+                      className={classes.statSubDot}
+                      sx={{ background: '#10b981', boxShadow: '0 0 6px #10b981', flexShrink: 0 }}
+                    />
+                    <Typography
+                      className={classes.statSub}
+                      sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                    >
+                      <span style={{ color: '#10b981', fontWeight: 700 }}>{approved}</span>
+                      {' active'}
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      flex: '1 1 0',
+                      minWidth: 0,
+                      justifyContent: 'flex-end',
+                    }}
+                  >
+                    <Box
+                      className={classes.statSubDot}
+                      sx={{ background: '#94a3b8', boxShadow: '0 0 6px #94a3b8', flexShrink: 0 }}
+                    />
+                    <Typography
+                      className={classes.statSub}
+                      sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                    >
+                      <span style={{ color: '#94a3b8', fontWeight: 700 }}>{inactive}</span>
+                      {' inactive'}
+                    </Typography>
+                  </Box>
                 </Box>
               </Box>
-              <Divider className={classes.statDivider} />
-              <Box className={classes.statSubRow}>
-                <Box
-                  className={classes.statSubDot}
-                  sx={{ background: color, boxShadow: `0 0 6px ${color}` }}
-                />
-                <Typography className={classes.statSub}>{sub}</Typography>
-              </Box>
-            </Box>
-          ))}
+            );
+          })}
         </Box>
 
-        {/* Search bar */}
-        <Box className={classes.tabsBox} sx={{ justifyContent: 'space-between' }}>
-          <Typography sx={{ fontWeight: 600, fontSize: '0.92rem', color: '#1e293b', pl: 1 }}>
-            {filteredData.length} operator{filteredData.length !== 1 ? 's' : ''}
-          </Typography>
+        {/* Tabs + Search */}
+        <Box className={classes.tabsBox}>
+          <Tabs
+            value={tabValue}
+            onChange={(_, v) => {
+              setTabValue(v);
+              setTableSearch('');
+              setSelectedRow(null);
+            }}
+            variant='scrollable'
+            scrollButtons='auto'
+            allowScrollButtonsMobile
+            sx={{ flex: 1 }}
+          >
+            {visibleFleetTypes.map((ft) => (
+              <Tab
+                key={ft.key}
+                icon={<ft.IconComponent sx={{ fontSize: '1.1rem' }} />}
+                iconPosition='start'
+                label={ft.label}
+              />
+            ))}
+          </Tabs>
           <TextField
             placeholder='Search...'
             value={tableSearch}
@@ -658,21 +735,25 @@ const VehicleFleet = () => {
           />
         </Box>
 
-        {/* Table */}
-        <Box className={classes.tableContainer}>
-          <DataTable
-            columns={columns}
-            data={filteredData}
-            rowKey='id'
-            searchable={false}
-            initialRowsPerPage={10}
-            onRowClick={(row) => setSelectedRow(row)}
-            activeRowKey={selectedRow?.id}
-          />
-        </Box>
+        {/* Tab panels */}
+        {visibleFleetTypes.map((ft, idx) => (
+          <TabPanel key={ft.key} value={tabValue} index={idx}>
+            <Box className={classes.tableContainer}>
+              <DataTable
+                columns={columns}
+                data={filteredData}
+                rowKey='id'
+                searchable={false}
+                initialRowsPerPage={10}
+                onRowClick={(row) => setSelectedRow(row)}
+                activeRowKey={selectedRow?.id}
+              />
+            </Box>
+          </TabPanel>
+        ))}
       </Box>
     </>
   );
 };
 
-export default VehicleFleet;
+export default FleetManagement;
